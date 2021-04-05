@@ -8,41 +8,78 @@ library(IBrokers)
 library(TTR)
 library(data.table)
 tws=twsConnect(port=7497)
-isConnected(tws)
 
+
+#**********************
+# Operational inquiries
+#**********************
+isConnected(tws)
 # reqCurrentTime(tws)
 # serverVersion(tws)
 # twsDisconnect(tws) # disconnect from TWS
+
+#*********************
+#
+#*********************
+function.dir.path="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
+source(paste0(function.dir.path, "Future_Functions.R"))
+
+
+#********************
+# account information
+#********************
 # margin account = "U4524665"
 # paper trading account = "DU2656942"
 reqAccountUpdates(tws,
                   acctCode="DU2656942")
   
 
+#**************
 # contract info
-contract=twsFuture("MNQ", "GLOBEX", "202103")
+#**************
+contract=twsFuture("MNQ", "GLOBEX", "202106")
+
+
+#
+reqRealTimeBars(tws, contract, barSize="5", useRTH=F)
+
+reqMktData(tws, security, eventWrapper= eWrapper.data(1),
+           CALLBACK=snapShot)
+
+
 
 # real time market data
 temp_data=c()
-temp_data = rbind(
-  temp_data,
-  reqMktData(
-    tws,
-    contract,
-    snapshot = T
+while(TRUE){
+  temp_data = rbind(
+    temp_data,
+    reqMktData(
+      tws,
+      contract,
+      snapshot = T
+    )
   )
+  
+  temp_data=unique(temp_data)
+}
+
+
+# request market data
+reqMktData(
+  tws,
+  contract
 )
-
-
 reqMktDepth(tws, contract)
 
-# real time bar data
-reqRealTimeBars(tws, contract, barSize="1", useRTH=F)
+# real time bar data (5 seconds bar chart)
+temp_data=c()
+temp_data=reqRealTimeBars(tws, contract, barSize="5", useRTH=F)
+
 
 # historical data
-Hist_Dat_Original=reqHistoricalData(tws, contract, barSize="1 min", duration="20 D", useRTH="0") # not limited to regular trading hours
+Hist_Dat_Original=reqHistoricalData(tws, contract, barSize="15 mins", duration="30 D", useRTH="0") # not limited to regular trading hours
 Hist_Dat=as.data.table(Hist_Dat_Original)
-Hist_Dat[, Sign:=sign(MNQH1.Close-MNQH1.Open)]
+Hist_Dat[, Sign:=sign(MNQM1.Close-MNQM1.Open)]
 
 Hist_Dat[, RSI:=RSI(MNQH1.Close, n=9)]
 Hist_Dat[, Shifted_Sign:=sign(shift(MNQH1.Close, -5)-MNQH1.Close)]
@@ -74,43 +111,8 @@ Hist_Dat$Shifted_Sign
 
 ########################
 
-snapShot = function(twsCon,
-                    eWrapper,
-                    timestamp,
-                    file,
-                    playback = 1,
-                    ...)
-{
-  if (missing(eWrapper))
-    eWrapper <- eWrapper()
-  names(eWrapper$.Data$data) <- eWrapper$.Data$symbols
-  con <- twsCon[[1]]
-  while (TRUE) {
-    socketSelect(list(con), FALSE, NULL)
-    curMsg <- .Internal(readBin(con, "character", 1L,
-                                NA_integer_, TRUE, FALSE))
-    if (!is.null(timestamp)) {
-      processMsg(curMsg,
-                 con,
-                 eWrapper,
-                 format(Sys.time(),
-                        timestamp),
-                 file,
-                 ...)
-    }
-    else {
-      processMsg(curMsg, con, eWrapper, timestamp,
-                 file, ...)
-    }
-    if (!any(sapply(eWrapper$.Data$data, is.na)))
-      return(do.call(rbind, lapply(eWrapper$.Data$data,
-                                   as.data.frame)))
-  }
-}
 
-library(IBrokers)
-tws=twsConnect(port=7497)
-security=twsFuture("M2k", "GLOBEX", "202103")
+
 
 sma_len1=1
 sma_len2=5
@@ -172,6 +174,13 @@ placeOrder(tws, contract, myorder)
 orderId=as.numeric(reqIds(tws))
 myorder=twsOrder(orderId, orderType="MKT", action="SELL", totalQuantity = "1", transmit = T)
 placeOrder(tws, contract, myorder)
+
+
+
+
+
+
+
 
 
 
