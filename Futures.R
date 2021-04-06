@@ -7,6 +7,7 @@ rm(list=ls())
 library(IBrokers)
 library(TTR)
 library(data.table)
+library(dplyr)
 tws=twsConnect(port=7497)
 
 
@@ -18,10 +19,11 @@ isConnected(tws)
 # serverVersion(tws)
 # twsDisconnect(tws) # disconnect from TWS
 
-#*********************
-#
-#*********************
-function.dir.path="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
+#***************
+# import sources
+#***************
+function.dir.path="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#function.dir.path="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 source(paste0(function.dir.path, "Future_Functions.R"))
 
 
@@ -41,11 +43,7 @@ contract=twsFuture("MNQ", "GLOBEX", "202106")
 
 
 #
-reqRealTimeBars(tws, contract, barSize="5", useRTH=F)
-
-reqMktData(tws, security, eventWrapper= eWrapper.data(1),
-           CALLBACK=snapShot)
-
+#reqRealTimeBars(tws, contract, barSize="5", useRTH=F)
 
 
 # real time market data
@@ -56,28 +54,50 @@ while(TRUE){
     reqMktData(
       tws,
       contract,
-      snapshot = T
+      snapshot=T
     )
   )
   
   temp_data=unique(temp_data)
+  
 }
 
+temp_data=as.data.table(temp_data)
+temp_data[, lastTimeStampNum:=as.numeric(lastTimeStamp)]
 
-# request market data
-reqMktData(
-  tws,
-  contract
-)
-reqMktDepth(tws, contract)
 
-# real time bar data (5 seconds bar chart)
-temp_data=c()
-temp_data=reqRealTimeBars(tws, contract, barSize="5", useRTH=F)
+#**************
+# save and load
+#**************
+#save.image(paste0(function.dir.path, "Rdata/Futures_2021-04-05.Rdata"))
+#load(paste0(rdata.dir, "CLMM_Analysis_2021-02-13_Additional.Rdata"))
+
+
+
+
+chart_size=5
+temp_data[, lastTimeStampNum%%chart_size]
+
+
+
+strftime(temp_data$lastTimeStamp, format="%D")
+strftime(temp_data$lastTimeStamp, format="%H:%M:%S")
+
+
+as.numeric(temp_data$lastTimeStamp)%%5
+
+
+
+reqMktData(tws, contract, eventWrapper=eWrapper.data(1),
+           CALLBACK=snapShot, snapshot = 1)
+
+reqMktData(tws, contract, snapshot = 1)
+
+
 
 
 # historical data
-Hist_Dat_Original=reqHistoricalData(tws, contract, barSize="15 mins", duration="30 D", useRTH="0") # not limited to regular trading hours
+Hist_Dat_Original=reqHistoricalData(tws, contract, barSize="15 mins", duration="1 D", useRTH="0") # not limited to regular trading hours
 Hist_Dat=as.data.table(Hist_Dat_Original)
 Hist_Dat[, Sign:=sign(MNQM1.Close-MNQM1.Open)]
 
@@ -120,10 +140,10 @@ max_pos=2
 currentPosition=0
 
 if(!exists("toyData") ){
-  toydata = reqMktData(tws,security,eventWrapper=eWrapper.data(1),CALLBACK=snapShot)
+  toydata = reqMktData(tws,contract, eventWrapper=eWrapper.data(1), CALLBACK=snapShot)
 }
 while(TRUE){
-  toydata=rbind(toydata, reqMktData(tws, security, eventWrapper= eWrapper.data(1),
+  toydata=rbind(toydata, reqMktData(tws, contract, eventWrapper= eWrapper.data(1),
                                     CALLBACK=snapShot))
   
   toydata=unique(toydata)
@@ -148,7 +168,7 @@ while(TRUE){
       orderId=as.numeric(reqIds(tws))
       toyorder=twsOrder(orderId,orderType = "MKT",action=action,
                         totalQuantity=quantity,transmit=T)
-      placeOrder(tws,security,toyorder)
+      placeOrder(tws,contract,toyorder)
       currentPosition=currentPosition+ (action=="BUY") *as.numeric(quantity)
       - (action=="SELL")*as.numeric(quantity)
     }
