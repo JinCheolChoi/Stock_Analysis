@@ -31,3 +31,4 @@ snapShot = function(twsCon,
                                    as.data.frame)))
   }
 }
+
