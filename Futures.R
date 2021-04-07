@@ -22,9 +22,9 @@ isConnected(tws)
 #***************
 # import sources
 #***************
-function.dir.path="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#function.dir.path="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
-source(paste0(function.dir.path, "Future_Functions.R"))
+#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+source(paste0(working.dir, "Future_Functions.R"))
 
 
 #********************
@@ -34,7 +34,7 @@ source(paste0(function.dir.path, "Future_Functions.R"))
 # paper trading account = "DU2656942"
 reqAccountUpdates(tws,
                   acctCode="DU2656942")
-  
+
 
 #**************
 # contract info
@@ -50,21 +50,60 @@ contract=twsFuture("MNQ", "GLOBEX", "202106")
 #******************************************
 # request and save 5 seconds bar chart data
 #******************************************
-fh=file(paste0(function.dir.path, "out.dat"), open='a')
-reqRealTimeBars(tws, contract, barSize="5", useRTH=F, file=fh)
-close(fh)
+# fh=file(paste0(working.dir, "out.dat"), open='a')
+# reqRealTimeBars(tws, contract, barSize="5", useRTH=F, file=fh)
+# close(fh)
+BarData=c()
+while(T){
+  reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
+                  eventWrapper = eWrapper_cust(),
+                  CALLBACK=twsCALLBACK_cust)
+  
+  if(!exists("RealTimeBarData")){
+    Sys.sleep(0.5)
+  }
+  if(exists("RealTimeBarData")){
+    BarData=unique(rbind(BarData, RealTimeBarData))
+  }
+  rm(RealTimeBarData)
+}
 
-reqRealTimeBars(tws, contract, barSize="5", useRTH=F)
 
+# missing times
+setdiff(seq(from=min(as.POSIXct(BarData$Time)),
+            to=max(as.POSIXct(BarData$Time)),
+            by=5),
+        as.POSIXct(BarData$Time)) %>% as.POSIXct(origin="1970-01-01")
+
+
+
+#
+
+
+
+
+
+
+reqMktData(tws, contract, eventWrapper=eWrapper.data(1),
+           CALLBACK=snapShot)
+
+twsCALLBACK
+
+test_function=function(x){ 
+  paste0(x, "-1")
+}
+test_function_2=function(x){
+  return(paste0(test_function(x), "-2"))
+}
+test_function_2("o")
 #********************************
 # import 5 seconds bar chart data
 #********************************
 library(data.table)
-function.dir.path="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 while(T){
-  if(file.exists(paste0(function.dir.path, "out.dat"))){
+  if(file.exists(paste0(working.dir, "out.dat"))){
     if(round(as.numeric(Sys.time())%%5)==0){
-      Bar_Data=fread(paste0(function.dir.path, "out.dat"))
+      Bar_Data=fread(paste0(working.dir, "out.dat"))
       print(Bar_Data[nrow(Bar_Data),])
       
       Sys.sleep(5)
@@ -73,11 +112,11 @@ while(T){
 }
 
 # filter bar data
-Bar_Data=fread(paste0(function.dir.path, "out.dat"))
+Bar_Data=fread(paste0(working.dir, "out.dat"))
 Colnames=c("Symbol", "Date", "Time", "Open", "High", "Low", "Close", "Volume", "Wap", "Count")
 colnames(Bar_Data)=Colnames
 Bar_Data_Filtered=Bar_Data[, lapply(.SD, function(x) unlist(strsplit(x, "="))[seq(from=2, to=2*nrow(Bar_Data), by=2)]), 
-         .SDcols=Colnames[Colnames!="Time"]]
+                           .SDcols=Colnames[Colnames!="Time"]]
 Bar_Data_Filtered[, Time:=Bar_Data$Time]
 setcolorder(Bar_Data_Filtered, Colnames) # re-order columns
 
@@ -87,19 +126,25 @@ while(T){
   print(as.ITime(Sys.time()))
   
   if(as.ITime(Sys.time())==as.ITime("17:24:00")){
-   break 
+    break 
   }
 }
 
 
-HistData=reqHistoricalData(tws, contract, barSize="5 secs", duration="1 M", useRTH="0") # not limited to regular trading hours
+HistData=reqHistoricalData(tws, contract, barSize="5 secs", duration="2 D", useRTH="0") # not limited to regular trading hours
 #HistData=reqHistoricalData(tws, contract, barSize="30 mins", duration="3 M", useRTH="0") # not limited to regular trading hours
 HistData=as.data.table(HistData)
 
+# save historical data up to today's market closed at 15:00:00 pm PDT
+HistData[index<as.POSIXct(paste0(Sys.Date(), " 15:00:00 PDT")), ]
 
 
-if(file.exists(paste0(function.dir.path, "out.dat"))){
-  file.remove(paste0(function.dir.path, "out.dat"))
+
+
+
+
+if(file.exists(paste0(working.dir, "out.dat"))){
+  file.remove(paste0(working.dir, "out.dat"))
 }
 
 min(as.ITime(Test$`15:58:15`))
@@ -160,11 +205,6 @@ reqMktData(tws, contract)
 library(DescTools)
 
 
-HistData=reqHistoricalData(tws, contract, barSize="5 secs", duration="86400 S", useRTH="0") # not limited to regular trading hours
-HistData=as.data.table(HistData)
-
-
-
 
 
 
@@ -185,8 +225,8 @@ PlotCandlestick(x=as.Date(rownames(Temp_HistData)), y=Temp_HistData, border=NA, 
 #**************
 # save and load
 #**************
-#save.image(paste0(function.dir.path, "Rdata/Futures_2021-04-05.Rdata"))
-#load(paste0(function.dir.path, "Rdata/Futures_2021-04-05.Rdata"))
+#save.image(paste0(working.dir, "Rdata/Futures_2021-04-05.Rdata"))
+#load(paste0(working.dir, "Rdata/Futures_2021-04-05.Rdata"))
 
 
 
