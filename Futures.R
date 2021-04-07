@@ -54,19 +54,42 @@ contract=twsFuture("MNQ", "GLOBEX", "202106")
 # reqRealTimeBars(tws, contract, barSize="5", useRTH=F, file=fh)
 # close(fh)
 BarData=c()
-while(T){
+while(TRUE){
   reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
                   eventWrapper = eWrapper_cust(),
                   CALLBACK=twsCALLBACK_cust)
   
   if(!exists("RealTimeBarData")){
     Sys.sleep(0.5)
-  }
-  if(exists("RealTimeBarData")){
+  }else if(exists("RealTimeBarData")){
     BarData=unique(rbind(BarData, RealTimeBarData))
   }
+  
   rm(RealTimeBarData)
 }
+
+
+# do something at x time everyday
+while(TRUE){
+  if(as.ITime(Sys.time(), tz="PST8PDT")==as.ITime("15:00:00")){
+    HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="3 D", useRTH="0")) # not limited to regular trading hours
+    colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
+    
+    HistData[, hasGaps:=NULL] # hasGaps is redundant
+    
+    HistData=data.table(Symbol=contract$symbol,
+                        HistData)
+    
+    # save historical data up to today's market closed at 15:00:00 pm PDT
+    HistData[Time<as.POSIXct(paste0(Sys.Date(), " 15:00:00 PDT")), ]
+    fwrite(paste0(working.dir, "Data/"))
+  }
+  
+}
+
+
+
+
 
 
 # missing times
@@ -121,22 +144,9 @@ Bar_Data_Filtered[, Time:=Bar_Data$Time]
 setcolorder(Bar_Data_Filtered, Colnames) # re-order columns
 
 
-# do something at x time everyday
-while(T){
-  print(as.ITime(Sys.time()))
-  
-  if(as.ITime(Sys.time())==as.ITime("17:24:00")){
-    break 
-  }
-}
 
 
-HistData=reqHistoricalData(tws, contract, barSize="5 secs", duration="2 D", useRTH="0") # not limited to regular trading hours
-#HistData=reqHistoricalData(tws, contract, barSize="30 mins", duration="3 M", useRTH="0") # not limited to regular trading hours
-HistData=as.data.table(HistData)
 
-# save historical data up to today's market closed at 15:00:00 pm PDT
-HistData[index<as.POSIXct(paste0(Sys.Date(), " 15:00:00 PDT")), ]
 
 
 

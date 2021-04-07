@@ -1,3 +1,9 @@
+#*****************
+#
+# snapShot
+#
+#*****************
+# an example function provided from the interactive brokers' API archives
 snapShot = function(twsCon,
                     eWrapper,
                     timestamp,
@@ -270,7 +276,7 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
       
       `e_real_time_bars_dup` <- function(curMsg, msg, symbols, file, ...) {
         # msg[1] is VERSION
-        columns <- c("Id","Time","Open","High","Low","Close","Volume",
+        columns <- c("Symbol","Time","Open","High","Low","Close","Volume",
                      "Wap","Count")
         id <- as.numeric(msg[2])
         file <- file[[id]]
