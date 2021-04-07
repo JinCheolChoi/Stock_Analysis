@@ -45,32 +45,148 @@ contract=twsFuture("MNQ", "GLOBEX", "202106")
 #
 #reqRealTimeBars(tws, contract, barSize="5", useRTH=F)
 
+#setwd("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/")
 
-# real time market data
-temp_data=c()
-while(TRUE){
-  temp_data = rbind(
-    temp_data,
-    reqMktData(
-      tws,
-      contract,
-      snapshot=T
-    )
-  )
-  
-  temp_data=unique(temp_data)
-  
+#******************************************
+# request and save 5 seconds bar chart data
+#******************************************
+fh=file(paste0(function.dir.path, "out.dat"), open='a')
+reqRealTimeBars(tws, contract, barSize="5", useRTH=F, file=fh)
+close(fh)
+
+reqRealTimeBars(tws, contract, barSize="5", useRTH=F)
+
+#********************************
+# import 5 seconds bar chart data
+#********************************
+library(data.table)
+function.dir.path="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+while(T){
+  if(file.exists(paste0(function.dir.path, "out.dat"))){
+    if(round(as.numeric(Sys.time())%%5)==0){
+      Bar_Data=fread(paste0(function.dir.path, "out.dat"))
+      print(Bar_Data[nrow(Bar_Data),])
+      
+      Sys.sleep(5)
+    }
+  }else{break}
 }
 
-temp_data=as.data.table(temp_data)
-temp_data[, lastTimeStampNum:=as.numeric(lastTimeStamp)]
+# filter bar data
+Bar_Data=fread(paste0(function.dir.path, "out.dat"))
+Colnames=c("Symbol", "Date", "Time", "Open", "High", "Low", "Close", "Volume", "Wap", "Count")
+colnames(Bar_Data)=Colnames
+Bar_Data_Filtered=Bar_Data[, lapply(.SD, function(x) unlist(strsplit(x, "="))[seq(from=2, to=2*nrow(Bar_Data), by=2)]), 
+         .SDcols=Colnames[Colnames!="Time"]]
+Bar_Data_Filtered[, Time:=Bar_Data$Time]
+setcolorder(Bar_Data_Filtered, Colnames) # re-order columns
+
+
+# do something at x time everyday
+while(T){
+  print(as.ITime(Sys.time()))
+  
+  if(as.ITime(Sys.time())==as.ITime("17:24:00")){
+   break 
+  }
+}
+
+
+HistData=reqHistoricalData(tws, contract, barSize="5 secs", duration="1 M", useRTH="0") # not limited to regular trading hours
+#HistData=reqHistoricalData(tws, contract, barSize="30 mins", duration="3 M", useRTH="0") # not limited to regular trading hours
+HistData=as.data.table(HistData)
+
+
+
+if(file.exists(paste0(function.dir.path, "out.dat"))){
+  file.remove(paste0(function.dir.path, "out.dat"))
+}
+
+min(as.ITime(Test$`15:58:15`))
+
+# # real time market data
+# barSize=5
+# Temp_MktData=c()
+# BarData=c()
+# while(TRUE){
+#   # raw market data
+#   Raw_MktData=reqMktData(tws, contract, snapshot=T) 
+#   
+#   #*************************************
+#   # record bar data + reset Temp_MktData
+#   # if
+#   # (1) the current Raw_MktData yields the remainder of 0; and
+#   # (2) maximum time stamp in the current Temp_MktData does yield the remainder of 0
+#   #*************************************#*******************************************
+#   if(as.numeric(Raw_MktData$lastTimeStamp)%%barSize==0 &
+#      max(as.numeric(Temp_MktData$lastTimeStamp))%%barSize!=0){
+#     # record bar data
+#     BarData=rbind(BarData,
+#                   data.table(
+#                     Symbol=unique(Temp_MktData$symbol),
+#                     Timestamp=Temp_MktData$lastTimeStamp[nrow(Temp_MktData)]+1,
+#                     Open=Temp_MktData$lastPrice[1],
+#                     High=max(Temp_MktData$lastPrice),
+#                     Low=min(Temp_MktData$lastPrice),
+#                     Close=Temp_MktData$lastPrice[nrow(Temp_MktData)]
+#                   )
+#     )
+#     
+#     # reset Temp_MktData 
+#     Temp_MktData=c()
+#   }
+#   
+#   # Temp_MktData
+#   Temp_MktData=unique(
+#     rbind(
+#       Temp_MktData,
+#       Raw_MktData
+#       )
+#     )
+# }
+
+
+reqMktData(tws, contract) 
+reqMktData(tws, contract)
+
+unique(Temp_MktData)
+reqMktData(tws, contract)
+
+
+
+#*************
+# candle chart
+#*************
+library(DescTools)
+
+
+HistData=reqHistoricalData(tws, contract, barSize="5 secs", duration="86400 S", useRTH="0") # not limited to regular trading hours
+HistData=as.data.table(HistData)
+
+
+
+
+
+
+
+
+Temp_BarData=as.matrix(BarData[, 3:6])
+rownames(Temp_BarData)=as.character(as.Date(BarData$Timestamp)+(0:(nrow(Temp_BarData)-1)))
+PlotCandlestick(x=as.Date(rownames(Temp_BarData)), y=Temp_BarData, border=NA, las=1, ylab="")
+
+Target_HistData=HistData[index>=min(BarData$Timestamp) & index<=max(BarData$Timestamp), 1:5]
+Temp_HistData=as.matrix(Target_HistData[, 2:5])
+colnames(Temp_HistData)=c("Open", "High", "Low", "Close")
+rownames(Temp_HistData)=as.character(as.Date(Target_HistData$index)+(0:(nrow(Target_HistData)-1)))
+PlotCandlestick(x=as.Date(rownames(Temp_HistData)), y=Temp_HistData, border=NA, las=1, ylab="")
+
 
 
 #**************
 # save and load
 #**************
 #save.image(paste0(function.dir.path, "Rdata/Futures_2021-04-05.Rdata"))
-#load(paste0(rdata.dir, "CLMM_Analysis_2021-02-13_Additional.Rdata"))
+#load(paste0(function.dir.path, "Rdata/Futures_2021-04-05.Rdata"))
 
 
 
