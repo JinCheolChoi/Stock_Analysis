@@ -1,8 +1,8 @@
-#*****************
+#**************
 #
-# snapShot
+# snapShot ----
 #
-#*****************
+#**************
 # an example function provided from the interactive brokers' API archives
 snapShot = function(twsCon,
                     eWrapper,
@@ -39,13 +39,13 @@ snapShot = function(twsCon,
 }
 
 
-#******************
+#**********************
 #
-# twsCALLBACK_cust
+# twsCALLBACK_cust ----
 #
-#******************
+#**********************
 # customized twsCALLBACK()
-# revised lines are highlighted with #
+# revised lines are highlighted with # # # #
 twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...) 
 {
   if (missing(eWrapper)) 
@@ -79,8 +79,8 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
     }
   }
   else {
-    rep.ind=1 ##################
-    tryCatch(while (isConnected(twsCon) & rep.ind==1) { ##################
+    rep.ind=1 # # # #
+    tryCatch(while (isConnected(twsCon) & rep.ind==1) { # # # #
       if (!socketSelect(list(con), FALSE, 0.25)) {
         next
       }
@@ -92,7 +92,7 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
       else {
         processMsg(curMsg, con, eWrapper, timestamp, 
                    file, twsCon, ...)
-        rep.ind=0 ##################
+        rep.ind=0 # # # #
       }
       
     }, error = function(e) {
@@ -105,11 +105,11 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
 
 
 
-#**************
+#*******************
 #
-# eWrapper_cust
+# eWrapper_cust ----
 #
-#**************
+#*******************
 # customized eWrapper()
 # revised lines (realtimeBars) are highlighted with #
 eWrapper_cust=function (debug = FALSE, errfile = stderr()) 
@@ -283,9 +283,27 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
         msg[2] <- symbols[as.numeric(msg[2])]
         msg[3] <- strftime(structure(as.numeric(msg[3]), class=c("POSIXt","POSIXct")))
         
+        #*****************************
         Data=matrix(msg[-1], nrow=1)
         colnames(Data)=columns
-        RealTimeBarData<<-as.data.table(Data)
+        Data=as.data.table(Data)
+        
+        #Corrected timezone
+        Adj_Time=as.POSIXct(format(as.POSIXct(Data$Time), 
+                                  tz="PST8PDT"), 
+                           tz="PST8PDT") # fix the timezone to PDT
+        
+        Data[, Time:=NULL]
+        Data[, Time:=Adj_Time]
+        Data[, (columns[!columns%in%c("Symbol", "Time")]):=lapply(.SD, as.numeric), .SDcols=columns[!columns%in%c("Symbol", "Time")]]
+        
+        setcolorder(Data, columns)
+        
+        RealTimeBarData<<-as.data.table(Data) # generate RealTimeBarData in the global environment
+        #************************************
+        
+        
+        
       }
       #**************
       # original code
@@ -302,7 +320,7 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
       # }
       
       
-      e_real_time_bars_dup(curMsg, msg, symbols, file, ...) ##################
+      e_real_time_bars_dup(curMsg, msg, symbols, file, ...) # # # #
     }
     currentTime <- function(curMsg, msg, timestamp, file, 
                             ...) {
@@ -355,6 +373,81 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
   invisible(eW)
 }
 
+
+
+
+#*******************
+#
+# System_Break ----
+#
+#*******************
+# a break during the temporary market close time
+System_Break=function(){
+  if(as.ITime(format(Sys.time(), tz="PST8PDT"))>=(as.ITime("13:15:00")-60*5)& # if time is between 13:10:00 and 13:15:00 PDT
+     as.ITime(format(Sys.time(), tz="PST8PDT"))<=(as.ITime("13:15:00"))){
+    # (1) for 25 mins from 13:10:00 to 13:35:00 PDT (market close : 13:15:00 to 13:30:00 PDT)
+    Sys.sleep(60*25)
+    
+    # if connection is lost, reconnect
+    while(!isConnected(tws)){
+      tws=twsConnect(port=7497)
+    }
+  }else if(as.ITime(format(Sys.time(), tz="PST8PDT"))>=(as.ITime("14:00:00")-60*5)& # if time is between 13:55:00 and 14:00:00 PDT
+           as.ITime(format(Sys.time(), tz="PST8PDT"))<=(as.ITime("14:00:00"))){
+    # (2) for 70 mins from 13:55:00 to 15:05:00 PDT (market close : 14:00:00 to 15:00:00 PDT)
+    Sys.sleep(60*70)
+    
+    # if connection is lost, reconnect
+    while(!isConnected(tws)){
+      tws=twsConnect(port=7497)
+    }
+    
+    # execute a daily save of 5 second bar data afterwards
+    Daily_Hist_Data_Save()
+    
+  }
+}
+
+
+
+#**************************
+#
+# Daily_Hist_Data_Save ----
+#
+#**************************
+# execute a daily save of 5 second bar data at 15:00:00 pm PDT
+Daily_Hist_Data_Save=function(){
+  # request historical data of 5 seconds bar
+  HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+  colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
+  
+  HistData[, hasGaps:=NULL] # hasGaps is redundant
+  
+  HistData=data.table(Symbol=contract$symbol,
+                      HistData)
+  
+  # remove redundant data
+  # different time zone examples : "GMT", "PST8PDT", "Europe/London"
+  Time_Cutoff=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT")), " 15:00:00"), tz="PST8PDT")
+  HistData=HistData[Time<Time_Cutoff, ]
+  HistData[, Time:=as.POSIXct(format(as.POSIXct(Time), 
+                                     tz="PST8PDT"), 
+                              tz="PST8PDT")]
+  
+  # save historical data up to today's market closed at 15:00:00 pm PDT
+  if(!file.exists(paste0(working.dir, "Data/", contract$symbol, "_", Sys.Date(), ".csv"))){
+    fwrite(HistData,
+           paste0(working.dir, "Data/", contract$symbol, "_", Sys.Date(), ".csv"))
+  }else if(file.exists(paste0(working.dir, "Data/", contract$symbol, "_", Sys.Date(), ".csv"))){ 
+    # if a file already exists for this symbol, combine it with the newly extract historical data
+    fwrite(
+      unique(
+        rbind(fread(paste0(working.dir, "Data/", contract$symbol, "_", Sys.Date(), ".csv")),
+              HistData)
+      ),
+      paste0(working.dir, "Data/", contract$symbol, "_", Sys.Date(), ".csv"))
+  }
+}
 
 
 

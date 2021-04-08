@@ -11,24 +11,34 @@ library(dplyr)
 tws=twsConnect(port=7497)
 
 
+
 #**********************
+#
 # Operational inquiries
+#
 #**********************
 isConnected(tws)
 # reqCurrentTime(tws)
 # serverVersion(tws)
 # twsDisconnect(tws) # disconnect from TWS
 
+
+
 #***************
+#
 # import sources
+#
 #***************
-#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 source(paste0(working.dir, "Future_Functions.R"))
 
 
+
 #********************
+#
 # account information
+#
 #********************
 # margin account = "U4524665"
 # paper trading account = "DU2656942"
@@ -36,58 +46,46 @@ reqAccountUpdates(tws,
                   acctCode="DU2656942")
 
 
+
 #**************
+#
 # contract info
+#
 #**************
 contract=twsFuture("MNQ", "GLOBEX", "202106")
 
 
-#
-#reqRealTimeBars(tws, contract, barSize="5", useRTH=F)
-
-#setwd("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/")
 
 #******************************************
+#
 # request and save 5 seconds bar chart data
+#
 #******************************************
 # fh=file(paste0(working.dir, "out.dat"), open='a')
 # reqRealTimeBars(tws, contract, barSize="5", useRTH=F, file=fh)
 # close(fh)
 BarData=c()
 while(TRUE){
+  #************************************
+  # request realtime 5 seconds bar data
   reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
-                  eventWrapper = eWrapper_cust(),
+                  eventWrapper=eWrapper_cust(),
                   CALLBACK=twsCALLBACK_cust)
   
+  # if it fails to create RealTimeBarData, suspend execution for a while to avoid the system going break
   if(!exists("RealTimeBarData")){
     Sys.sleep(0.5)
   }else if(exists("RealTimeBarData")){
     BarData=unique(rbind(BarData, RealTimeBarData))
+    
+    # remove RealTimeBarData everytime it's combined
+    rm(RealTimeBarData)
   }
   
-  rm(RealTimeBarData)
-}
-
-
-# do something at x time everyday
-while(TRUE){
-  if(as.ITime(Sys.time(), tz="PST8PDT")==as.ITime("15:00:00")){
-    HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="3 D", useRTH="0")) # not limited to regular trading hours
-    colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
-    
-    HistData[, hasGaps:=NULL] # hasGaps is redundant
-    
-    HistData=data.table(Symbol=contract$symbol,
-                        HistData)
-    
-    # save historical data up to today's market closed at 15:00:00 pm PDT
-    HistData[Time<as.POSIXct(paste0(Sys.Date(), " 15:00:00 PDT")), ]
-    fwrite(paste0(working.dir, "Data/"))
-  }
+  # a break during the temporary market close time
+  System_Break()
   
 }
-
-
 
 
 
@@ -107,18 +105,6 @@ setdiff(seq(from=min(as.POSIXct(BarData$Time)),
 
 
 
-reqMktData(tws, contract, eventWrapper=eWrapper.data(1),
-           CALLBACK=snapShot)
-
-twsCALLBACK
-
-test_function=function(x){ 
-  paste0(x, "-1")
-}
-test_function_2=function(x){
-  return(paste0(test_function(x), "-2"))
-}
-test_function_2("o")
 #********************************
 # import 5 seconds bar chart data
 #********************************
@@ -146,6 +132,11 @@ setcolorder(Bar_Data_Filtered, Colnames) # re-order columns
 
 
 
+#**************
+# save and load
+#**************
+#save.image(paste0(working.dir, "Rdata/Futures_2021-04-05.Rdata"))
+#load(paste0(working.dir, "Rdata/Futures_2021-04-05.Rdata"))
 
 
 
@@ -232,11 +223,6 @@ PlotCandlestick(x=as.Date(rownames(Temp_HistData)), y=Temp_HistData, border=NA, 
 
 
 
-#**************
-# save and load
-#**************
-#save.image(paste0(working.dir, "Rdata/Futures_2021-04-05.Rdata"))
-#load(paste0(working.dir, "Rdata/Futures_2021-04-05.Rdata"))
 
 
 
