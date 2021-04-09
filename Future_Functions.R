@@ -79,7 +79,7 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
     }
   }
   else {
-    rep.ind=1 # # # #
+    rep.ind=1 # # # # for snapshot
     tryCatch(while (isConnected(twsCon) & rep.ind==1) { # # # #
       if (!socketSelect(list(con), FALSE, 0.25)) {
         next
@@ -389,21 +389,25 @@ System_Break=function(){
     Sys.sleep(60*25)
     
     # if connection is lost, reconnect
-    while(!isConnected(tws)){
-      tws=twsConnect(port=7497)
-    }
+    while(!isConnected(tws)){tws=twsConnect(port=7497)}
   }else if(as.ITime(format(Sys.time(), tz="PST8PDT"))>=(as.ITime("14:00:00")-60*5)& # if time is between 13:55:00 and 14:00:00 PDT
            as.ITime(format(Sys.time(), tz="PST8PDT"))<=(as.ITime("14:00:00"))){
     # (2) for 70 mins from 13:55:00 to 15:05:00 PDT (market close : 14:00:00 to 15:00:00 PDT)
     Sys.sleep(60*70)
     
     # if connection is lost, reconnect
-    while(!isConnected(tws)){
-      tws=twsConnect(port=7497)
-    }
+    while(!isConnected(tws)){tws=twsConnect(port=7497)}
     
     # execute a daily save of 5 second bar data afterwards
     Daily_Hist_Data_Save()
+    
+  }else if(as.ITime(format(Sys.time(), tz="PST8PDT"))>=(as.ITime("23:45:00")-60*5)& # if time is between 23:40:00 and 23:45:00 PDT
+           as.ITime(format(Sys.time(), tz="PST8PDT"))<=(as.ITime("23:45:00"))){
+    # (3) for 20 mins from 23:40:00 to 24:00:00 PDT (automatic log-off)
+    Sys.sleep(60*20)
+    
+    # if connection is lost, reconnect
+    while(!isConnected(tws)){tws=twsConnect(port=7497)}
     
   }
 }
@@ -417,6 +421,9 @@ System_Break=function(){
 #**************************
 # execute a daily save of 5 second bar data at 15:00:00 pm PDT
 Daily_Hist_Data_Save=function(){
+  # if(as.ITime(format(Sys.time(), tz="PST8PDT"))>=(as.ITime("15:10:00")-60*5)& # if time is between 13:10:00 and 13:15:00 PDT
+  #    as.ITime(format(Sys.time(), tz="PST8PDT"))<=(as.ITime("15:10:00")))
+  
   # request historical data of 5 seconds bar
   HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
   colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
@@ -435,17 +442,17 @@ Daily_Hist_Data_Save=function(){
                               tz="PST8PDT")]
   
   # save historical data up to today's market closed at 15:00:00 pm PDT
-  if(!file.exists(paste0(working.dir, "Data/", contract$symbol, "_", Sys.Date(), ".csv"))){
+  if(!file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))){
     fwrite(HistData,
-           paste0(working.dir, "Data/", contract$symbol, "_", Sys.Date(), ".csv"))
-  }else if(file.exists(paste0(working.dir, "Data/", contract$symbol, "_", Sys.Date(), ".csv"))){ 
+           paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
+  }else if(file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))){ 
     # if a file already exists for this symbol, combine it with the newly extract historical data
     fwrite(
       unique(
-        rbind(fread(paste0(working.dir, "Data/", contract$symbol, "_", Sys.Date(), ".csv")),
+        rbind(fread(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv")),
               HistData)
       ),
-      paste0(working.dir, "Data/", contract$symbol, "_", Sys.Date(), ".csv"))
+      paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
   }
 }
 

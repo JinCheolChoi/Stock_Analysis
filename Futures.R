@@ -66,6 +66,9 @@ contract=twsFuture("MNQ", "GLOBEX", "202106")
 # close(fh)
 BarData=c()
 while(TRUE){
+  # if connection is lost, reconnect
+  while(!isConnected(tws)){tws=twsConnect(port=7497)}
+  
   #************************************
   # request realtime 5 seconds bar data
   reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
@@ -82,11 +85,21 @@ while(TRUE){
     rm(RealTimeBarData)
   }
   
-  # a break during the temporary market close time
+  # a break during periods of temporary market close time
   System_Break()
-  
 }
 
+
+#
+# remove a line displaying an error message in eWrapper_cust
+
+#
+BarData[, RSI:=RSI(Close, n=9)]
+
+# candle chart
+Temp_BarData=as.matrix(BarData[, 3:6])
+rownames(Temp_BarData)=as.character(as.Date(BarData$Time)+(0:(nrow(Temp_BarData)-1)))
+PlotCandlestick(x=as.Date(rownames(Temp_BarData)), y=Temp_BarData, border=NA, las=1, ylab="")
 
 
 
@@ -100,6 +113,21 @@ setdiff(seq(from=min(as.POSIXct(BarData$Time)),
 
 #
 
+
+library(quantmod)
+
+
+
+
+
+
+
+#
+Target_HistData=HistData[index>=min(BarData$Timestamp) & index<=max(BarData$Timestamp), 1:5]
+Temp_HistData=as.matrix(Target_HistData[, 2:5])
+colnames(Temp_HistData)=c("Open", "High", "Low", "Close")
+rownames(Temp_HistData)=as.character(as.Date(Target_HistData$index)+(0:(nrow(Target_HistData)-1)))
+PlotCandlestick(x=as.Date(rownames(Temp_HistData)), y=Temp_HistData, border=NA, las=1, ylab="")
 
 
 
