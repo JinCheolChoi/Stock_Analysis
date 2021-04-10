@@ -69,6 +69,12 @@ while(TRUE){
   # if connection is lost, reconnect
   while(!isConnected(tws)){tws=twsConnect(port=7497)}
   
+  # a break during periods of market close time
+  System_Break()
+  
+  #source(paste0(working.dir, "Systeam_Break.R"))
+  
+  
   #************************************
   # request realtime 5 seconds bar data
   reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
@@ -85,9 +91,9 @@ while(TRUE){
     rm(RealTimeBarData)
   }
   
-  # a break during periods of temporary market close time
-  System_Break()
 }
+
+
 
 
 #
@@ -115,6 +121,11 @@ setdiff(seq(from=min(as.POSIXct(BarData$Time)),
 
 
 library(quantmod)
+
+
+BarData[Time>=as.POSIXct(as.ITime("13:15:00"), tz="PST8PDT"), ]
+
+
 
 
 
@@ -163,8 +174,8 @@ setcolorder(Bar_Data_Filtered, Colnames) # re-order columns
 #**************
 # save and load
 #**************
-#save.image(paste0(working.dir, "Rdata/Futures_2021-04-05.Rdata"))
-#load(paste0(working.dir, "Rdata/Futures_2021-04-05.Rdata"))
+#save.image(paste0(working.dir, "Rdata/Futures_2021-04-09.Rdata"))
+#load(paste0(working.dir, "Rdata/Futures_2021-04-09.Rdata"))
 
 
 
