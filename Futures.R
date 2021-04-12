@@ -29,10 +29,10 @@ isConnected(tws)
 # import sources
 #
 #***************
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 source(paste0(working.dir, "Future_Functions.R"))
-
+R.version
 
 
 #********************
@@ -44,7 +44,6 @@ source(paste0(working.dir, "Future_Functions.R"))
 # paper trading account = "DU2656942"
 reqAccountUpdates(tws,
                   acctCode="DU2656942")
-
 
 
 #**************
