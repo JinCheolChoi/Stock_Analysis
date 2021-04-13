@@ -29,8 +29,8 @@ isConnected(tws)
 # import sources
 #
 #***************
-#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 source(paste0(working.dir, "Future_Functions.R"))
 #source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
 
