@@ -116,15 +116,6 @@ setdiff(seq(from=min(as.POSIXct(BarData$Time)),
 
 
 
-#
-
-
-library(quantmod)
-
-
-BarData[Time>=as.POSIXct(as.ITime("13:15:00"), tz="PST8PDT"), ]
-
-
 
 
 
@@ -173,8 +164,8 @@ setcolorder(Bar_Data_Filtered, Colnames) # re-order columns
 #**************
 # save and load
 #**************
-#save.image(paste0(working.dir, "Rdata/Futures_2021-04-09.Rdata"))
-#load(paste0(working.dir, "Rdata/Futures_2021-04-09.Rdata"))
+#save.image(paste0(working.dir, "Rdata/Futures_2021-04-12.Rdata"))
+#load(paste0(working.dir, "Rdata/Futures_2021-04-12.Rdata"))
 
 
 
