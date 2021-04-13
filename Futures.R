@@ -29,9 +29,10 @@ isConnected(tws)
 # import sources
 #
 #***************
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 source(paste0(working.dir, "Future_Functions.R"))
+#source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
 
 
 
@@ -44,7 +45,6 @@ source(paste0(working.dir, "Future_Functions.R"))
 # paper trading account = "DU2656942"
 reqAccountUpdates(tws,
                   acctCode="DU2656942")
-
 
 
 #**************
@@ -72,29 +72,16 @@ while(TRUE){
   # a break during periods of market close time
   System_Break()
   
-  #source(paste0(working.dir, "Systeam_Break.R"))
-  
-  
-  #************************************
   # request realtime 5 seconds bar data
-  reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
-                  eventWrapper=eWrapper_cust(),
-                  CALLBACK=twsCALLBACK_cust)
-  
-  # if it fails to create RealTimeBarData, suspend execution for a while to avoid the system going break
-  if(!exists("RealTimeBarData")){
-    Sys.sleep(0.5)
-  }else if(exists("RealTimeBarData")){
-    BarData=unique(rbind(BarData, RealTimeBarData))
-    
-    # remove RealTimeBarData everytime it's combined
-    rm(RealTimeBarData)
-  }
+  # output : BarData
+  req5SecsRealTimeBars()
   
 }
+BarData
 
-
-
+Test=function(x){
+  print(x)
+}
 
 #
 # remove a line displaying an error message in eWrapper_cust
@@ -115,15 +102,6 @@ setdiff(seq(from=min(as.POSIXct(BarData$Time)),
             by=5),
         as.POSIXct(BarData$Time)) %>% as.POSIXct(origin="1970-01-01")
 
-
-
-#
-
-
-library(quantmod)
-
-
-BarData[Time>=as.POSIXct(as.ITime("13:15:00"), tz="PST8PDT"), ]
 
 
 
@@ -174,8 +152,8 @@ setcolorder(Bar_Data_Filtered, Colnames) # re-order columns
 #**************
 # save and load
 #**************
-#save.image(paste0(working.dir, "Rdata/Futures_2021-04-09.Rdata"))
-#load(paste0(working.dir, "Rdata/Futures_2021-04-09.Rdata"))
+#save.image(paste0(working.dir, "Rdata/Futures_2021-04-12.Rdata"))
+#load(paste0(working.dir, "Rdata/Futures_2021-04-12.Rdata"))
 
 
 

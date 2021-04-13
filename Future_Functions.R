@@ -303,7 +303,6 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
         #************************************
         
         
-        
       }
       #**************
       # original code
@@ -454,6 +453,24 @@ Daily_Hist_Data_Save=function(){
   HistData=data.table(Symbol=contract$symbol,
                       HistData)
   
+  # # for statement to get and save bar data day-by-day
+  # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="PST8PDT")), by="day")){
+  #   if(weekdays.Date(as.Date(Date))=="Saturday"|
+  #      weekdays.Date(as.Date(Date))=="Sunday"){
+  #     next
+  #   }
+  #   
+  #   Time_Cutoff=as.POSIXct(paste0(as.Date(Date), " 15:00:00"), tz="PST8PDT")
+  # 
+  # 
+  #   HistData[Time>=(Time_Cutoff-60*60*24)&
+  #              Time<Time_Cutoff, ]
+  # 
+  #   fwrite(HistData[Time>=(Time_Cutoff-60*60*24)&
+  #                     Time<Time_Cutoff, ],
+  #          paste0(working.dir, "Data/", contract$symbol, "_", as.Date(Date), ".csv"))
+  # }
+  
   # remove redundant data
   # different time zone examples : "GMT", "PST8PDT", "Europe/London"
   Time_Cutoff=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT")), " 15:00:00"), tz="PST8PDT")
@@ -474,6 +491,37 @@ Daily_Hist_Data_Save=function(){
               HistData)
       ),
       paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
+  }
+}
+
+
+
+
+
+
+#**************************
+#
+# req5SecsRealTimeBars ----
+#
+#**************************
+# request realtime 5 seconds bar data
+#*******************************************
+# output : BarData in the global environment
+req5SecsRealTimeBars=function(){
+  # output : RealTimeBarData in the global environment
+  reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
+                  eventWrapper=eWrapper_cust(),
+                  CALLBACK=twsCALLBACK_cust)
+  
+  # if it fails to create RealTimeBarData, suspend execution for a while to avoid the system going break
+  if(!exists("RealTimeBarData")){
+    Sys.sleep(0.5)
+  }else if(exists("RealTimeBarData")){
+    BarData<<-unique(rbind(BarData, RealTimeBarData))
+    
+    # remove RealTimeBarData everytime it's combined
+    rm(RealTimeBarData, envir=.GlobalEnv)
+    
   }
 }
 
