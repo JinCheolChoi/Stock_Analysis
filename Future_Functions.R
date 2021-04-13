@@ -303,7 +303,6 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
         #************************************
         
         
-        
       }
       #**************
       # original code
@@ -492,6 +491,37 @@ Daily_Hist_Data_Save=function(){
               HistData)
       ),
       paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
+  }
+}
+
+
+
+
+
+
+#**************************
+#
+# req5SecsRealTimeBars ----
+#
+#**************************
+# request realtime 5 seconds bar data
+#*******************************************
+# output : BarData in the global environment
+req5SecsRealTimeBars=function(){
+  # output : RealTimeBarData in the global environment
+  reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
+                  eventWrapper=eWrapper_cust(),
+                  CALLBACK=twsCALLBACK_cust)
+  
+  # if it fails to create RealTimeBarData, suspend execution for a while to avoid the system going break
+  if(!exists("RealTimeBarData")){
+    Sys.sleep(0.5)
+  }else if(exists("RealTimeBarData")){
+    BarData<<-unique(rbind(BarData, RealTimeBarData))
+    
+    # remove RealTimeBarData everytime it's combined
+    rm(RealTimeBarData, envir=.GlobalEnv)
+    
   }
 }
 
