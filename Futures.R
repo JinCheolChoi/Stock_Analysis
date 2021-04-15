@@ -29,8 +29,8 @@ isConnected(tws)
 # import sources
 #
 #***************
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 source(paste0(working.dir, "Future_Functions.R"))
 #source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
 
@@ -56,15 +56,13 @@ contract=twsFuture("MNQ", "GLOBEX", "202106")
 
 
 
-#******************************************
+#***********************
 #
-# request and save 5 seconds bar chart data
+# live trading algorithm
 #
-#******************************************
-# fh=file(paste0(working.dir, "out.dat"), open='a')
-# reqRealTimeBars(tws, contract, barSize="5", useRTH=F, file=fh)
-# close(fh)
+#***********************
 BarData=c()
+# BarData5Secs=c()
 while(TRUE){
   # if connection is lost, reconnect
   while(!isConnected(tws)){tws=twsConnect(port=7497)}
@@ -72,16 +70,34 @@ while(TRUE){
   # a break during periods of market close time
   System_Break()
   
-  # request realtime 5 seconds bar data
+  # request realtime bar data
   # output : BarData
-  req5SecsRealTimeBars()
+  ReqRealTimeBars(BarSize=5)
+  
+  # determine an action
+  
+  
+  
+  # place an order
+  
+  
   
 }
-BarData
 
-Test=function(x){
-  print(x)
-}
+
+#*********************
+#
+# simulation algorithm
+#
+#*********************
+# import data
+
+# parse BarData to determine an action
+# establish criteria to make a deicision
+
+
+
+
 
 #
 # remove a line displaying an error message in eWrapper_cust
@@ -108,6 +124,14 @@ setdiff(seq(from=min(as.POSIXct(BarData$Time)),
 
 
 
+#******************************************
+#
+# request and save 5 seconds bar chart data
+#
+#******************************************
+# fh=file(paste0(working.dir, "out.dat"), open='a')
+# reqRealTimeBars(tws, contract, barSize="5", useRTH=F, file=fh)
+# close(fh)
 
 
 
