@@ -290,8 +290,8 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
         
         #Corrected timezone
         Adj_Time=as.POSIXct(format(as.POSIXct(Data$Time), 
-                                  tz="PST8PDT"), 
-                           tz="PST8PDT") # fix the timezone to PDT
+                                   tz="PST8PDT"), 
+                            tz="PST8PDT") # fix the timezone to PDT
         
         Data[, Time:=NULL]
         Data[, Time:=Adj_Time]
@@ -453,7 +453,7 @@ Daily_Hist_Data_Save=function(){
   HistData=data.table(Symbol=contract$symbol,
                       HistData)
   
-  # # for statement to get and save bar data day-by-day
+  # # "for statement" to get and save bar data day-by-day
   # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="PST8PDT")), by="day")){
   #   if(weekdays.Date(as.Date(Date))=="Saturday"|
   #      weekdays.Date(as.Date(Date))=="Sunday"){
@@ -499,32 +499,83 @@ Daily_Hist_Data_Save=function(){
 
 
 
-#**************************
+#*********************
 #
-# req5SecsRealTimeBars ----
+# ReqRealTimeBars ----
 #
 #**************************
-# request realtime 5 seconds bar data
+# request realtime bar data
 #*******************************************
 # output : BarData in the global environment
-req5SecsRealTimeBars=function(){
+ReqRealTimeBars=function(BarSize=5){
   # output : RealTimeBarData in the global environment
-  reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
-                  eventWrapper=eWrapper_cust(),
-                  CALLBACK=twsCALLBACK_cust)
+  IBrokers::reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
+                            eventWrapper=eWrapper_cust(),
+                            CALLBACK=twsCALLBACK_cust)
   
   # if it fails to create RealTimeBarData, suspend execution for a while to avoid the system going break
   if(!exists("RealTimeBarData")){
     Sys.sleep(0.5)
   }else if(exists("RealTimeBarData")){
-    BarData<<-unique(rbind(BarData, RealTimeBarData))
+    # generate BarData
+    if(BarSize==5){ # if BarSize=5, no additional process is required
+      BarData<<-unique(rbind(BarData, RealTimeBarData))
+    }else if(BarSize>5 & BarSize%%5==0){ # additional process given a BarSize>5
+      if(as.numeric(RealTimeBarData$Time)%%BarSize==0){Init<<-1} # initiate when the remainder is 0
+      if(exists("Init", envir=.GlobalEnv)){ # main process part
+        if(as.numeric(RealTimeBarData$Time)%%BarSize==0){ # open info
+          Symbol<<-RealTimeBarData$Symbol
+          Time<<-RealTimeBarData$Time
+          Open<<-RealTimeBarData$Open
+          High<<-RealTimeBarData$High
+          Low<<-RealTimeBarData$Low
+          Volume<<-RealTimeBarData$Volume
+          Count<<-RealTimeBarData$Count
+        }else if(as.numeric(RealTimeBarData$Time)%%BarSize>0){
+          High<<-max(High, RealTimeBarData$High)
+          Low<<-min(Low, RealTimeBarData$Low)
+          Volume<<-Volume+RealTimeBarData$Volume
+          Count<<-Count+RealTimeBarData$Count
+        }
+        
+        # close info
+        if(as.numeric(RealTimeBarData$Time)%%BarSize==(BarSize-5)){
+          Close<<-RealTimeBarData$Close
+          
+          BarData<<-unique(rbind(BarData, 
+                                 data.table(
+                                   Symbol=Symbol,
+                                   Time=Time,
+                                   Open=Open,
+                                   High=High,
+                                   Low=Low,
+                                   Close=Close,
+                                   Volume=Volume,
+                                   Count=Count
+                                 )))
+          
+          # remove values in the global environment after generating a data point
+          rm(Init, envir=.GlobalEnv)
+          rm(Symbol, envir=.GlobalEnv)
+          rm(Time, envir=.GlobalEnv)
+          rm(Open, envir=.GlobalEnv)
+          rm(High, envir=.GlobalEnv)
+          rm(Low, envir=.GlobalEnv)
+          rm(Close, envir=.GlobalEnv)
+          rm(Volume, envir=.GlobalEnv)
+          rm(Count, envir=.GlobalEnv)
+          
+        }
+      }
+    }else{
+      message("BarSize must be a multiple of 5")
+    }
     
-    # remove RealTimeBarData everytime it's combined
+    # remove RealTimeBarData everytime its info is stored
     rm(RealTimeBarData, envir=.GlobalEnv)
     
   }
 }
-
 
 
 
