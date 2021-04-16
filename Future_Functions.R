@@ -39,6 +39,9 @@ snapShot = function(twsCon,
 }
 
 
+
+
+
 #**********************
 #
 # twsCALLBACK_cust ----
@@ -102,6 +105,8 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
     })
   }
 }
+
+
 
 
 
@@ -375,6 +380,7 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
 
 
 
+
 #*******************
 #
 # System_Break ----
@@ -428,7 +434,6 @@ System_Break=function(){
     stop("The market is closed.")
   }
 }
-
 
 
 
@@ -493,7 +498,6 @@ Daily_Hist_Data_Save=function(){
       paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
   }
 }
-
 
 
 
@@ -581,4 +585,52 @@ ReqRealTimeBars=function(BarSize=5){
 
 
 
+#*********************
+#
+# Import_HistData ----
+#
+#****************************************************
+# import historical data saved in a repository folder
+#****************************************************
+# output : HistData in the global environment
+Import_HistData=function(Location, Symbol, First_date, Last_date){
+  for(Date in seq(as.Date(First_date), Last_date, by="day")){
+    File_name=paste0(Symbol, "_", as.Date(Date), ".csv")
+    if(!file.exists(paste0(Location, File_name))){
+      next
+    }
+    
+    if(!exists("HistData", envir=.GlobalEnv)){
+      HistData<<-fread(paste0(Location, File_name))
+    }else{
+      HistData<<-rbind(HistData,
+                       fread(paste0(Location, File_name)))
+    }
+  }
+  
+}
 
+# 
+# as.POSIXct(format(as.POSIXct(head(HistData$Time)), 
+#                   tz="UTC"), 
+#            tz="PST8PDT") # fix the timezone to PDT
+# as.ITime(HistData$Time)
+# 
+# as.character(HistData$Time)
+# fwrite(HistData,
+#        paste0(working.dir, "Data/test.csv"),
+#        dateTimeAs=d)
+# 
+# Test=fread(paste0(working.dir, "Data/test.csv"))
+# 
+# attr(Date, 'tzone')
+# Test$Time
+# Sys.setenv(TZ='PST8PDT')
+# t = Sys.time()
+# t
+# attr(Sys.time(), "tzone")
+# 
+# library(lubridate)
+# 
+# install.packages("lubridate")
+# 'lubridate'

@@ -29,8 +29,8 @@ isConnected(tws)
 # import sources
 #
 #***************
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 source(paste0(working.dir, "Future_Functions.R"))
 #source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
 
@@ -91,8 +91,15 @@ while(TRUE){
 #
 #*********************
 # import data
+# output : HistData
+Import_HistData(Location=paste0(working.dir, "Data/"),
+                Symbol=contract$symbol,
+                First_date="2021-03-01",
+                Last_date=as.Date(format(Sys.time(), tz="PST8PDT")))
 
-# parse BarData to determine an action
+# parse HistData to determine an action to take
+
+
 # establish criteria to make a deicision
 
 
@@ -124,51 +131,6 @@ setdiff(seq(from=min(as.POSIXct(BarData$Time)),
 
 
 
-#******************************************
-#
-# request and save 5 seconds bar chart data
-#
-#******************************************
-# fh=file(paste0(working.dir, "out.dat"), open='a')
-# reqRealTimeBars(tws, contract, barSize="5", useRTH=F, file=fh)
-# close(fh)
-
-
-
-#
-Target_HistData=HistData[index>=min(BarData$Timestamp) & index<=max(BarData$Timestamp), 1:5]
-Temp_HistData=as.matrix(Target_HistData[, 2:5])
-colnames(Temp_HistData)=c("Open", "High", "Low", "Close")
-rownames(Temp_HistData)=as.character(as.Date(Target_HistData$index)+(0:(nrow(Target_HistData)-1)))
-PlotCandlestick(x=as.Date(rownames(Temp_HistData)), y=Temp_HistData, border=NA, las=1, ylab="")
-
-
-
-
-
-#********************************
-# import 5 seconds bar chart data
-#********************************
-library(data.table)
-while(T){
-  if(file.exists(paste0(working.dir, "out.dat"))){
-    if(round(as.numeric(Sys.time())%%5)==0){
-      Bar_Data=fread(paste0(working.dir, "out.dat"))
-      print(Bar_Data[nrow(Bar_Data),])
-      
-      Sys.sleep(5)
-    }
-  }else{break}
-}
-
-# filter bar data
-Bar_Data=fread(paste0(working.dir, "out.dat"))
-Colnames=c("Symbol", "Date", "Time", "Open", "High", "Low", "Close", "Volume", "Wap", "Count")
-colnames(Bar_Data)=Colnames
-Bar_Data_Filtered=Bar_Data[, lapply(.SD, function(x) unlist(strsplit(x, "="))[seq(from=2, to=2*nrow(Bar_Data), by=2)]), 
-                           .SDcols=Colnames[Colnames!="Time"]]
-Bar_Data_Filtered[, Time:=Bar_Data$Time]
-setcolorder(Bar_Data_Filtered, Colnames) # re-order columns
 
 
 
@@ -185,11 +147,6 @@ setcolorder(Bar_Data_Filtered, Colnames) # re-order columns
 
 
 
-if(file.exists(paste0(working.dir, "out.dat"))){
-  file.remove(paste0(working.dir, "out.dat"))
-}
-
-min(as.ITime(Test$`15:58:15`))
 
 # # real time market data
 # barSize=5
