@@ -8,6 +8,7 @@ library(IBrokers)
 library(TTR)
 library(data.table)
 library(dplyr)
+library(DescTools) # candle chart
 tws=twsConnect(port=7497)
 
 
@@ -41,8 +42,8 @@ source(paste0(working.dir, "Future_Functions.R"))
 # account information
 #
 #********************
-# margin account = "U4524665"
-# paper trading account = "DU2656942"
+# margin account="U4524665"
+# paper trading account="DU2656942"
 reqAccountUpdates(tws,
                   acctCode="DU2656942")
 
@@ -74,13 +75,13 @@ while(TRUE){
   # output : BarData
   ReqRealTimeBars(BarSize=5)
   
+  # candle chart
+  Candle_Chart(BarData)
+  
   # determine an action
   
   
-  
   # place an order
-  
-  
   
 }
 
@@ -93,15 +94,53 @@ while(TRUE){
 # import data
 # output : HistData
 Import_HistData(Location=paste0(working.dir, "Data/"),
-                Symbol=contract$symbol,
-                First_date="2021-03-01",
+                Symbol="MNQ",
+                First_date="2021-03-15",
                 Last_date=as.Date(format(Sys.time(), tz="PST8PDT")))
 
+# collapse data to the chosen-sized bar data
+Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`, BarSize=60*5)
+
+
+HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 mins", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
+HistData[, hasGaps:=NULL] # hasGaps is redundant
+HistData=data.table(Symbol=contract$symbol,
+                    HistData)
+Merged_Data=HistData %>% 
+  left_join(Collapsed_BarData,
+            by=c("Symbol", "Time"))
+Merged_Data=Merged_Data[!is.na(Volume.y),]
+#273
+Merged_Data[Open.x!=Open.y, ]
+Merged_Data[High.x!=High.y, ]
+Merged_Data[Low.x!=Low.y, ] %>% head(5)
+Merged_Data[Close.x!=Close.y, ]
+Merged_Data[Volume.x!=Volume.y, ]
+Merged_Data[Count.x!=Count.y, ]
+
+`5SecsBarHistData`[Time%in%c(Merged_Data[Open.x!=Open.y, Time])]
+`5SecsBarHistData`[Time>=c(Merged_Data[Low.x!=Low.y, Time])[1]] %>% head(6)
+
+
 # parse HistData to determine an action to take
+HistData
+HistData[, RSI:=RSI(Close, n=9)]
+HistData[, Sign:=sign(Close-Open)]
+HistData[, Volume_Change:=Volume/shift(Volume, 1)]
+HistData[, Future_Direction:=sign(shift(Close, -5)-Close)]
+
+
+HistData=HistData[!is.na(Future_Direction)&
+                    !is.na(RSI)&
+                    !is.na(Volume_Change), ]
+#
+cor(HistData[, .SD, .SDcols=c("RSI", "Future_Direction")])
+cor(HistData[RSI>=95, .SD, .SDcols=c("RSI", "Future_Direction")])
+cor(HistData[RSI>=70 & Volume_Change>2.5, .SD, .SDcols=c("RSI", "Future_Direction")])
 
 
 # establish criteria to make a deicision
-
 
 
 
@@ -110,13 +149,6 @@ Import_HistData(Location=paste0(working.dir, "Data/"),
 # remove a line displaying an error message in eWrapper_cust
 
 #
-BarData[, RSI:=RSI(Close, n=9)]
-
-# candle chart
-Temp_BarData=as.matrix(BarData[, 3:6])
-rownames(Temp_BarData)=as.character(as.Date(BarData$Time)+(0:(nrow(Temp_BarData)-1)))
-PlotCandlestick(x=as.Date(rownames(Temp_BarData)), y=Temp_BarData, border=NA, las=1, ylab="")
-
 
 
 # missing times
@@ -124,8 +156,6 @@ setdiff(seq(from=min(as.POSIXct(BarData$Time)),
             to=max(as.POSIXct(BarData$Time)),
             by=5),
         as.POSIXct(BarData$Time)) %>% as.POSIXct(origin="1970-01-01")
-
-
 
 
 
@@ -198,53 +228,6 @@ reqMktData(tws, contract)
 
 
 
-#*************
-# candle chart
-#*************
-library(DescTools)
-
-
-
-
-
-
-
-Temp_BarData=as.matrix(BarData[, 3:6])
-rownames(Temp_BarData)=as.character(as.Date(BarData$Timestamp)+(0:(nrow(Temp_BarData)-1)))
-PlotCandlestick(x=as.Date(rownames(Temp_BarData)), y=Temp_BarData, border=NA, las=1, ylab="")
-
-Target_HistData=HistData[index>=min(BarData$Timestamp) & index<=max(BarData$Timestamp), 1:5]
-Temp_HistData=as.matrix(Target_HistData[, 2:5])
-colnames(Temp_HistData)=c("Open", "High", "Low", "Close")
-rownames(Temp_HistData)=as.character(as.Date(Target_HistData$index)+(0:(nrow(Target_HistData)-1)))
-PlotCandlestick(x=as.Date(rownames(Temp_HistData)), y=Temp_HistData, border=NA, las=1, ylab="")
-
-
-
-
-
-
-
-chart_size=5
-temp_data[, lastTimeStampNum%%chart_size]
-
-
-
-strftime(temp_data$lastTimeStamp, format="%D")
-strftime(temp_data$lastTimeStamp, format="%H:%M:%S")
-
-
-as.numeric(temp_data$lastTimeStamp)%%5
-
-
-
-reqMktData(tws, contract, eventWrapper=eWrapper.data(1),
-           CALLBACK=snapShot, snapshot = 1)
-
-reqMktData(tws, contract, snapshot = 1)
-
-
-
 
 # historical data
 Hist_Dat_Original=reqHistoricalData(tws, contract, barSize="15 mins", duration="1 D", useRTH="0") # not limited to regular trading hours
@@ -290,7 +273,7 @@ max_pos=2
 currentPosition=0
 
 if(!exists("toyData") ){
-  toydata = reqMktData(tws,contract, eventWrapper=eWrapper.data(1), CALLBACK=snapShot)
+  toydata=reqMktData(tws,contract, eventWrapper=eWrapper.data(1), CALLBACK=snapShot)
 }
 while(TRUE){
   toydata=rbind(toydata, reqMktData(tws, contract, eventWrapper= eWrapper.data(1),
@@ -306,17 +289,17 @@ while(TRUE){
   long_sma= mean(tail(toydata$Last,sma_len2))
   action =""
   if(short_sma >(long_sma+0.005))
-    action = "BUY"
+    action="BUY"
   if(short_sma <(long_sma-0.005))
-    action = "SELL"
-  quantity = 1
+    action="SELL"
+  quantity=1
   if(action!=""){
     print(paste(action,quantity,currentPosition))
     if(abs(currentPosition+ (action=="BUY") *as.numeric(quantity)
            - (action=="SELL")*as.numeric(quantity))<max_pos)
     {
       orderId=as.numeric(reqIds(tws))
-      toyorder=twsOrder(orderId,orderType = "MKT",action=action,
+      toyorder=twsOrder(orderId,orderType="MKT",action=action,
                         totalQuantity=quantity,transmit=T)
       placeOrder(tws,contract,toyorder)
       currentPosition=currentPosition+ (action=="BUY") *as.numeric(quantity)
@@ -338,11 +321,11 @@ ac=reqAccountUpdates(tws)
 twsPortfolioValue(ac)
 
 orderId=as.numeric(reqIds(tws))
-myorder=twsOrder(orderId, orderType="MKT", action="BUY", totalQuantity = "1", transmit = T)
+myorder=twsOrder(orderId, orderType="MKT", action="BUY", totalQuantity="1", transmit=T)
 placeOrder(tws, contract, myorder)
 
 orderId=as.numeric(reqIds(tws))
-myorder=twsOrder(orderId, orderType="MKT", action="SELL", totalQuantity = "1", transmit = T)
+myorder=twsOrder(orderId, orderType="MKT", action="SELL", totalQuantity="1", transmit=T)
 placeOrder(tws, contract, myorder)
 
 

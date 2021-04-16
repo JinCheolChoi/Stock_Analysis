@@ -582,55 +582,124 @@ ReqRealTimeBars=function(BarSize=5){
 }
 
 
-
-
-
 #*********************
 #
 # Import_HistData ----
 #
 #****************************************************
 # import historical data saved in a repository folder
-#****************************************************
-# output : HistData in the global environment
+#******************************************************
+# output : `5SecsBarHistData` in the global environment
 Import_HistData=function(Location, Symbol, First_date, Last_date){
+  # remove `5SecsBarHistData` in the global environment
+  if(exists("5SecsBarHistData")){rm(`5SecsBarHistData`, envir=.GlobalEnv)}
+  
+  # import
   for(Date in seq(as.Date(First_date), Last_date, by="day")){
     File_name=paste0(Symbol, "_", as.Date(Date), ".csv")
     if(!file.exists(paste0(Location, File_name))){
       next
     }
     
-    if(!exists("HistData", envir=.GlobalEnv)){
-      HistData<<-fread(paste0(Location, File_name))
+    if(!exists("5SecsBarHistData", envir=.GlobalEnv)){
+      `5SecsBarHistData`<<-fread(paste0(Location, File_name))
     }else{
-      HistData<<-rbind(HistData,
-                       fread(paste0(Location, File_name)))
+      `5SecsBarHistData`<<-rbind(`5SecsBarHistData`,
+                                 fread(paste0(Location, File_name)))
     }
   }
   
+  `5SecsBarHistData`[, Time:=as.POSIXct(format(as.POSIXct(Time), 
+                                               tz="PST8PDT"),
+                                        tz="PST8PDT")]
+  
 }
 
-# 
-# as.POSIXct(format(as.POSIXct(head(HistData$Time)), 
-#                   tz="UTC"), 
-#            tz="PST8PDT") # fix the timezone to PDT
-# as.ITime(HistData$Time)
-# 
-# as.character(HistData$Time)
-# fwrite(HistData,
-#        paste0(working.dir, "Data/test.csv"),
-#        dateTimeAs=d)
-# 
-# Test=fread(paste0(working.dir, "Data/test.csv"))
-# 
-# attr(Date, 'tzone')
-# Test$Time
-# Sys.setenv(TZ='PST8PDT')
-# t = Sys.time()
-# t
-# attr(Sys.time(), "tzone")
-# 
-# library(lubridate)
-# 
-# install.packages("lubridate")
-# 'lubridate'
+
+
+
+#******************
+#
+# Candle_Chart ----
+#
+#******************
+Candle_Chart=function(BarData){
+  if(!is.null(BarData)){
+    Temp_BarData=as.matrix(BarData[, 3:6])
+    rownames(Temp_BarData)=as.character(as.Date(BarData$Time)+(0:(nrow(Temp_BarData)-1)))
+    
+    # PlotCandlestick from "DescTools"
+    PlotCandlestick(x=as.Date(rownames(Temp_BarData)),
+                    y=Temp_BarData,
+                    border=NA,
+                    las=1,
+                    ylab="",
+                    xaxt="n")
+    
+    # x-axis labels
+    # year
+    j=Year(as.Date(BarData$Time))
+    j[!c(1, diff(j))]=NA
+    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=j, cex=1, line=0)
+    
+    # month
+    j=Month(as.Date(BarData$Time))
+    j[!c(1, diff(j))]=NA
+    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=month.name[j], cex=0.9, line=0.9)
+    
+    # day
+    j=Day(as.Date(BarData$Time))
+    j[!c(1, diff(j))]=NA
+    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=j, cex=0.8, line=1.7)
+    
+    # hour-min-sec
+    mtext(side=1,
+          at=as.Date(rownames(Temp_BarData)),
+          text=as.character(as.ITime(BarData$Time)),
+          cex=0.7,
+          line=2.4)
+  }
+}
+
+
+
+
+
+#***************************
+#
+# Collapse_5SecsBarData ----
+#
+#***************************
+# collapse 5 seconds bar data to a larger-sized bar data
+Collapse_5SecsBarData=function(`5SecsBarData`, BarSize){
+  
+  if(BarSize==5){ # if BarSize=5, no additional process is required
+    Collapsed_BarData=`5SecsBarData`
+  }else if(BarSize>5 & BarSize%%5==0){
+    `5SecsBarData`[, Time_Group:=rep(1:(ceiling(nrow(`5SecsBarData`)/(BarSize/5))),
+                                     each=(BarSize/5))[1:nrow(`5SecsBarData`)]]
+    # `5SecsBarData`[, Remainder:=as.numeric(as.POSIXct(format(as.POSIXct(`5SecsBarData`$Time), 
+    #                                                tz="PST8PDT"), 
+    #                                         tz="PST8PDT"))%%30]
+    Collapsed_BarData=`5SecsBarData`[, .(Symbol=unique(Symbol),
+                                         Time=min(Time),
+                                         Open=Open[Time==min(Time)],
+                                         High=max(High),
+                                         Low=max(Low),
+                                         Close=Close[Time==max(Time)],
+                                         Volume=sum(Volume),
+                                         Count=sum(Count)),
+                                     by="Time_Group"]
+    Collapsed_BarData[, Time:=as.POSIXct(format(as.POSIXct(Time), 
+                                                tz="PST8PDT"),
+                                         tz="PST8PDT")]
+    Collapsed_BarData[, Time_Group:=NULL]
+    
+  }else{
+    message("BarSize must be a multiple of 5")
+  }
+  
+  return(Collapsed_BarData)
+}
+
+
