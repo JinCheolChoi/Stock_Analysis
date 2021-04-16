@@ -609,10 +609,10 @@ Import_HistData=function(Location, Symbol, First_date, Last_date){
     }
   }
   
-  `5SecsBarHistData`[, Time:=as.POSIXct(format(as.POSIXct(Time), 
+  # this process of converting time to the PDT time zone can be skipped as needed for less processing time
+  `5SecsBarHistData`[, Time:=as.POSIXct(format(as.POSIXct(Time),
                                                tz="PST8PDT"),
                                         tz="PST8PDT")]
-  
 }
 
 
@@ -671,6 +671,32 @@ Candle_Chart=function(BarData){
 #
 #***************************
 # collapse 5 seconds bar data to a larger-sized bar data
+#*******************************************************
+# # verify the collapsed bar data is generated properly by making a comparison with the historical data requested from Interactive Brokers TWS
+# HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 mins", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+# colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
+# HistData[, hasGaps:=NULL] # hasGaps is redundant
+# HistData=data.table(Symbol=contract$symbol,
+#                     HistData)
+# Merged_Data=HistData %>% 
+#   left_join(Collapsed_BarData,
+#             by=c("Symbol", "Time"))
+# Merged_Data=Merged_Data[Time%in%(Collapsed_BarData$Time),]
+# 
+# #
+# Merged_Data[Open.x!=Open.y, ]
+# Merged_Data[High.x!=High.y, ]
+# Merged_Data[Low.x!=Low.y, ]
+# Merged_Data[Close.x!=Close.y, ]
+# Merged_Data[Volume.x!=Volume.y, ]
+# Merged_Data[Count.x!=Count.y, ]
+# 
+# Merged_Data[is.na(Open.y), ]
+# Merged_Data[is.na(High.y), ]
+# Merged_Data[is.na(Low.y), ]
+# Merged_Data[is.na(Close.y), ]
+# Merged_Data[is.na(Volume.y), ]
+# Merged_Data[is.na(Count.y), ]
 Collapse_5SecsBarData=function(`5SecsBarData`, BarSize){
   
   if(BarSize==5){ # if BarSize=5, no additional process is required
@@ -678,14 +704,15 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize){
   }else if(BarSize>5 & BarSize%%5==0){
     `5SecsBarData`[, Time_Group:=rep(1:(ceiling(nrow(`5SecsBarData`)/(BarSize/5))),
                                      each=(BarSize/5))[1:nrow(`5SecsBarData`)]]
+    # # generate Remainder to verify the process
     # `5SecsBarData`[, Remainder:=as.numeric(as.POSIXct(format(as.POSIXct(`5SecsBarData`$Time), 
     #                                                tz="PST8PDT"), 
     #                                         tz="PST8PDT"))%%30]
     Collapsed_BarData=`5SecsBarData`[, .(Symbol=unique(Symbol),
                                          Time=min(Time),
-                                         Open=Open[Time==min(Time)],
+                                         Open=Open[Volume>0][Time==min(Time)], # open price at the earliest bar with non-zero volume
                                          High=max(High),
-                                         Low=max(Low),
+                                         Low=min(Low),
                                          Close=Close[Time==max(Time)],
                                          Volume=sum(Volume),
                                          Count=sum(Count)),
@@ -701,5 +728,9 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize){
   
   return(Collapsed_BarData)
 }
+
+
+
+
 
 
