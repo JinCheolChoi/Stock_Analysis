@@ -445,7 +445,7 @@ System_Break=function(){
 Daily_Hist_Data_Save=function(Force=F){
   # if time is after 15:05:00 PDT & 5 second bar has not been saved yet, proceed
   if((as.ITime(format(Sys.time(), tz="PST8PDT"))>(as.ITime("15:05:00"))&
-     !file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))) |
+      !file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))) |
      (Force==T)){ # or execute the saving process by force
     
     # request historical data of 5 seconds bar
@@ -705,8 +705,8 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
   if(BarSize==5){ # if BarSize=5, no additional process is required
     Collapsed_BarData=`5SecsBarData`
   }else if(BarSize>5 & BarSize%%5==0){
-    `5SecsBarData`[, Time_Group:=rep(1:(ceiling(nrow(`5SecsBarData`)/(BarSize/5))),
-                                     each=(BarSize/5))[1:nrow(`5SecsBarData`)]]
+    `5SecsBarData`[, Group:=rep(1:(ceiling(nrow(`5SecsBarData`)/(BarSize/5))),
+                                each=(BarSize/5))[1:nrow(`5SecsBarData`)]]
     # # generate Remainder to verify the process
     # `5SecsBarData`[, Remainder:=as.numeric(as.POSIXct(format(as.POSIXct(`5SecsBarData`$Time), 
     #                                                tz="PST8PDT"), 
@@ -719,9 +719,9 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
                                          Close=Close[Time==max(Time)],
                                          Volume=sum(Volume),
                                          Count=sum(Count)),
-                                     by="Time_Group"]
+                                     by="Group"]
     
-    Collapsed_BarData[, Time_Group:=NULL]
+    Collapsed_BarData[, Group:=NULL]
     
   }else{
     message("BarSize must be a multiple of 5")
