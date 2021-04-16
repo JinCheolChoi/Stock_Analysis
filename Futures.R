@@ -30,8 +30,8 @@ isConnected(tws)
 # import sources
 #
 #***************
-#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 source(paste0(working.dir, "Future_Functions.R"))
 #source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
 
@@ -102,44 +102,25 @@ Import_HistData(Location=paste0(working.dir, "Data/"),
 Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`, BarSize=60*5)
 
 
-HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 mins", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
-colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
-HistData[, hasGaps:=NULL] # hasGaps is redundant
-HistData=data.table(Symbol=contract$symbol,
-                    HistData)
-Merged_Data=HistData %>% 
-  left_join(Collapsed_BarData,
-            by=c("Symbol", "Time"))
-Merged_Data=Merged_Data[!is.na(Volume.y),]
-#273
-Merged_Data[Open.x!=Open.y, ]
-Merged_Data[High.x!=High.y, ]
-Merged_Data[Low.x!=Low.y, ] %>% head(5)
-Merged_Data[Close.x!=Close.y, ]
-Merged_Data[Volume.x!=Volume.y, ]
-Merged_Data[Count.x!=Count.y, ]
-
-`5SecsBarHistData`[Time%in%c(Merged_Data[Open.x!=Open.y, Time])]
-`5SecsBarHistData`[Time>=c(Merged_Data[Low.x!=Low.y, Time])[1]] %>% head(6)
 
 
-# parse HistData to determine an action to take
-HistData
-HistData[, RSI:=RSI(Close, n=9)]
-HistData[, Sign:=sign(Close-Open)]
-HistData[, Volume_Change:=Volume/shift(Volume, 1)]
-HistData[, Future_Direction:=sign(shift(Close, -5)-Close)]
+# parse Collapsed_BarData to determine an action to take
+Collapsed_BarData
+Collapsed_BarData[, RSI:=RSI(Close, n=9)]
+Collapsed_BarData[, Sign:=sign(Close-Open)]
+Collapsed_BarData[, Volume_Change:=Volume/shift(Volume, 1)]
+Collapsed_BarData[, Future_Direction:=sign(shift(Close, -1)-Close)]
 
 
-HistData=HistData[!is.na(Future_Direction)&
-                    !is.na(RSI)&
-                    !is.na(Volume_Change), ]
+Collapsed_BarData=Collapsed_BarData[!is.na(Future_Direction)&
+                                      !is.na(RSI)&
+                                      !is.na(Volume_Change), ]
 #
-cor(HistData[, .SD, .SDcols=c("RSI", "Future_Direction")])
-cor(HistData[RSI>=95, .SD, .SDcols=c("RSI", "Future_Direction")])
-cor(HistData[RSI>=70 & Volume_Change>2.5, .SD, .SDcols=c("RSI", "Future_Direction")])
+cor(Collapsed_BarData[, .SD, .SDcols=c("RSI", "Future_Direction")])
+cor(Collapsed_BarData[RSI>=80, .SD, .SDcols=c("RSI", "Future_Direction")])
+cor(Collapsed_BarData[RSI>=80 & Volume_Change>2.5, .SD, .SDcols=c("RSI", "Future_Direction")])
 
-
+Collapsed_BarData[RSI>=80 & Volume_Change>2.5, ]
 # establish criteria to make a deicision
 
 
@@ -218,53 +199,6 @@ setdiff(seq(from=min(as.POSIXct(BarData$Time)),
 #       )
 #     )
 # }
-
-
-reqMktData(tws, contract) 
-reqMktData(tws, contract)
-
-unique(Temp_MktData)
-reqMktData(tws, contract)
-
-
-
-
-# historical data
-Hist_Dat_Original=reqHistoricalData(tws, contract, barSize="15 mins", duration="1 D", useRTH="0") # not limited to regular trading hours
-Hist_Dat=as.data.table(Hist_Dat_Original)
-Hist_Dat[, Sign:=sign(MNQM1.Close-MNQM1.Open)]
-
-Hist_Dat[, RSI:=RSI(MNQH1.Close, n=9)]
-Hist_Dat[, Shifted_Sign:=sign(shift(MNQH1.Close, -5)-MNQH1.Close)]
-Hist_Dat[, Volume_Change:=MNQH1.Volume/shift(MNQH1.Volume, 1)]
-
-Hist_Dat=Hist_Dat[!is.na(Shifted_Sign)&
-                    !is.na(RSI)&
-                    !is.na(Volume_Change), ]
-#
-cor(Hist_Dat[, .SD, .SDcols=c("RSI", "Shifted_Sign")])
-cor(Hist_Dat[RSI>=70 & Volume_Change>2.5, .SD, .SDcols=c("RSI", "Shifted_Sign")])
-
-
-pacf(Hist_Dat$MNQH1.Close)
-Hist_Dat[RSI>=85 & Volume_Change>2.5, ]
-
-Hist_Dat$Shifted_Sign
-
-# #
-# Bar_Data=reqRealTimeBars(tws, contract, barSize="1")
-# print(head(Bar_Data))
-# print(head(reqRealTimeBars(tws, contract, barSize="1")))
-# 
-# # write to an open file connection
-# fh=file('C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/out.dat',open='a')
-# reqMktData(tws, contract, file=fh)
-# close(fh)
-
-
-########################
-
-
 
 
 sma_len1=1
