@@ -288,7 +288,9 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
         msg[2] <- symbols[as.numeric(msg[2])]
         msg[3] <- strftime(structure(as.numeric(msg[3]), class=c("POSIXt","POSIXct")))
         
-        #*****************************
+        #************
+        # edited part
+        #***************************
         Data=matrix(msg[-1], nrow=1)
         colnames(Data)=columns
         Data=as.data.table(Data)
@@ -409,10 +411,6 @@ System_Break=function(){
     # if connection is lost, reconnect
     while(!isConnected(tws)){tws=twsConnect(port=7497)}
     
-    # execute a daily save of 5 second bar data afterwards
-    Daily_Hist_Data_Save()
-    
-    
   }else if(as.ITime(format(Sys.time(), tz="PST8PDT"))>=(as.ITime("23:45:00")-60*5)& # if time is between 23:40:00 and 23:45:00 PDT
            as.ITime(format(Sys.time(), tz="PST8PDT"))<=(as.ITime("23:45:00"))){
     
@@ -421,7 +419,6 @@ System_Break=function(){
     
     # if connection is lost, reconnect
     while(!isConnected(tws)){tws=twsConnect(port=7497)}
-    
     
   }
   
@@ -445,57 +442,61 @@ System_Break=function(){
 #
 #**************************
 # execute a daily save of 5 second bar data at 15:00:00 pm PDT
-Daily_Hist_Data_Save=function(){
-  # if(as.ITime(format(Sys.time(), tz="PST8PDT"))>=(as.ITime("15:10:00")-60*5)& # if time is between 13:10:00 and 13:15:00 PDT
-  #    as.ITime(format(Sys.time(), tz="PST8PDT"))<=(as.ITime("15:10:00")))
-  
-  # request historical data of 5 seconds bar
-  HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
-  colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
-  
-  HistData[, hasGaps:=NULL] # hasGaps is redundant
-  
-  HistData=data.table(Symbol=contract$symbol,
-                      HistData)
-  
-  # # "for statement" to get and save bar data day-by-day
-  # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="PST8PDT")), by="day")){
-  #   if(weekdays.Date(as.Date(Date))=="Saturday"|
-  #      weekdays.Date(as.Date(Date))=="Sunday"){
-  #     next
-  #   }
-  #   
-  #   Time_Cutoff=as.POSIXct(paste0(as.Date(Date), " 15:00:00"), tz="PST8PDT")
-  # 
-  # 
-  #   HistData[Time>=(Time_Cutoff-60*60*24)&
-  #              Time<Time_Cutoff, ]
-  # 
-  #   fwrite(HistData[Time>=(Time_Cutoff-60*60*24)&
-  #                     Time<Time_Cutoff, ],
-  #          paste0(working.dir, "Data/", contract$symbol, "_", as.Date(Date), ".csv"))
-  # }
-  
-  # remove redundant data
-  # different time zone examples : "GMT", "PST8PDT", "Europe/London"
-  Time_Cutoff=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT")), " 15:00:00"), tz="PST8PDT")
-  HistData=HistData[Time<Time_Cutoff, ]
-  HistData[, Time:=as.POSIXct(format(as.POSIXct(Time), 
-                                     tz="PST8PDT"), 
-                              tz="PST8PDT")]
-  
-  # save historical data up to today's market closed at 15:00:00 pm PDT
-  if(!file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))){
+Daily_Hist_Data_Save=function(Force=F){
+  # if time is after 15:05:00 PDT & 5 second bar has not been saved yet, proceed
+  if((as.ITime(format(Sys.time(), tz="PST8PDT"))>(as.ITime("15:05:00"))&
+      !file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))) |
+     (Force==T)){ # or execute the saving process by force
+    
+    # request historical data of 5 seconds bar
+    HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+    colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
+    
+    HistData[, hasGaps:=NULL] # hasGaps is redundant
+    
+    HistData=data.table(Symbol=contract$symbol,
+                        HistData)
+    
+    # HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="1 M", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+    # colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
+    # 
+    # HistData[, hasGaps:=NULL] # hasGaps is redundant
+    # 
+    # HistData=data.table(Symbol=contract$symbol,
+    #                     HistData)
+    # 
+    # # "for statement" to get and save bar data day-by-day
+    # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="PST8PDT")), by="day")){
+    #   if(weekdays.Date(as.Date(Date))=="Saturday"|
+    #      weekdays.Date(as.Date(Date))=="Sunday"){
+    #     next
+    #   }
+    # 
+    #   Time_Cutoff=as.POSIXct(paste0(as.Date(Date), " 15:00:00"), tz="PST8PDT")
+    # 
+    # 
+    #   HistData[Time>=(Time_Cutoff-60*60*24)&
+    #              Time<Time_Cutoff, ]
+    # 
+    #   fwrite(HistData[Time>=(Time_Cutoff-60*60*24)&
+    #                     Time<Time_Cutoff, ],
+    #          paste0(working.dir, "Data/", contract$symbol, "_", as.Date(Date), ".csv"))
+    # }
+    
+    # remove redundant data
+    # different time zone examples : "GMT", "PST8PDT", "Europe/London"
+    Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT"))-1, " 15:00:00"), tz="PST8PDT")
+    Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT")), " 15:00:00"), tz="PST8PDT")
+    HistData=HistData[Time>=Time_From &
+                        Time<Time_To, ]
+    
+    HistData[, Time:=as.POSIXct(format(as.POSIXct(Time), 
+                                       tz="PST8PDT"), 
+                                tz="PST8PDT")]
+    
+    # save historical data up to today's market closed at 15:00:00 pm PDT
     fwrite(HistData,
            paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
-  }else if(file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))){ 
-    # if a file already exists for this symbol, combine it with the newly extract historical data
-    fwrite(
-      unique(
-        rbind(fread(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv")),
-              HistData)
-      ),
-      paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
   }
 }
 
@@ -590,7 +591,7 @@ ReqRealTimeBars=function(BarSize=5){
 # import historical data saved in a repository folder
 #******************************************************
 # output : `5SecsBarHistData` in the global environment
-Import_HistData=function(Location, Symbol, First_date, Last_date){
+Import_HistData=function(Location, Symbol, First_date, Last_date, Convert_Tz=F){
   # remove `5SecsBarHistData` in the global environment
   if(exists("5SecsBarHistData")){rm(`5SecsBarHistData`, envir=.GlobalEnv)}
   
@@ -609,11 +610,15 @@ Import_HistData=function(Location, Symbol, First_date, Last_date){
     }
   }
   
+  # convert time zone
   # this process of converting time to the PDT time zone can be skipped as needed for less processing time
-  `5SecsBarHistData`[, Time:=as.POSIXct(format(as.POSIXct(Time),
-                                               tz="PST8PDT"),
-                                        tz="PST8PDT")]
+  if(Convert_Tz==T){
+    `5SecsBarHistData`[, Time:=as.POSIXct(format(as.POSIXct(Time),
+                                                 tz="PST8PDT"),
+                                          tz="PST8PDT")]
+  }
 }
+
 
 
 
@@ -663,8 +668,6 @@ Candle_Chart=function(BarData){
 
 
 
-
-
 #***************************
 #
 # Collapse_5SecsBarData ----
@@ -697,13 +700,13 @@ Candle_Chart=function(BarData){
 # Merged_Data[is.na(Close.y), ]
 # Merged_Data[is.na(Volume.y), ]
 # Merged_Data[is.na(Count.y), ]
-Collapse_5SecsBarData=function(`5SecsBarData`, BarSize){
+Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
   
   if(BarSize==5){ # if BarSize=5, no additional process is required
     Collapsed_BarData=`5SecsBarData`
   }else if(BarSize>5 & BarSize%%5==0){
-    `5SecsBarData`[, Time_Group:=rep(1:(ceiling(nrow(`5SecsBarData`)/(BarSize/5))),
-                                     each=(BarSize/5))[1:nrow(`5SecsBarData`)]]
+    `5SecsBarData`[, Group:=rep(1:(ceiling(nrow(`5SecsBarData`)/(BarSize/5))),
+                                each=(BarSize/5))[1:nrow(`5SecsBarData`)]]
     # # generate Remainder to verify the process
     # `5SecsBarData`[, Remainder:=as.numeric(as.POSIXct(format(as.POSIXct(`5SecsBarData`$Time), 
     #                                                tz="PST8PDT"), 
@@ -716,20 +719,24 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize){
                                          Close=Close[Time==max(Time)],
                                          Volume=sum(Volume),
                                          Count=sum(Count)),
-                                     by="Time_Group"]
-    Collapsed_BarData[, Time:=as.POSIXct(format(as.POSIXct(Time), 
-                                                tz="PST8PDT"),
-                                         tz="PST8PDT")]
-    Collapsed_BarData[, Time_Group:=NULL]
+                                     by="Group"]
+    
+    Collapsed_BarData[, Group:=NULL]
     
   }else{
     message("BarSize must be a multiple of 5")
   }
   
+  # convert time zone
+  # this process of converting time to the PDT time zone can be skipped as needed for less processing time
+  if(Convert_Tz==T){
+    Collapsed_BarData[, Time:=as.POSIXct(format(as.POSIXct(Time),
+                                                tz="PST8PDT"),
+                                         tz="PST8PDT")]
+  }
+  
   return(Collapsed_BarData)
 }
-
-
 
 
 

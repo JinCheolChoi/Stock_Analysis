@@ -30,8 +30,8 @@ isConnected(tws)
 # import sources
 #
 #***************
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 source(paste0(working.dir, "Future_Functions.R"))
 #source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
 
@@ -71,6 +71,9 @@ while(TRUE){
   # a break during periods of market close time
   System_Break()
   
+  # execute a daily save of 5 second bar data afterwards
+  Daily_Hist_Data_Save(Force=F)
+  
   # request realtime bar data
   # output : BarData
   ReqRealTimeBars(BarSize=5)
@@ -86,20 +89,42 @@ while(TRUE){
 }
 
 
+T_1=system.time({
+  z=0
+  for(i in 1:100000){
+    # a break during periods of market close time
+    System_Break()
+
+    # execute a daily save of 5 second bar data afterwards
+    Daily_Hist_Data_Save(Force=F)
+
+    z=z+1
+  }
+})
+
+T_2=system.time({
+  r=0
+  for(i in 1:100000){
+    r=r+1
+  }
+})
+
+
 #*********************
 #
 # simulation algorithm
 #
 #*********************
 # import data
-# output : HistData
+# output : `5SecsBarHistData`
 Import_HistData(Location=paste0(working.dir, "Data/"),
                 Symbol="MNQ",
                 First_date="2021-03-15",
                 Last_date=as.Date(format(Sys.time(), tz="PST8PDT")))
 
 # collapse data to the chosen-sized bar data
-Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`, BarSize=60*5)
+Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
+                                        BarSize=60*5)
 
 
 
