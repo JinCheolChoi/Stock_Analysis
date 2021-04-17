@@ -30,8 +30,8 @@ isConnected(tws)
 # import sources
 #
 #***************
-#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 source(paste0(working.dir, "Future_Functions.R"))
 #source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
 
@@ -72,7 +72,7 @@ while(TRUE){
   System_Break()
   
   # execute a daily save of 5 second bar data afterwards
-  Daily_Hist_Data_Save(Force=F)
+  Daily_Hist_Data_Save(Force=T)
   
   # request realtime bar data
   # output : BarData
@@ -128,10 +128,12 @@ Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
 
 
 
-
 # parse Collapsed_BarData to determine an action to take
 Collapsed_BarData
 Collapsed_BarData[, RSI:=RSI(Close, n=9)]
+
+
+
 Collapsed_BarData[, Sign:=sign(Close-Open)]
 Collapsed_BarData[, Volume_Change:=Volume/shift(Volume, 1)]
 Collapsed_BarData[, Future_Direction:=sign(shift(Close, -1)-Close)]
@@ -150,6 +152,10 @@ Collapsed_BarData[RSI>=80 & Volume_Change>2.5, ]
 
 
 
+
+BB=BBands(Collapsed_BarData[, c("High", "Low", "Close")])
+
+Collapsed_BarData
 
 #
 # remove a line displaying an error message in eWrapper_cust
