@@ -4,110 +4,36 @@
 #
 #********************
 rm(list=ls())
-library(IBrokers)
-library(TTR)
-library(data.table)
-library(dplyr)
-library(DescTools) # candle chart
-tws=twsConnect(port=7497)
 
 
-
-#**********************
+#***********
 #
-# Operational inquiries
+# parameters
 #
-#**********************
-isConnected(tws)
-# reqCurrentTime(tws)
-# serverVersion(tws)
-# twsDisconnect(tws) # disconnect from TWS
+#***********
+# working directory
+#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 
 
-
-#***************
+#*****************
 #
-# import sources
+# preliminary step
 #
-#***************
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
-source(paste0(working.dir, "Future_Functions.R"))
-#source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
+#*******************
+# required functions
+source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
 
-
-
-#********************
-#
-# account information
-#
-#********************
-# margin account="U4524665"
-# paper trading account="DU2656942"
-reqAccountUpdates(tws,
-                  acctCode="DU2656942")
-
-
-#**************
-#
-# contract info
-#
-#**************
-contract=twsFuture("MNQ", "GLOBEX", "202106")
-
-
-
-#***********************
-#
-# live trading algorithm
-#
-#***********************
-BarData=c()
-# BarData5Secs=c()
-while(TRUE){
-  # if connection is lost, reconnect
-  while(!isConnected(tws)){tws=twsConnect(port=7497)}
-  
-  # a break during periods of market close time
-  System_Break()
-  
-  # execute a daily save of 5 second bar data afterwards
-  Daily_Hist_Data_Save(Force=T)
-  
-  # request realtime bar data
-  # output : BarData
-  ReqRealTimeBars(BarSize=5)
-  
-  # candle chart
-  Candle_Chart(BarData)
-  
-  # determine an action
-  
-  
-  # place an order
-  
-}
-
-
-T_1=system.time({
-  z=0
-  for(i in 1:100000){
-    # a break during periods of market close time
-    System_Break()
-
-    # execute a daily save of 5 second bar data afterwards
-    Daily_Hist_Data_Save(Force=F)
-
-    z=z+1
-  }
-})
-
-T_2=system.time({
-  r=0
-  for(i in 1:100000){
-    r=r+1
-  }
-})
+# import packages
+lapply(
+  c(
+    "IBrokers",
+    "TTR",
+    "data.table",
+    "dplyr",
+    "DescTools" # candle chart
+  ), 
+  checkpackages)
 
 
 #*********************
@@ -125,7 +51,6 @@ Import_HistData(Location=paste0(working.dir, "Data/"),
 # collapse data to the chosen-sized bar data
 Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
                                         BarSize=60*5)
-
 
 
 # parse Collapsed_BarData to determine an action to take

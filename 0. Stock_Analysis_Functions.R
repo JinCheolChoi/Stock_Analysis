@@ -1,3 +1,24 @@
+#*******************
+#
+# checkpackages ----
+#
+#*******************
+# package check
+#**************
+# Example
+#********
+# lapply(c("geepack"), checkpackages)
+checkpackages=function(package){
+  # Checking the Availability of packages 
+  # Installs them.  
+  # Example usage: checkpackages("gtools")
+  if (!package %in% installed.packages()){
+    install.packages(package)
+  }
+  library(package, character.only=T)
+}
+
+
 #**************
 #
 # snapShot ----
@@ -389,47 +410,56 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
 #
 #*******************
 # a break during the temporary market close time
-System_Break=function(){
+System_Break=function(Rerun_Trading=0){
+  
+  # re-run indicator
+  Rerun=1
+  
+  # the market closes temporarily on weekdays
+  ToDay=weekdays(as.Date(format(Sys.time(), tz="PST8PDT")))
+  CurrentTime=as.ITime(format(Sys.time(), tz="PST8PDT")) # time zone : PDT
   
   #**********************
   # Daily temporary break
-  if(as.ITime(format(Sys.time(), tz="PST8PDT"))>=(as.ITime("13:15:00")-60*5)& # if time is between 13:10:00 and 13:15:00 PDT
-     as.ITime(format(Sys.time(), tz="PST8PDT"))<=(as.ITime("13:15:00"))){
+  if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")&
+     (CurrentTime>=(as.ITime("13:15:00")-60*5)& # if time is between 13:10:00 and 13:15:00 PDT
+      CurrentTime<=(as.ITime("13:15:00")))){
     
     # (1) for 25 mins from 13:10:00 to 13:35:00 PDT (market close : 13:15:00 to 13:30:00 PDT)
-    Sys.sleep(60*25)
+    Duration=60*25
     
-    # if connection is lost, reconnect
-    while(!isConnected(tws)){tws=twsConnect(port=7497)}
-    
-  }else if(as.ITime(format(Sys.time(), tz="PST8PDT"))>=(as.ITime("14:00:00")-60*10)& # if time is between 13:50:00 and 14:00:00 PDT
-           as.ITime(format(Sys.time(), tz="PST8PDT"))<=(as.ITime("14:00:00"))){
+  }else if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday")&
+           (CurrentTime>=(as.ITime("14:00:00")-60*10)& # if time is between 13:50:00 and 14:00:00 PDT
+            CurrentTime<=(as.ITime("14:00:00")))){
     
     # (2) for 75 mins from 13:50:00 to 15:05:00 PDT (market close : 14:00:00 to 15:00:00 PDT)
-    Sys.sleep(60*75)
+    Duration=60*75
     
-    # if connection is lost, reconnect
-    while(!isConnected(tws)){tws=twsConnect(port=7497)}
-    
-  }else if(as.ITime(format(Sys.time(), tz="PST8PDT"))>=(as.ITime("23:45:00")-60*5)& # if time is between 23:40:00 and 23:45:00 PDT
-           as.ITime(format(Sys.time(), tz="PST8PDT"))<=(as.ITime("23:45:00"))){
+  }else if(ToDay%in%c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday")&
+           (CurrentTime>=(as.ITime("23:45:00")-60*5)& # if time is between 23:40:00 and 23:45:00 PDT
+            CurrentTime<=(as.ITime("23:45:00")))){
     
     # (3) for 20 mins from 23:40:00 to 24:00:00 PDT (automatic log-off)
-    Sys.sleep(60*20)
-    
-    # if connection is lost, reconnect
-    while(!isConnected(tws)){tws=twsConnect(port=7497)}
+    Duration=60*20
     
   }
   
   #***********
   # Long break
-  if((weekdays(as.Date(format(Sys.time(), tz="PST8PDT")))=="Friday" & as.ITime(format(Sys.time(), tz="PST8PDT"))>=(as.ITime("14:00:00"))) | # the market closes at 14:00:00 PDT on Friday
-     (weekdays(as.Date(format(Sys.time(), tz="PST8PDT")))=="Saturday") | # the market closes on Saturday
-     (weekdays(as.Date(format(Sys.time(), tz="PST8PDT")))=="Sunday" & as.ITime(format(Sys.time(), tz="PST8PDT"))<(as.ITime("15:00:00")))){ # the market opens at 15:00:00 PDT on Sunday
+  if((ToDay=="Friday" & CurrentTime>=(as.ITime("14:00:00")-60*10)) | # the market closes at 14:00:00 PDT on Friday
+     (ToDay=="Saturday") | # the market closes on Saturday
+     (ToDay=="Sunday" & CurrentTime<(as.ITime("15:00:00")+5))){ # the market opens at 15:00:00 PDT on Sunday
     
-    stop("The market is closed.")
+    # no need to re-run the live trading algorithm
+    Rerun=0
+    Duration=600
   }
+  
+  # put the system to sleep
+  message("The market is closed.")
+  Sys.sleep(Duration)
+
+  return(Rerun)
 }
 
 
@@ -442,62 +472,76 @@ System_Break=function(){
 #
 #**************************
 # execute a daily save of 5 second bar data at 15:00:00 pm PDT
-Daily_Hist_Data_Save=function(Force=F){
-  # if time is after 15:05:00 PDT & 5 second bar has not been saved yet, proceed
-  if((as.ITime(format(Sys.time(), tz="PST8PDT"))>(as.ITime("15:05:00"))&
-      !file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))) |
-     (Force==T)){ # or execute the saving process by force
+Daily_Hist_Data_Save=function(Force=T){
+  # the market closes at 14:00:00 PDT on Friday; and
+  # at 15:00:00 PDT on the other weekdays
+  ToDay=weekdays(as.Date(format(Sys.time(), tz="PST8PDT")))
+  CurrentTime=as.ITime(format(Sys.time(), tz="PST8PDT")) # time zone : PDT
+  File_Exist=file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
+  
+  # if time is after 15:00:00 PDT on weekdays, proceed
+  if(!ToDay%in%c("Saturday", "Sunday") &
+     CurrentTime>=(as.ITime("15:00:00"))){
     
-    # request historical data of 5 seconds bar
-    HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
-    colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
+    if(!File_Exist| # if 5 second bar has not been saved yet, or
+       Force==T){ # Force==1 (execute the saving process by force (overwrite the data))
+      
+      # request historical data of 5 seconds bar
+      HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+      colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
+      
+      HistData[, hasGaps:=NULL] # hasGaps is redundant
+      
+      HistData=data.table(Symbol=contract$symbol,
+                          HistData)
+      
+      # HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="1 M", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+      # colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
+      #
+      # HistData[, hasGaps:=NULL] # hasGaps is redundant
+      #
+      # HistData=data.table(Symbol=contract$symbol,
+      #                     HistData)
+      #
+      # # "for statement" to get and save bar data day-by-day
+      # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="PST8PDT")), by="day")){
+      #   if(weekdays.Date(as.Date(Date))=="Saturday"|
+      #      weekdays.Date(as.Date(Date))=="Sunday"){
+      #     next
+      #   }
+      #
+      #   Time_Cutoff=as.POSIXct(paste0(as.Date(Date), " 15:00:00"), tz="PST8PDT")
+      #
+      #
+      #   HistData[Time>=(Time_Cutoff-60*60*24)&
+      #              Time<Time_Cutoff, ]
+      #
+      #   fwrite(HistData[Time>=(Time_Cutoff-60*60*24)&
+      #                     Time<Time_Cutoff, ],
+      #          paste0(working.dir, "Data/", contract$symbol, "_", as.Date(Date), ".csv"))
+      # }
+      
+      # remove redundant data
+      # different time zone examples : "GMT", "PST8PDT", "Europe/London"
+      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT"))-1, " 15:00:00"), tz="PST8PDT")
+      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT")), " 15:00:00"), tz="PST8PDT")
+      HistData=HistData[Time>=Time_From &
+                          Time<Time_To, ]
+      
+      HistData[, Time:=as.POSIXct(format(as.POSIXct(Time), 
+                                         tz="PST8PDT"), 
+                                  tz="PST8PDT")]
+      
+      # save historical data up to today's market closed at 15:00:00 pm PDT
+      fwrite(HistData,
+             paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
+    }
     
-    HistData[, hasGaps:=NULL] # hasGaps is redundant
-    
-    HistData=data.table(Symbol=contract$symbol,
-                        HistData)
-    
-    # HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="1 M", useRTH="0")) # useRTH="0" : not limited to regular trading hours
-    # colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
-    #
-    # HistData[, hasGaps:=NULL] # hasGaps is redundant
-    #
-    # HistData=data.table(Symbol=contract$symbol,
-    #                     HistData)
-    #
-    # # "for statement" to get and save bar data day-by-day
-    # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="PST8PDT")), by="day")){
-    #   if(weekdays.Date(as.Date(Date))=="Saturday"|
-    #      weekdays.Date(as.Date(Date))=="Sunday"){
-    #     next
-    #   }
-    #
-    #   Time_Cutoff=as.POSIXct(paste0(as.Date(Date), " 15:00:00"), tz="PST8PDT")
-    #
-    #
-    #   HistData[Time>=(Time_Cutoff-60*60*24)&
-    #              Time<Time_Cutoff, ]
-    #
-    #   fwrite(HistData[Time>=(Time_Cutoff-60*60*24)&
-    #                     Time<Time_Cutoff, ],
-    #          paste0(working.dir, "Data/", contract$symbol, "_", as.Date(Date), ".csv"))
-    # }
-
-    # remove redundant data
-    # different time zone examples : "GMT", "PST8PDT", "Europe/London"
-    Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT"))-1, " 15:00:00"), tz="PST8PDT")
-    Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT")), " 15:00:00"), tz="PST8PDT")
-    HistData=HistData[Time>=Time_From &
-                        Time<Time_To, ]
-    
-    HistData[, Time:=as.POSIXct(format(as.POSIXct(Time), 
-                                       tz="PST8PDT"), 
-                                tz="PST8PDT")]
-    
-    # save historical data up to today's market closed at 15:00:00 pm PDT
-    fwrite(HistData,
-           paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
+  }else{
+    message("No new data to save yet.")
+    Sys.sleep(600)
   }
+  
 }
 
 
@@ -735,7 +779,7 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
                                          tz="PST8PDT")]
   }
   
-  return(Collapsed_BarData)
+  return(as.data.table(Collapsed_BarData))
 }
 
 
