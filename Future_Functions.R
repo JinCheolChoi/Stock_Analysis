@@ -459,30 +459,30 @@ Daily_Hist_Data_Save=function(Force=F){
     
     # HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="1 M", useRTH="0")) # useRTH="0" : not limited to regular trading hours
     # colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
-    # 
+    #
     # HistData[, hasGaps:=NULL] # hasGaps is redundant
-    # 
+    #
     # HistData=data.table(Symbol=contract$symbol,
     #                     HistData)
-    # 
+    #
     # # "for statement" to get and save bar data day-by-day
     # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="PST8PDT")), by="day")){
     #   if(weekdays.Date(as.Date(Date))=="Saturday"|
     #      weekdays.Date(as.Date(Date))=="Sunday"){
     #     next
     #   }
-    # 
+    #
     #   Time_Cutoff=as.POSIXct(paste0(as.Date(Date), " 15:00:00"), tz="PST8PDT")
-    # 
-    # 
+    #
+    #
     #   HistData[Time>=(Time_Cutoff-60*60*24)&
     #              Time<Time_Cutoff, ]
-    # 
+    #
     #   fwrite(HistData[Time>=(Time_Cutoff-60*60*24)&
     #                     Time<Time_Cutoff, ],
     #          paste0(working.dir, "Data/", contract$symbol, "_", as.Date(Date), ".csv"))
     # }
-    
+
     # remove redundant data
     # different time zone examples : "GMT", "PST8PDT", "Europe/London"
     Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT"))-1, " 15:00:00"), tz="PST8PDT")
