@@ -779,7 +779,7 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
                                          tz="PST8PDT")]
   }
   
-  return(Collapsed_BarData)
+  return(as.data.table(Collapsed_BarData))
 }
 
 

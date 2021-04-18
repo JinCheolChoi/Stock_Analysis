@@ -53,7 +53,6 @@ Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
                                         BarSize=60*5)
 
 
-
 # parse Collapsed_BarData to determine an action to take
 Collapsed_BarData
 Collapsed_BarData[, RSI:=RSI(Close, n=9)]
