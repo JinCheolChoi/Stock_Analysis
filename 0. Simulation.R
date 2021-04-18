@@ -22,7 +22,7 @@ working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 #
 #*******************
 # required functions
-source(paste0(working.dir, "Stock_Analysis_Functions.R"))
+source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
 
 # import packages
 lapply(
