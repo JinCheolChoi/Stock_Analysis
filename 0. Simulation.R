@@ -12,11 +12,11 @@ rm(list=ls())
 #
 #***********
 # working directory
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 
 # BarSize
-BarSize=5*60
+BarSize=60*1
 
 #*****************
 #
@@ -55,9 +55,30 @@ Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
                                         BarSize=BarSize)
 
 
-# parse Collapsed_BarData to determine an action to take
-Collapsed_BarData
+# compute indicators
+# Bollinger Bands
+Collapsed_BarData=data.table(Collapsed_BarData,
+                             Collapsed_BarData[, BBands(Close, n=30, sd=2.58)])
+setnames(Collapsed_BarData,
+         c("dn", "mavg", "up", "pctB"),
+         c("LBand", "MBand", "HBand", "PctB"))
+
+# RSI
 Collapsed_BarData[, RSI:=RSI(Close, n=9)]
+
+
+
+# parse Collapsed_BarData to determine an action to take
+# Bollinger bands strategy simulation
+Result=BBands_Sim(Consec_Times=1,
+                  Long_PctB=0.0,
+                  Short_PctB=0.7)
+
+Result
+Result$Tradings[, Time_Diff:=as.numeric(Short_Time-Long_Time)]
+Result$Tradings[Time_Diff>100, ]
+Result$Tradings[, Time_Diff] %>% summary
+#
 
 
 
@@ -79,8 +100,6 @@ Collapsed_BarData[RSI>=80 & Volume_Change>2.5, ]
 
 
 
-
-BB=BBands(Collapsed_BarData[, c("High", "Low", "Close")])
 
 Collapsed_BarData
 
