@@ -410,13 +410,16 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
 #
 #*******************
 # a break during the temporary market close time
-System_Break=function(Rerun_Trading=0){
+#******************************************************************************
+# Output : return Rerun_Live_Trading=1 (1) after break during market closure or 
+#                                      (2) after a temporary break (for test) during the market open time
+System_Break=function(Rerun_Trading=0, Log=F){
   
   #**************************
   # No break (market is open)
   # re-run indicator
   Rerun=1
-  Duration=5
+  Duration=60
   
   # the market closes temporarily on weekdays
   ToDay=weekdays(as.Date(format(Sys.time(), tz="PST8PDT")))
@@ -470,13 +473,23 @@ System_Break=function(Rerun_Trading=0){
     message("weekend closure")
   }
   
+  # write log everytime System_Break is run
+  if(Log==T){
+    if(file.exists(paste0(working.dir, "Stop_Live_Trading_Log.csv"))){
+      Log=data.table(Time=Sys.time())
+      Log=rbind(Log,
+                fread(paste0(working.dir, "Stop_Live_Trading_Log.csv")))
+      fwrite(Log, paste0(working.dir, "Stop_Live_Trading_Log.csv"))
+    }else{
+      Log=data.table(Time=Sys.time())
+      fwrite(Log, paste0(working.dir, "Stop_Live_Trading_Log.csv"))
+    }
+  }
+  
   # echo re-run message
   if(Rerun==1){
-    Sys.sleep(Duration)
-    
     for(Secs_Left in 1:Duration){
-      message(paste0("Re-run live trading in : ", Duration-Secs_Left+1, " seconds"))
-      
+      message(paste0("Re-run live trading in ", Duration-Secs_Left+1, " seconds"))
       Sys.sleep(1)
     }
     message(paste0("Re-run live trading in : 0 seconds"))
@@ -495,14 +508,14 @@ System_Break=function(Rerun_Trading=0){
 #
 #**************************
 # execute a daily save of 5 second bar data at 15:00:00 pm PDT
-Daily_Hist_Data_Save=function(Force=T){
+Daily_Hist_Data_Save=function(Force=T, Log=F){
   # the market closes at 14:00:00 PDT on Friday; and
   # at 15:00:00 PDT on the other weekdays
   ToDay=weekdays(as.Date(format(Sys.time(), tz="PST8PDT")))
   CurrentTime=as.ITime(format(Sys.time(), tz="PST8PDT")) # time zone : PDT
   File_Exist=file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
   
-  # if time is after 15:00:00 PDT on weekdays, proceed
+  # if time is after 15:00:00 PDT on weekdays, proceed ot extract historical data
   if(!ToDay%in%c("Saturday", "Sunday") &
      CurrentTime>=(as.ITime("15:00:00"))){
     
@@ -560,6 +573,18 @@ Daily_Hist_Data_Save=function(Force=T){
              paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
     }
     
+    # write log everytime historical data is extracted and saved
+    if(Log==T){
+      if(file.exists(paste0(working.dir, "Daily_Hist_Data_Save.csv"))){
+        Log=data.table(Time=Sys.time())
+        Log=rbind(Log,
+                  fread(paste0(working.dir, "Daily_Hist_Data_Save.csv")))
+        fwrite(Log, paste0(working.dir, "Daily_Hist_Data_Save.csv"))
+      }else{
+        Log=data.table(Time=Sys.time())
+        fwrite(Log, paste0(working.dir, "Daily_Hist_Data_Save.csv"))
+      }
+    }
   }else{
     message("No new data to save yet.")
     Sys.sleep(60*5)
@@ -579,20 +604,45 @@ Daily_Hist_Data_Save=function(Force=T){
 # request realtime bar data
 #*******************************************
 # output : BarData in the global environment
-ReqRealTimeBars=function(BarSize=5){
-  # output : RealTimeBarData in the global environment
-  # once RealTimeBarData is available, there is a 5 seconds suspension in time, which I think is a built-in functionality in twsCALLBACK_cust
+# return New_Data=1 if the new data is derived; and 0 if not
+ReqRealTimeBars=function(BarSize=5, Log=F){
+  # RealTimeBarData is stored temporarily in the global environment
+  #*************************************************************************************************
+  # -> once RealTimeBarData is available, reqRealTimeBars is executed every 5 seconds automatically, 
+  # which I think is a built-in functionality in twsCALLBACK_cust
+  # -> nope... sometimes data is extracted faster than every 5 seconds
+  # -> so, the code is modified to echo out the new data only when it is added
+  #***************************************************************************
   IBrokers::reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
                             eventWrapper=eWrapper_cust(),
                             CALLBACK=twsCALLBACK_cust)
   
+  # New_Data : 1 if RealTimeBarData is the new data; and 0 if not
+  New_Data=0
+  
   # if it fails to create RealTimeBarData, suspend execution for a while to prevent the system from breaking
   if(!exists("RealTimeBarData")){
     Sys.sleep(0.5)
+    return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
+    
   }else if(exists("RealTimeBarData")){
+    # remove Wap (redundant variable)
+    RealTimeBarData[, Wap:=NULL]
+    
     # generate BarData
     if(BarSize==5){ # if BarSize=5, no additional process is required
-      BarData<<-unique(rbind(BarData, RealTimeBarData))
+      if(!is.null(BarData) & (sum(tail(BarData, 1)==RealTimeBarData)==ncol(RealTimeBarData))){ # if RealTimeBarData is not the new data
+        # remove RealTimeBarData at the end of everytime iteration
+        rm(RealTimeBarData, envir=.GlobalEnv)
+        
+        return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
+        
+      }else{ # if RealTimeBarData is the new data
+        BarData<<-unique(rbind(BarData, RealTimeBarData))
+        
+        New_Data=1
+      }
+      
     }else if(BarSize>5 & BarSize%%5==0){ # additional process given that BarSize>5 and it is a multiple of 5
       if(as.numeric(RealTimeBarData$Time)%%BarSize==0){Init<<-1} # initiate when the remainder is 0
       if(exists("Init", envir=.GlobalEnv)){ # main process part
@@ -613,30 +663,42 @@ ReqRealTimeBars=function(BarSize=5){
         
         # close info
         if(as.numeric(RealTimeBarData$Time)%%BarSize==(BarSize-5)){
-          Close<<-RealTimeBarData$Close
-          
-          BarData<<-unique(rbind(BarData, 
-                                 data.table(
-                                   Symbol=Symbol,
-                                   Time=Time,
-                                   Open=Open,
-                                   High=High,
-                                   Low=Low,
-                                   Close=Close,
-                                   Volume=Volume,
-                                   Count=Count
-                                 )))
-          
-          # remove values in the global environment after generating a data point
-          rm(Init, envir=.GlobalEnv)
-          rm(Symbol, envir=.GlobalEnv)
-          rm(Time, envir=.GlobalEnv)
-          rm(Open, envir=.GlobalEnv)
-          rm(High, envir=.GlobalEnv)
-          rm(Low, envir=.GlobalEnv)
-          rm(Close, envir=.GlobalEnv)
-          rm(Volume, envir=.GlobalEnv)
-          rm(Count, envir=.GlobalEnv)
+          if(!is.null(BarData) & (sum(tail(BarData, 1)==RealTimeBarData)==ncol(RealTimeBarData))){ # if RealTimeBarData is not the new data
+            # remove RealTimeBarData at the end of everytime iteration
+            rm(RealTimeBarData, envir=.GlobalEnv)
+            
+            return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
+            
+          }else{ # if RealTimeBarData is the new data
+            BarData<<-unique(rbind(BarData, RealTimeBarData))
+            
+            Close<<-RealTimeBarData$Close
+            
+            BarData<<-unique(rbind(BarData, 
+                                   data.table(
+                                     Symbol=Symbol,
+                                     Time=Time,
+                                     Open=Open,
+                                     High=High,
+                                     Low=Low,
+                                     Close=Close,
+                                     Volume=Volume,
+                                     Count=Count
+                                   )))
+            
+            # remove values in the global environment after generating a data point
+            rm(Init, envir=.GlobalEnv)
+            rm(Symbol, envir=.GlobalEnv)
+            rm(Time, envir=.GlobalEnv)
+            rm(Open, envir=.GlobalEnv)
+            rm(High, envir=.GlobalEnv)
+            rm(Low, envir=.GlobalEnv)
+            rm(Close, envir=.GlobalEnv)
+            rm(Volume, envir=.GlobalEnv)
+            rm(Count, envir=.GlobalEnv)
+            
+            New_Data=1
+          }
         }
       }
     }else{
@@ -645,17 +707,35 @@ ReqRealTimeBars=function(BarSize=5){
       BarSize<<-round(BarSize, -1)
       message(paste0("So, it is rounded off from ", BarSize, " to ", get("BarSize", envir=.GlobalEnv), "."))
       
+      # remove RealTimeBarData at the end of everytime iteration
+      rm(RealTimeBarData, envir=.GlobalEnv)
+      
+      return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
     }
     
-    # echo the updated data
-    if(BarSize==5|
-       ((BarSize>5 & BarSize%%5==0)&(as.numeric(RealTimeBarData$Time)%%BarSize==(BarSize-5)))){
+    # if the new data is added
+    if(New_Data==1){
+      # echo the updated data
       print(tail(BarData, 1))
+      
+      # write log everytime new data is added
+      if(Log==T){
+        if(file.exists(paste0(working.dir, "Live_Trading_Log.csv"))){
+          Log=data.table(Time=Sys.time())
+          Log=rbind(Log,
+                    fread(paste0(working.dir, "Live_Trading_Log.csv")))
+          fwrite(Log, paste0(working.dir, "Live_Trading_Log.csv"))
+        }else{
+          Log=data.table(Time=Sys.time())
+          fwrite(Log, paste0(working.dir, "Live_Trading_Log.csv"))
+        }
+      }
     }
     
-    # remove RealTimeBarData everytime its info is stored
+    # remove RealTimeBarData at the end of everytime iteration
     rm(RealTimeBarData, envir=.GlobalEnv)
     
+    return(New_Data) # terminate the algorithm by retunning New_Data
   }
 }
 

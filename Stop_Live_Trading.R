@@ -51,7 +51,7 @@ for(Package in
 taskscheduler_stop("Run_Live_Trading")
 
 # a break during periods of market close time
-Rerun_Live_Trading=System_Break()
+Rerun_Live_Trading=System_Break(Log=T)
 
 
 #*****************
@@ -62,5 +62,12 @@ Rerun_Live_Trading=System_Break()
 if(Rerun_Live_Trading==1){
   taskscheduler_runnow("Run_Live_Trading")
 }
+
+
+#
+Log=fread(paste0(working.dir, "Stop_Live_Trading_Log.csv"))
+Log[, Time:=as.POSIXct(format(as.POSIXct(Time),
+                              tz="PST8PDT"),
+                       tz="PST8PDT")]
 
 
