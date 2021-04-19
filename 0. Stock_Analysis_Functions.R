@@ -860,7 +860,8 @@ Candle_Chart=function(BarData){
 Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
   
   if(BarSize==5){ # if BarSize=5, no additional process is required
-    Collapsed_BarData=`5SecsBarData`
+    Collapsed_BarData=`5SecsBarData` %>% as.data.frame() %>% as.data.table()
+    Collapsed_BarData[, Wap:=NULL]
   }else if(BarSize>5 & BarSize%%5==0){ # if BarSize is a multiple of 5
     `5SecsBarData`[, Group:=rep(1:(ceiling(nrow(`5SecsBarData`)/(BarSize/5))),
                                 each=(BarSize/5))[1:nrow(`5SecsBarData`)]]
@@ -879,7 +880,7 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
                                      by="Group"]
     
     Collapsed_BarData[, Group:=NULL]
-    
+    `5SecsBarData`[, Group:=NULL]
   }else{
     message("BarSize must be a multiple of 5")
   }
