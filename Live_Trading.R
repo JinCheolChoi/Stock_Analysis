@@ -12,8 +12,8 @@ rm(list=ls())
 #
 #***********
 # working directory
-#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 
 # account
 # margin account="U4524665"
@@ -22,6 +22,9 @@ Account_Code="DU2656942"
 
 # port
 Port=7497 # tws : 7497, IB gateway : 4002
+
+# BarSize
+BarSize=5
 
 #*****************
 #
@@ -66,16 +69,25 @@ while(TRUE){
   
   # request realtime bar data
   # output : BarData
-  ReqRealTimeBars(BarSize=5)
-  
+  if(!ReqRealTimeBars(BarSize, Log=T)){ # skip to the next iteration if the new data is not derived
+    print("old data produced")
+    next
+  }
+  print("new data updated")
   # candle chart
-  Candle_Chart(BarData)
+  #Candle_Chart(BarData)
   
   # determine an action
   
   # place an order
-  
+
 }
+
+#
+Log=fread(paste0(working.dir, "Live_Trading_Log.csv"))
+Log[, Time:=as.POSIXct(format(as.POSIXct(Time),
+                              tz="PST8PDT"),
+                       tz="PST8PDT")]
 
 z=0
 T_1=system.time({

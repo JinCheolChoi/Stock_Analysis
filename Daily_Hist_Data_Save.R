@@ -12,8 +12,8 @@ rm(list=ls())
 #
 #***********
 # working directory
-#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 
 # account
 # margin account="U4524665"
@@ -58,7 +58,7 @@ tws=twsConnect(port=Port)
 # serverVersion(tws)
 
 # execute a daily save of 5 second bar data afterwards
-Daily_Hist_Data_Save(Force=T) #
+Daily_Hist_Data_Save(Force=T, Log=T) #
 
 
 

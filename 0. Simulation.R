@@ -12,9 +12,11 @@ rm(list=ls())
 #
 #***********
 # working directory
-#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 
+# BarSize
+BarSize=5*60
 
 #*****************
 #
@@ -50,7 +52,7 @@ Import_HistData(Location=paste0(working.dir, "Data/"),
 
 # collapse data to the chosen-sized bar data
 Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
-                                        BarSize=60*5)
+                                        BarSize=BarSize)
 
 
 # parse Collapsed_BarData to determine an action to take
