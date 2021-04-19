@@ -899,3 +899,55 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
 
 
 
+
+#****************
+#
+# BBands_Sim ----
+#
+#****************************************
+# Simulation based on bollinger bands strategy
+#*************************
+BBands_Sim=function(Consec_Times, Long_PctB, Short_PctB, Commision=0.52){
+  # Long_Pos_Ind : indice of rows to which a long position is filled
+  # fill long positions if PctB is below Long_PctB for consecutive times (Consec_Times) in the recent bar data
+  if(Consec_Times==1){
+    Long_Pos_Ind=which(shift(Collapsed_BarData$PctB, 0)<Long_PctB)
+  }else{
+    Long_Pos_Ind=which(Reduce("+", lapply(shift(Collapsed_BarData$PctB, 0:(Consec_Times-1)),
+                                          function(x) x<Long_PctB))==Consec_Times)
+  }
+  Short_Pos_Ind=which(Collapsed_BarData$PctB>Short_PctB) # a short position must be filled after a long position
+  
+  #
+  Tradings=data.table(
+    Collapsed_BarData[c(Long_Pos_Ind+1), 
+                      .SD,
+                      .SDcols=c("Time", "Open")],
+    Collapsed_BarData[sapply(Long_Pos_Ind,
+                             function(x) Short_Pos_Ind[which(x<Short_Pos_Ind)[1]])+1,
+                      .SD,
+                      .SDcols=c("Time", "Open")]
+  )
+  colnames(Tradings)=c("Long_Time", "Long_Price", "Short_Time", "Short_Price")
+  
+  # remove rows with duplicated short positions
+  Tradings=Tradings[!duplicated(Tradings[,
+                                         .SD,
+                                         .SDcols=c("Short_Time", "Short_Price")])&
+                      !is.na(Short_Price), ]
+  
+  # output
+  Out=c()
+  
+  Out$Tradings=Tradings
+  Out$Profit=sum(Tradings$Short_Price-Tradings$Long_Price, na.rm=T)*4*0.5
+  Out$Commision=2*Commision*nrow(Tradings)
+  Out$Net_Profit=Out$Profit-Out$Commision
+  
+  return(Out)
+}
+
+
+
+
+
