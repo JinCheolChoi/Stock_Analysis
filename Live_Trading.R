@@ -69,8 +69,11 @@ while(TRUE){
   
   # request realtime bar data
   # output : BarData
-  ReqRealTimeBars(BarSize)
-  
+  if(!ReqRealTimeBars(BarSize, Log=T)){ # skip to the next iteration if the new data is not derived
+    print("old data produced")
+    next
+  }
+  print("new data updated")
   # candle chart
   #Candle_Chart(BarData)
   
@@ -80,6 +83,11 @@ while(TRUE){
 
 }
 
+#
+Log=fread(paste0(working.dir, "Live_Trading_Log.csv"))
+Log[, Time:=as.POSIXct(format(as.POSIXct(Time),
+                              tz="PST8PDT"),
+                       tz="PST8PDT")]
 
 z=0
 T_1=system.time({
