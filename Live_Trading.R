@@ -12,8 +12,8 @@ rm(list=ls())
 #
 #***********
 # working directory
-#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 
 # account
 # margin account="U4524665"
@@ -66,16 +66,17 @@ while(TRUE){
   
   # request realtime bar data
   # output : BarData
-  ReqRealTimeBars(BarSize=5)
+  ReqRealTimeBars(BarSize=10)
   
   # candle chart
-  Candle_Chart(BarData)
+  #Candle_Chart(BarData)
   
   # determine an action
   
   # place an order
-  
+
 }
+
 
 z=0
 T_1=system.time({

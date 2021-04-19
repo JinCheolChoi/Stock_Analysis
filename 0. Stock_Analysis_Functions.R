@@ -412,8 +412,11 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
 # a break during the temporary market close time
 System_Break=function(Rerun_Trading=0){
   
+  #**************************
+  # No break (market is open)
   # re-run indicator
   Rerun=1
+  Duration=5
   
   # the market closes temporarily on weekdays
   ToDay=weekdays(as.Date(format(Sys.time(), tz="PST8PDT")))
@@ -422,43 +425,63 @@ System_Break=function(Rerun_Trading=0){
   #**********************
   # Daily temporary break
   if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")&
-     (CurrentTime>=(as.ITime("13:15:00")-60*5)& # if time is between 13:10:00 and 13:15:00 PDT
+     (CurrentTime>=(as.ITime("13:10:00"))& # if time is between 13:10:00 and 13:15:00 PDT
       CurrentTime<=(as.ITime("13:15:00")))){
     
-    # (1) for 25 mins from 13:10:00 to 13:35:00 PDT (market close : 13:15:00 to 13:30:00 PDT)
+    # (1) for 25 mins from 13:10:00 to 13:35:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
     Duration=60*25
     
+    # put the system to sleep
+    message("market closed : 13:15:00 to 13:30:00 PDT")
+    
   }else if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday")&
-           (CurrentTime>=(as.ITime("14:00:00")-60*10)& # if time is between 13:50:00 and 14:00:00 PDT
+           (CurrentTime>=(as.ITime("13:50:00"))& # if time is between 13:50:00 and 14:00:00 PDT
             CurrentTime<=(as.ITime("14:00:00")))){
     
-    # (2) for 75 mins from 13:50:00 to 15:05:00 PDT (market close : 14:00:00 to 15:00:00 PDT)
+    # (2) for 75 mins from 13:50:00 to 15:05:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
     Duration=60*75
     
+    # put the system to sleep
+    message("market closed : 14:00:00 to 15:00:00 PDT")
+    
   }else if(ToDay%in%c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday")&
-           (CurrentTime>=(as.ITime("23:45:00")-60*5)& # if time is between 23:40:00 and 23:45:00 PDT
+           (CurrentTime>=(as.ITime("23:40:00"))& # if time is between 23:40:00 and 23:45:00 PDT
             CurrentTime<=(as.ITime("23:45:00")))){
     
-    # (3) for 20 mins from 23:40:00 to 24:00:00 PDT (automatic log-off)
+    # (3) for 20 mins from 23:40:00 to 24:00:00 PDT (TWS automatic log-off)
     Duration=60*20
+    
+    # put the system to sleep
+    message("TWS automatic log-off and restart")
     
   }
   
   #***********
   # Long break
-  if((ToDay=="Friday" & CurrentTime>=(as.ITime("14:00:00")-60*10)) | # the market closes at 14:00:00 PDT on Friday
+  if((ToDay=="Friday" & CurrentTime>=(as.ITime("13:50:00"))) | # the market closes at 14:00:00 PDT on Friday
      (ToDay=="Saturday") | # the market closes on Saturday
-     (ToDay=="Sunday" & CurrentTime<(as.ITime("15:00:00")+5))){ # the market opens at 15:00:00 PDT on Sunday
+     (ToDay=="Sunday" & CurrentTime<(as.ITime("15:05:00")))){ # the market opens at 15:00:00 PDT on Sunday
     
-    # no need to re-run the live trading algorithm
+    # no need to re-run the live trading algorithm during weekends
     Rerun=0
     Duration=600
+    
+    # put the system to sleep
+    message("weekend closure")
   }
   
-  # put the system to sleep
-  message("The market is closed.")
-  Sys.sleep(Duration)
-
+  # echo re-run message
+  if(Rerun==1){
+    Sys.sleep(Duration)
+    
+    for(Secs_Left in 1:Duration){
+      message(paste0("Re-run live trading in : ", Duration-Secs_Left+1, " seconds"))
+      
+      Sys.sleep(1)
+    }
+    message(paste0("Re-run live trading in : 0 seconds"))
+  }
+  
   return(Rerun)
 }
 
@@ -539,7 +562,7 @@ Daily_Hist_Data_Save=function(Force=T){
     
   }else{
     message("No new data to save yet.")
-    Sys.sleep(600)
+    Sys.sleep(60*5)
   }
   
 }
@@ -558,11 +581,12 @@ Daily_Hist_Data_Save=function(Force=T){
 # output : BarData in the global environment
 ReqRealTimeBars=function(BarSize=5){
   # output : RealTimeBarData in the global environment
+  # once RealTimeBarData is available, there is a 5 seconds suspension in time, which I think is a built-in functionality in twsCALLBACK_cust
   IBrokers::reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
                             eventWrapper=eWrapper_cust(),
                             CALLBACK=twsCALLBACK_cust)
   
-  # if it fails to create RealTimeBarData, suspend execution for a while to avoid the system going break
+  # if it fails to create RealTimeBarData, suspend execution for a while to prevent the system from breaking
   if(!exists("RealTimeBarData")){
     Sys.sleep(0.5)
   }else if(exists("RealTimeBarData")){
@@ -613,11 +637,16 @@ ReqRealTimeBars=function(BarSize=5){
           rm(Close, envir=.GlobalEnv)
           rm(Volume, envir=.GlobalEnv)
           rm(Count, envir=.GlobalEnv)
-          
         }
       }
     }else{
       message("BarSize must be a multiple of 5")
+    }
+    
+    # echo the updated data
+    if(BarSize==5|
+       ((BarSize>5 & BarSize%%5==0)&(as.numeric(RealTimeBarData$Time)%%BarSize==(BarSize-5)))){
+      print(tail(BarData, 1))
     }
     
     # remove RealTimeBarData everytime its info is stored
