@@ -23,6 +23,9 @@ Account_Code="DU2656942"
 # port
 Port=7497 # tws : 7497, IB gateway : 4002
 
+# BarSize
+BarSize=12
+
 #*****************
 #
 # preliminary step
@@ -66,7 +69,7 @@ while(TRUE){
   
   # request realtime bar data
   # output : BarData
-  ReqRealTimeBars(BarSize=10)
+  ReqRealTimeBars(BarSize)
   
   # candle chart
   #Candle_Chart(BarData)

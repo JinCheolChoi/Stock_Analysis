@@ -593,7 +593,7 @@ ReqRealTimeBars=function(BarSize=5){
     # generate BarData
     if(BarSize==5){ # if BarSize=5, no additional process is required
       BarData<<-unique(rbind(BarData, RealTimeBarData))
-    }else if(BarSize>5 & BarSize%%5==0){ # additional process given a BarSize>5
+    }else if(BarSize>5 & BarSize%%5==0){ # additional process given that BarSize>5 and it is a multiple of 5
       if(as.numeric(RealTimeBarData$Time)%%BarSize==0){Init<<-1} # initiate when the remainder is 0
       if(exists("Init", envir=.GlobalEnv)){ # main process part
         if(as.numeric(RealTimeBarData$Time)%%BarSize==0){ # open info
@@ -640,7 +640,11 @@ ReqRealTimeBars=function(BarSize=5){
         }
       }
     }else{
-      message("BarSize must be a multiple of 5")
+      message("BarSize must be a multiple of 5.")
+      # round off BarSize to an integer
+      BarSize<<-round(BarSize, -1)
+      message(paste0("So, it is rounded off from ", BarSize, " to ", get("BarSize", envir=.GlobalEnv), "."))
+      
     }
     
     # echo the updated data
@@ -777,7 +781,7 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
   
   if(BarSize==5){ # if BarSize=5, no additional process is required
     Collapsed_BarData=`5SecsBarData`
-  }else if(BarSize>5 & BarSize%%5==0){
+  }else if(BarSize>5 & BarSize%%5==0){ # if BarSize is a multiple of 5
     `5SecsBarData`[, Group:=rep(1:(ceiling(nrow(`5SecsBarData`)/(BarSize/5))),
                                 each=(BarSize/5))[1:nrow(`5SecsBarData`)]]
     # # generate Remainder to verify the process
