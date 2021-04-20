@@ -475,14 +475,14 @@ System_Break=function(Rerun_Trading=0, Log=F){
   
   # write log everytime System_Break is run
   if(Log==T){
-    if(file.exists(paste0(working.dir, "Stop_Live_Trading_Log.csv"))){
+    if(file.exists(paste0(working.dir, "/Log/Stop_Live_Trading_Log.csv"))){
       Log=data.table(Time=Sys.time())
       Log=rbind(Log,
-                fread(paste0(working.dir, "Stop_Live_Trading_Log.csv")))
-      fwrite(Log, paste0(working.dir, "Stop_Live_Trading_Log.csv"))
+                fread(paste0(working.dir, "/Log/Stop_Live_Trading_Log.csv")))
+      fwrite(Log, paste0(working.dir, "/Log/Stop_Live_Trading_Log.csv"))
     }else{
       Log=data.table(Time=Sys.time())
-      fwrite(Log, paste0(working.dir, "Stop_Live_Trading_Log.csv"))
+      fwrite(Log, paste0(working.dir, "/Log/Stop_Live_Trading_Log.csv"))
     }
   }
   
@@ -575,14 +575,14 @@ Daily_Hist_Data_Save=function(Force=T, Log=F){
     
     # write log everytime historical data is extracted and saved
     if(Log==T){
-      if(file.exists(paste0(working.dir, "Daily_Hist_Data_Save.csv"))){
+      if(file.exists(paste0(working.dir, "/Log/Daily_Hist_Data_Save.csv"))){
         Log=data.table(Time=Sys.time())
         Log=rbind(Log,
-                  fread(paste0(working.dir, "Daily_Hist_Data_Save.csv")))
-        fwrite(Log, paste0(working.dir, "Daily_Hist_Data_Save.csv"))
+                  fread(paste0(working.dir, "/Log/Daily_Hist_Data_Save.csv")))
+        fwrite(Log, paste0(working.dir, "/Log/Daily_Hist_Data_Save.csv"))
       }else{
         Log=data.table(Time=Sys.time())
-        fwrite(Log, paste0(working.dir, "Daily_Hist_Data_Save.csv"))
+        fwrite(Log, paste0(working.dir, "/Log/Daily_Hist_Data_Save.csv"))
       }
     }
   }else{
@@ -720,14 +720,14 @@ ReqRealTimeBars=function(BarSize=5, Log=F){
       
       # write log everytime new data is added
       if(Log==T){
-        if(file.exists(paste0(working.dir, "Live_Trading_Log.csv"))){
+        if(file.exists(paste0(working.dir, "/Log/Live_Trading_Log.csv"))){
           Log=data.table(Time=Sys.time())
           Log=rbind(Log,
-                    fread(paste0(working.dir, "Live_Trading_Log.csv")))
-          fwrite(Log, paste0(working.dir, "Live_Trading_Log.csv"))
+                    fread(paste0(working.dir, "/Log/Live_Trading_Log.csv")))
+          fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
         }else{
           Log=data.table(Time=Sys.time())
-          fwrite(Log, paste0(working.dir, "Live_Trading_Log.csv"))
+          fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
         }
       }
     }
