@@ -11,12 +11,44 @@ rm(list=ls())
 # parameters
 #
 #***********
-# working directory
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
-
-# BarSize
-BarSize=60*15
+Input_Set=list(
+  #****************
+  # data parameters
+  #****************
+  Data_Params=list(
+    # working directory
+    #working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+    working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
+    
+    # BarSize
+    BarSize=60*5
+  ),
+  
+  #***************
+  # parameter sets
+  #***************
+  Model_Param_Sets=list(
+    # order parameters
+    Indicators=c("BBands", "RSI"),
+    Max_Positions=1, # the number of maximum positions to hold
+    OrderType="MKT", # "LMT"
+    Order_Direction="long", # "both", "long", "short"
+    Live_Data_Max_Rows=50,
+    
+    # models to run in combination to decide to transmit an order
+    Models=c("Simple_BBands",
+             "Simple_RSI"),
+    
+    # model parameters
+    Model_Params=list(
+      Simple_BBands=c(Consec_Times=2,
+                      Long_PctB=0,
+                      Short_PctB=0.8),
+      Simple_RSI=c()
+    )
+    
+  )
+)
 
 
 #*****************
@@ -25,18 +57,7 @@ BarSize=60*15
 #
 #*******************
 # required functions
-source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-
-# import packages
-lapply(
-  c(
-    "IBrokers",
-    "TTR",
-    "data.table",
-    "dplyr",
-    "DescTools" # candle chart
-  ), 
-  checkpackages)
+source(paste0(Input_Set$Data_Params$working.dir, "0. Stock_Analysis_Functions.R"))
 
 
 #*********************
@@ -44,187 +65,10 @@ lapply(
 # simulation algorithm
 #
 #*********************
-# import data
-# output : `5SecsBarHistData`
-Import_HistData(Location=paste0(working.dir, "Data/"),
-                Symbol="MNQ",
-                First_date="2021-03-15",
-                Last_date=as.Date(format(Sys.time(), tz="PST8PDT")))
-
-# collapse data to the chosen-sized bar data
-Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
-                                        BarSize=BarSize)
-
-
-
-# parameters
-Indicators=c("BBands", "RSI")
-Consec_Times=1
-Long_PctB=0
-Short_PctB=1
-Live_Data_Max_Rows=50
-Max_Positions=1 # 
-OrderType="MKT" # "LMT"
-Order_Direction="both" # "both", "long", "short"
-# Collapsed_BarData[, BBands(Close, n=30, sd=2.58)]
-# Collapsed_BarData[, RSI:=RSI(Close, n=9)]
-
-
-#
-if(Order_Direction=="both"){
-  Long_Max_Positions=Short_Max_Positions=Max_Positions-1
-}else if(Order_Direction=="long"){
-  Long_Max_Positions=Max_Positions-1
-  Short_Max_Positions=-1
-}else if(Order_Direction=="short"){
-  Long_Max_Positions=-1
-  Short_Max_Positions=Max_Positions-1
-}
-
-
-
-# nrow(Collapsed_BarData)
 system.time({
-  for(i in 1:nrow(Collapsed_BarData)){
-    # i=90
-    if(!exists("Live_Data")){
-      Live_Data=Collapsed_BarData[i, ]
-      Order_Transmit=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                Submit_Time=tail(Live_Data, 1)[, Time],
-                                Filled_Time=tail(Live_Data, 1)[, Time],
-                                Action="", 
-                                TotalQuantity=0,
-                                OrderType="MKT",
-                                LmtPrice=0,
-                                Fill=0)
-    }else{
-      Live_Data=rbind(Live_Data, Collapsed_BarData[i, ], fill=T) %>% tail(Live_Data_Max_Rows)
-    }
-    
-    # add indicators
-    # bollinger bands
-    if("BBands"%in%Indicators){
-      Long_By_pctB=0
-      Short_By_pctB=0
-      
-      if(nrow(Live_Data)>19){
-        BBands_Data=Live_Data[, BBands(Close)]
-        
-        # determine position by pctB
-        if(Order_Direction=="both"){
-          Long_By_pctB=sum(tail(BBands_Data, Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Consec_Times
-          Short_By_pctB=sum(tail(BBands_Data, Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Consec_Times
-        }else if(Order_Direction=="long"){
-          Long_By_pctB=sum(tail(BBands_Data, Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Consec_Times
-          Short_By_pctB=sum(tail(BBands_Data, 1)[,"pctB"]>=Short_PctB, na.rm=T)==1
-        }else if(Order_Direction=="short"){
-          Long_By_pctB=sum(tail(BBands_Data, 1)[,"pctB"]<=Long_PctB, na.rm=T)==1
-          Short_By_pctB=sum(tail(BBands_Data, Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Consec_Times
-        }
-        
-      }
-    }
-    
-    # rsi
-    if("RSI"%in%Indicators){
-      if(nrow(Live_Data)>15){
-        Live_Data[, RSI:=RSI(Close)]
-      }
-    }
-    
-    # macd
-    if("MACD"%in%Indicators){
-      if(nrow(Live_Data)>34){
-        MACD_Data=Live_Data[, MACD(Close)]
-      }
-    }
-    
-    
-    #**************
-    # fill position
-    #**************
-    # buy
-    if(nrow(Order_Transmit[Action=="Buy"&Fill==0, ])>0){
-      
-      Unfilled_Buy_Position_Times=Order_Transmit[Action=="Buy"&Fill==0, Submit_Time]
-      Unfilled_Buy_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
-      Which_Buy_Position_to_Fill=which(tail(Live_Data, 1)[, Low]<Unfilled_Buy_Position_Prices)[1] # fill the earlier one among positions that have met the price criterion
-      
-      Order_Transmit[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
-                     `:=`(Filled_Time=tail(Live_Data, 1)[, Time],
-                          Fill=1)]
-    }
-    # sell
-    if(nrow(Order_Transmit[Action=="Sell"&Fill==0, ])>0){
-      
-      Unfilled_Sell_Position_Times=Order_Transmit[Action=="Sell"&Fill==0, Submit_Time]
-      Unfilled_Sell_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
-      Which_Sell_Position_to_Fill=which(tail(Live_Data, 1)[, High]>Unfilled_Sell_Position_Prices)[1] # fill the earlier one among positions that have met the price criterion
-      
-      Order_Transmit[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
-                     `:=`(Filled_Time=tail(Live_Data, 1)[, Time],
-                          Fill=1)]
-    }
-    
-    
-    #******************
-    # transmit position
-    #******************
-    # buy
-    if(Long_By_pctB){
-      # determine the position
-      if(sum(Order_Transmit[Action=="Buy", TotalQuantity])-
-         sum(Order_Transmit[Action=="Sell", TotalQuantity])<=
-         (Long_Max_Positions)){ # the number of currently filled or transmitted long positions is limited to (Max_Positions + short positions)
-        print(paste0("buy : ", i))
-        Order_Transmit=rbind(Order_Transmit,
-                             data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                        Submit_Time=tail(Live_Data, 1)[, Time],
-                                        Filled_Time=tail(Live_Data, 1)[, Time],
-                                        Action="Buy",
-                                        TotalQuantity=1,
-                                        OrderType=OrderType,
-                                        LmtPrice=tail(Live_Data, 1)[, Close],
-                                        Fill=0))
-      }
-    }
-    
-    # sell
-    if(Short_By_pctB){
-      if(sum(Order_Transmit[Action=="Sell", TotalQuantity])-
-         sum(Order_Transmit[Action=="Buy", TotalQuantity])<=
-         (Short_Max_Positions)){ # the number of currently filled or transmitted short positions is limited to (Max_Positions + long positions)
-        print(paste0("sell : ", i))
-        Order_Transmit=rbind(Order_Transmit,
-                             data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                        Submit_Time=tail(Live_Data, 1)[, Time],
-                                        Filled_Time=tail(Live_Data, 1)[, Time],
-                                        Action="Sell",
-                                        TotalQuantity=1,
-                                        OrderType=OrderType,
-                                        LmtPrice=tail(Live_Data, 1)[, Close],
-                                        Fill=0))
-      }
-    }
-    
-  }
-  Order_Transmit=Order_Transmit[-1, ]
-  rm(Live_Data)
+  Sim_Results=do.call(Run_Simulation, Input_Set)
 })
-
-
-
-# calculate the balance
-Collapse_Order_Transmit=cbind(Order_Transmit[Action=="Buy", c("Filled_Time", "LmtPrice")],
-                              Order_Transmit[Action=="Sell", c("Filled_Time", "LmtPrice")])
-colnames(Collapse_Order_Transmit)=c("Buy_Time", "Buy_Price", "Sell_Time", "Sell_Price")
-
-Collapse_Order_Transmit=Collapse_Order_Transmit[-unique(c(which(duplicated(Collapse_Order_Transmit[, c("Buy_Time", "Buy_Price")])), 
-                                                          which(duplicated(Collapse_Order_Transmit[, c("Sell_Time", "Sell_Price")])))), ]
-
-2*sum(Collapse_Order_Transmit[, Sell_Price-Buy_Price])-0.52*nrow(Collapse_Order_Transmit)
-
-
+Sim_Results
 
 
 
