@@ -69,7 +69,7 @@ while(TRUE){
   
   # request realtime bar data
   # output : BarData
-  if(!ReqRealTimeBars(BarSize, Log=T)){ # skip to the next iteration if the new data is not derived
+  if(!ReqRealTimeBars(BarSize, Log=F)){ # skip to the next iteration if the new data is not derived
     next
   }
   
