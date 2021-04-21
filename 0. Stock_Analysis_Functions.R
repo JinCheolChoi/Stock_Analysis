@@ -1182,7 +1182,8 @@ Run_Simulation=function(Data_Params, Model_Param_Sets){
   Net_Profit=2*sum(Collapse_Order_Transmit[, Sell_Price-Buy_Price])-2*0.52*nrow(Collapse_Order_Transmit)
   
   
-  return(list(Order_Transmit=Order_Transmit,
+  return(list(Collapsed_BarData=Collapsed_BarData,
+              Order_Transmit=Order_Transmit,
               Net_Profit=Net_Profit))
   
 }

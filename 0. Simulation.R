@@ -21,7 +21,7 @@ Input_Set=list(
     working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
     
     # BarSize
-    BarSize=60*15
+    BarSize=60*5
   ),
   
   #***************
@@ -32,7 +32,7 @@ Input_Set=list(
     Indicators=c("BBands", "RSI"),
     Max_Positions=1, # the number of maximum positions to hold
     OrderType="MKT", # "LMT"
-    Order_Direction="both", # "both", "long", "short"
+    Order_Direction="long", # "both", "long", "short"
     Live_Data_Max_Rows=50,
     
     # models to run in combination to decide to transmit an order
@@ -41,9 +41,9 @@ Input_Set=list(
     
     # model parameters
     Model_Params=list(
-      Simple_BBands=c(Consec_Times=1,
+      Simple_BBands=c(Consec_Times=2,
                       Long_PctB=0,
-                      Short_PctB=0.7),
+                      Short_PctB=0.8),
       Simple_RSI=c()
     )
     
@@ -68,7 +68,7 @@ source(paste0(Input_Set$Data_Params$working.dir, "0. Stock_Analysis_Functions.R"
 system.time({
   Sim_Results=do.call(Run_Simulation, Input_Set)
 })
-
+Sim_Results
 
 
 
