@@ -973,7 +973,8 @@ Run_Simulation=function(Data_Params, Model_Param_Sets){
   Model_Params=Model_Param_Sets$Model_Params
   
   # model parameters
-  Consec_Times=Model_Param_Sets$Model_Params$Simple_BBands["Consec_Times"]
+  Long_Consec_Times=Model_Param_Sets$Model_Params$Simple_BBands["Long_Consec_Times"]
+  Short_Consec_Times=Model_Param_Sets$Model_Params$Simple_BBands["Short_Consec_Times"]
   Long_PctB=Model_Param_Sets$Model_Params$Simple_BBands["Long_PctB"]
   Short_PctB=Model_Param_Sets$Model_Params$Simple_BBands["Short_PctB"]
   
@@ -1063,17 +1064,8 @@ Run_Simulation=function(Data_Params, Model_Param_Sets){
          exists("BBands_Data")){
         
         # determine position by pctB
-        if(Order_Direction=="both"){
-          Long_by_Simple_BBands=sum(tail(BBands_Data, Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Consec_Times
-          Short_by_Simple_BBands=sum(tail(BBands_Data, Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Consec_Times
-        }else if(Order_Direction=="long"){
-          Long_by_Simple_BBands=sum(tail(BBands_Data, Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Consec_Times
-          Short_by_Simple_BBands=sum(tail(BBands_Data, 1)[,"pctB"]>=Short_PctB, na.rm=T)==1
-        }else if(Order_Direction=="short"){
-          Long_by_Simple_BBands=sum(tail(BBands_Data, 1)[,"pctB"]<=Long_PctB, na.rm=T)==1
-          Short_by_Simple_BBands=sum(tail(BBands_Data, Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Consec_Times
-        }
-        
+        Long_by_Simple_BBands=sum(tail(BBands_Data, Long_Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Long_Consec_Times
+        Short_by_Simple_BBands=sum(tail(BBands_Data, Short_Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Short_Consec_Times
       }else{
         if(!"BBands"%in%Indicators){
           stop("BBands required")
