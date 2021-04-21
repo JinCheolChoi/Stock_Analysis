@@ -98,7 +98,7 @@ system.time({
                                 LmtPrice=0,
                                 Fill=0)
     }else{
-      Live_Data=rbind(Live_Data, Collapsed_BarData[i, ], fill=T)
+      Live_Data=rbind(Live_Data, Collapsed_BarData[i, ], fill=T) %>% tail(Live_Data_Max_Rows)
     }
     
     # add indicators
@@ -111,8 +111,17 @@ system.time({
         BBands_Data=Live_Data[, BBands(Close)]
         
         # determine position by pctB
-        Long_By_pctB=sum(tail(BBands_Data, Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Consec_Times
-        Short_By_pctB=sum(tail(BBands_Data, Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Consec_Times
+        if(Order_Direction=="both"){
+          Long_By_pctB=sum(tail(BBands_Data, Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Consec_Times
+          Short_By_pctB=sum(tail(BBands_Data, Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Consec_Times
+        }else if(Order_Direction=="long"){
+          Long_By_pctB=sum(tail(BBands_Data, Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Consec_Times
+          Short_By_pctB=sum(tail(BBands_Data, 1)[,"pctB"]>=Short_PctB, na.rm=T)==1
+        }else if(Order_Direction=="short"){
+          Long_By_pctB=sum(tail(BBands_Data, 1)[,"pctB"]<=Long_PctB, na.rm=T)==1
+          Short_By_pctB=sum(tail(BBands_Data, Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Consec_Times
+        }
+        
       }
     }
     
@@ -245,9 +254,9 @@ Collapsed_BarData[, RSI:=RSI(Close)]
 
 # parse Collapsed_BarData to determine an action to take
 # Bollinger bands strategy simulation
-Result=BBands_Sim(Consec_Times=Consec_Times,
-                  Long_PctB=Long_PctB,
-                  Short_PctB=Short_PctB)
+Result=BBands_Sim(Consec_Times=2,
+                  Long_PctB=0,
+                  Short_PctB=1)
 
 Result
 
