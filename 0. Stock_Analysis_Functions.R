@@ -749,12 +749,12 @@ ReqRealTimeBars=function(BarSize=5, Log=F){
 # import historical data saved in a repository folder
 #******************************************************
 # output : `5SecsBarHistData` in the global environment
-Import_HistData=function(Location, Symbol, First_date, Last_date, Convert_Tz=F){
+Import_HistData=function(Location, Symbol, First_Date, Last_Date, Convert_Tz=F){
   # remove `5SecsBarHistData` in the global environment
   if(exists("5SecsBarHistData")){rm(`5SecsBarHistData`, envir=.GlobalEnv)}
   
   # import
-  for(Date in seq(as.Date(First_date), Last_date, by="day")){
+  for(Date in seq(as.Date(First_Date), Last_Date, by="day")){
     File_name=paste0(Symbol, "_", as.Date(Date), ".csv")
     if(!file.exists(paste0(Location, File_name))){
       next
@@ -984,12 +984,15 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
   #************************
   # data parameters
   working.dir=Data_Params$working.dir
+  Symbol=Data_Params$Symbol
+  First_Date=Data_Params$First_Date
+  Last_Date=Data_Params$Last_Date
   BarSize=Data_Params$BarSize
   
   # order parameters
-  Max_Positions=Order_Params$Max_Positions
+  Max_Orders=Order_Params$Max_Orders
   OrderType=Order_Params$OrderType
-  Order_Direction=Order_Params$Order_Direction
+  Position_Direction=Order_Params$Position_Direction
   Parsed_Data_Max_Rows=Order_Params$Parsed_Data_Max_Rows
   
   # model parameters
@@ -1008,26 +1011,28 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
   #************
   # output : `5SecsBarHistData`
   Import_HistData(Location=paste0(working.dir, "Data/"),
-                  Symbol="MNQ",
-                  First_date="2021-01-20",
-                  Last_date=as.Date(format(Sys.time(), tz="PST8PDT")))
+                  Symbol=Symbol,
+                  First_Date=First_Date,
+                  Last_Date=Last_Date)
   
   # collapse data to the chosen-sized bar data
   Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
                                           BarSize=BarSize)
   
+  # remove 5 seconds bar historical data set (`5SecsBarHistData`)
+  rm(`5SecsBarHistData`)
   
   #***************
   # order settings
   #***************
-  if(Order_Direction=="both"){
-    Long_Max_Positions=Short_Max_Positions=Max_Positions-1
-  }else if(Order_Direction=="long"){
-    Long_Max_Positions=Max_Positions-1
-    Short_Max_Positions=-1
-  }else if(Order_Direction=="short"){
-    Long_Max_Positions=-1
-    Short_Max_Positions=Max_Positions-1
+  if(Position_Direction=="both"){
+    Max_Long_Orders=Max_Short_Orders=Max_Orders-1
+  }else if(Position_Direction=="long"){
+    Max_Long_Orders=Max_Orders-1
+    Max_Short_Orders=-1
+  }else if(Position_Direction=="short"){
+    Max_Long_Orders=-1
+    Max_Short_Orders=Max_Orders-1
   }
   
   
@@ -1045,9 +1050,11 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
                                 Filled_Time=tail(Live_Data, 1)[, Time],
                                 Action="", 
                                 TotalQuantity=0,
-                                OrderType="MKT",
+                                OrderType=OrderType,
                                 LmtPrice=0,
                                 Fill=0)
+      # current filled orders
+      Current_Filled_Orders=Order_Transmit$Action
     }else{
       Live_Data=rbind(Live_Data, Collapsed_BarData[i, ], fill=T) %>% tail(Parsed_Data_Max_Rows)
     }
@@ -1079,19 +1086,33 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
     
     
     #***********
-    # run models
+    # fit models
     #***********
     # Simple_BBands
     if("Simple_BBands"%in%Models){
-      Long_by_Simple_BBands=0
-      Short_by_Simple_BBands=0
+      # signal to enter a long (short) position determined by Simple_BBands
+      Long_Sig_by_Simple_BBands=0
+      Short_Sig_by_Simple_BBands=0
       
       if("BBands"%in%Indicators&
          exists("BBands_Data")){
         
-        # determine position by pctB
-        Long_by_Simple_BBands=sum(tail(BBands_Data, Long_Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Long_Consec_Times
-        Short_by_Simple_BBands=sum(tail(BBands_Data, Short_Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Short_Consec_Times
+        # Simple_BBands
+        N_Filled_Buys=nrow(Order_Transmit[Action=="Buy"&Fill==1, ]) # number of filled buy orders
+        N_Filled_Sells=nrow(Order_Transmit[Action=="Sell"&Fill==1, ]) # number of filled sell orders
+        
+        # determine a position by pctB
+        if(N_Filled_Buys-N_Filled_Sells==0){ # if there is no filled order
+          Long_Sig_by_Simple_BBands=sum(tail(BBands_Data, Long_Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Long_Consec_Times
+          Short_Sig_by_Simple_BBands=sum(tail(BBands_Data, Short_Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Short_Consec_Times
+        }else if(N_Filled_Buys-N_Filled_Sells>0){ # if the currently filled order is buy order, generate signal to sell as soon as pctB>=Short_PctB
+          Long_Sig_by_Simple_BBands=sum(tail(BBands_Data, Long_Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Long_Consec_Times 
+          Short_Sig_by_Simple_BBands=sum(tail(BBands_Data, 1)[,"pctB"]>=Short_PctB, na.rm=T)==1
+        }else if(N_Filled_Buys-N_Filled_Sells<0){ # if the currently filled order is short order, generate signal to sell as soon as pctB<=Long_PctB
+          Long_Sig_by_Simple_BBands=sum(tail(BBands_Data, 1)[,"pctB"]<=Long_PctB, na.rm=T)==1
+          Short_Sig_by_Simple_BBands=sum(tail(BBands_Data, Short_Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Short_Consec_Times
+        }
+        
       }else{
         if(!"BBands"%in%Indicators){
           stop("BBands required")
@@ -1101,23 +1122,30 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
     
     # Simple_RSI
     if("Simple_RSI"%in%Models){
-      if(!"RSI"%in%Indicators){
+      # signal to enter a long (short) position determined by Simple_RSI
+      Long_Sig_by_Simple_RSI=0
+      Short_Sig_by_Simple_RSI=0
+      
+      if("RSI"%in%Indicators&
+         length(Live_Data$RSI)>0){
         
       }else{
-        
+        if(!"RSI"%in%Indicators){
+          stop("RSI required")
+        }
       }
     }
     
     
-    #******************
-    # transmit position
-    #******************
+    #***************
+    # transmit order
+    #***************
     # buy
-    if(Long_by_Simple_BBands){
+    if(Long_Sig_by_Simple_BBands){
       # determine the position
       if(sum(Order_Transmit[Action=="Buy", TotalQuantity])-
          sum(Order_Transmit[Action=="Sell", TotalQuantity])<=
-         (Long_Max_Positions)){ # the number of currently filled or transmitted long positions is limited to (Max_Positions + short positions)
+         (Max_Long_Orders)){ # the number of currently remaining filled or transmitted long positions is limited to Max_Orders(= Max_Long_Orders + 1)
         print(paste0("buy : ", i))
         Order_Transmit=rbind(Order_Transmit,
                              data.table(Symbol=tail(Live_Data, 1)[, Symbol],
@@ -1132,10 +1160,10 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
     }
     
     # sell
-    if(Short_by_Simple_BBands){
+    if(Short_Sig_by_Simple_BBands){
       if(sum(Order_Transmit[Action=="Sell", TotalQuantity])-
          sum(Order_Transmit[Action=="Buy", TotalQuantity])<=
-         (Short_Max_Positions)){ # the number of currently filled or transmitted short positions is limited to (Max_Positions + long positions)
+         (Max_Short_Orders)){ # the number of currently remaining filled or transmitted short positions is limited to Max_Orders(= Max_Short_Orders + 1)
         print(paste0("sell : ", i))
         Order_Transmit=rbind(Order_Transmit,
                              data.table(Symbol=tail(Live_Data, 1)[, Symbol],
@@ -1150,26 +1178,26 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
     }
     
     
-    #**************
-    # fill position
-    #**************
+    #***********
+    # fill order
+    #***********
     # buy
-    if(nrow(Order_Transmit[Action=="Buy"&Fill==0, ])>0){
+    if(nrow(Order_Transmit[Action=="Buy"&Fill==0, ])>0){ # if there is any transmitted buy order that has not been filled yet
       
       Unfilled_Buy_Position_Times=Order_Transmit[Action=="Buy"&Fill==0, Submit_Time]
       Unfilled_Buy_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
-      Which_Buy_Position_to_Fill=which(Collapsed_BarData[i+1, Low]<Unfilled_Buy_Position_Prices)[1] # fill the earlier one among positions that have met the price criterion
+      Which_Buy_Position_to_Fill=which(Collapsed_BarData[i+1, Low]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
       Order_Transmit[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
                      `:=`(Filled_Time=Collapsed_BarData[i+1, Time],
                           Fill=1)]
     }
     # sell
-    if(nrow(Order_Transmit[Action=="Sell"&Fill==0, ])>0){
+    if(nrow(Order_Transmit[Action=="Sell"&Fill==0, ])>0){ # if there is any transmitted sell order that has not been filled yet
       
       Unfilled_Sell_Position_Times=Order_Transmit[Action=="Sell"&Fill==0, Submit_Time]
       Unfilled_Sell_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
-      Which_Sell_Position_to_Fill=which(Collapsed_BarData[i+1, High]>Unfilled_Sell_Position_Prices)[1] # fill the earlier one among positions that have met the price criterion
+      Which_Sell_Position_to_Fill=which(Collapsed_BarData[i+1, High]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
       Order_Transmit[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
                      `:=`(Filled_Time=Collapsed_BarData[i+1, Time],
