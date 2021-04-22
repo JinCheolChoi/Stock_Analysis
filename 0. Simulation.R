@@ -24,16 +24,22 @@ Input_Set=list(
     BarSize=60*5
   ),
   
-  #***************
-  # parameter sets
-  #***************
-  Model_Param_Sets=list(
-    # order parameters
-    Indicators=c("BBands", "RSI"),
+  #*****************
+  # order parameters
+  #*****************
+  Order_Params=list(
     Max_Positions=1, # the number of maximum positions to hold
     OrderType="MKT", # "LMT"
     Order_Direction="both", # "both", "long", "short"
-    Live_Data_Max_Rows=50,
+    Parsed_Data_Max_Rows=50 # the maximum number of rows in a temp dataset to be parsed
+  ),
+  
+  #*****************
+  # model parameters
+  #*****************
+  Model_Param_Sets=list(
+    # indicators to calculate
+    Indicators=c("BBands", "RSI"),
     
     # models to run in combination to decide to transmit an order
     Models=c("Simple_BBands",
@@ -42,9 +48,9 @@ Input_Set=list(
     # model parameters
     Model_Params=list(
       Simple_BBands=c(Long_Consec_Times=1,
-                      Short_Consec_Times=2,
-                      Long_PctB=0.3,
-                      Short_PctB=1.1),
+                      Short_Consec_Times=1,
+                      Long_PctB=0,
+                      Short_PctB=1),
       Simple_RSI=c()
     )
     
@@ -116,7 +122,7 @@ Result$Tradings[, Time_Diff] %>% summary
 
 
 
-Collapsed_BarData[, Sign:=sign(Close-Open)]
+Collapsed_BarData[, Sign_in_Price_Change:=sign(Close-Open)]
 Collapsed_BarData[, Volume_Change:=Volume/shift(Volume, 1)]
 Collapsed_BarData[, Future_Direction:=sign(shift(Close, -1)-Close)]
 
