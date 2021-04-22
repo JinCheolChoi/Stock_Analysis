@@ -16,22 +16,22 @@ Input_Set=list(
   # data parameters
   #****************
   Data_Params=list(
-    # working directory
     #working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
     working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
-    
-    # BarSize
-    BarSize=60*5
+    Symbol="MNQ",
+    First_Date="2021-01-20",
+    Last_Date=as.Date(format(Sys.time(), tz="PST8PDT")),
+    BarSize=60*5 # secs (30 mins bar size seems to need a touch up in the code)
   ),
   
   #*****************
   # order parameters
   #*****************
   Order_Params=list(
-    Max_Positions=1, # the number of maximum positions to hold
+    Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
     OrderType="MKT", # "LMT"
-    Order_Direction="both", # "both", "long", "short"
-    Parsed_Data_Max_Rows=50 # the maximum number of rows in a temp dataset to be parsed
+    Position_Direction="both", # direction of position ("both", "long", "short")
+    Parsed_Data_Max_Rows=50 # the maximum number of rows in a temp dataset to parse
   ),
   
   #*****************
@@ -47,8 +47,8 @@ Input_Set=list(
     
     # model parameters
     Model_Params=list(
-      Simple_BBands=c(Long_Consec_Times=1,
-                      Short_Consec_Times=1,
+      Simple_BBands=c(Long_Consec_Times=2,
+                      Short_Consec_Times=2,
                       Long_PctB=0,
                       Short_PctB=1),
       Simple_RSI=c()
