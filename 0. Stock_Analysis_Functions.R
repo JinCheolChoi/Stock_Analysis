@@ -959,27 +959,15 @@ BBands_Sim=function(Consec_Times, Long_PctB, Short_PctB, Commision=0.52){
 #********************
 # run a simulation
 #*****************
-Run_Simulation=function(Data_Params, Model_Param_Sets){
-  # data parameters
-  working.dir=Data_Params$working.dir
-  BarSize=Data_Params$BarSize
+Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
+  # Data_Params=Input_Set$Data_Params
+  # Order_Params=Input_Set$Order_Params
+  # Model_Param_Sets=Input_Set$Model_Param_Sets
   
-  # assign local parameters
-  Order_Direction=Model_Param_Sets$Order_Direction
-  Max_Positions=Model_Param_Sets$Max_Positions
-  Indicators=Model_Param_Sets$Indicators
-  OrderType=Model_Param_Sets$OrderType
-  Live_Data_Max_Rows=Model_Param_Sets$Live_Data_Max_Rows
-  Models=Model_Param_Sets$Models
-  Model_Params=Model_Param_Sets$Model_Params
   
-  # model parameters
-  Long_Consec_Times=Model_Param_Sets$Model_Params$Simple_BBands["Long_Consec_Times"]
-  Short_Consec_Times=Model_Param_Sets$Model_Params$Simple_BBands["Short_Consec_Times"]
-  Long_PctB=Model_Param_Sets$Model_Params$Simple_BBands["Long_PctB"]
-  Short_PctB=Model_Param_Sets$Model_Params$Simple_BBands["Short_PctB"]
-  
+  #****************
   # import packages
+  #****************
   lapply(
     c(
       "IBrokers",
@@ -990,7 +978,34 @@ Run_Simulation=function(Data_Params, Model_Param_Sets){
     ), 
     checkpackages)
   
+  
+  #************************
+  # assign local parameters
+  #************************
+  # data parameters
+  working.dir=Data_Params$working.dir
+  BarSize=Data_Params$BarSize
+  
+  # order parameters
+  Max_Positions=Order_Params$Max_Positions
+  OrderType=Order_Params$OrderType
+  Order_Direction=Order_Params$Order_Direction
+  Parsed_Data_Max_Rows=Order_Params$Parsed_Data_Max_Rows
+  
+  # model parameters
+  Indicators=Model_Param_Sets$Indicators
+  Models=Model_Param_Sets$Models
+  Model_Params=Model_Param_Sets$Model_Params
+  
+  Long_Consec_Times=Model_Param_Sets$Model_Params$Simple_BBands["Long_Consec_Times"]
+  Short_Consec_Times=Model_Param_Sets$Model_Params$Simple_BBands["Short_Consec_Times"]
+  Long_PctB=Model_Param_Sets$Model_Params$Simple_BBands["Long_PctB"]
+  Short_PctB=Model_Param_Sets$Model_Params$Simple_BBands["Short_PctB"]
+  
+  
+  #************
   # import data
+  #************
   # output : `5SecsBarHistData`
   Import_HistData(Location=paste0(working.dir, "Data/"),
                   Symbol="MNQ",
@@ -1001,7 +1016,10 @@ Run_Simulation=function(Data_Params, Model_Param_Sets){
   Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
                                           BarSize=BarSize)
   
-  #
+  
+  #***************
+  # order settings
+  #***************
   if(Order_Direction=="both"){
     Long_Max_Positions=Short_Max_Positions=Max_Positions-1
   }else if(Order_Direction=="long"){
@@ -1012,11 +1030,16 @@ Run_Simulation=function(Data_Params, Model_Param_Sets){
     Short_Max_Positions=Max_Positions-1
   }
   
-  #
-  for(i in 1:nrow(Collapsed_BarData)){
+  
+  #*********************
+  # simulation algorithm
+  #*********************
+  for(i in 1:(nrow(Collapsed_BarData)-1)){
     # i=90
     if(!exists("Live_Data")){
+      # define Live_Data
       Live_Data=Collapsed_BarData[i, ]
+      # define Order_Transmit
       Order_Transmit=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
                                 Submit_Time=tail(Live_Data, 1)[, Time],
                                 Filled_Time=tail(Live_Data, 1)[, Time],
@@ -1026,8 +1049,9 @@ Run_Simulation=function(Data_Params, Model_Param_Sets){
                                 LmtPrice=0,
                                 Fill=0)
     }else{
-      Live_Data=rbind(Live_Data, Collapsed_BarData[i, ], fill=T) %>% tail(Live_Data_Max_Rows)
+      Live_Data=rbind(Live_Data, Collapsed_BarData[i, ], fill=T) %>% tail(Parsed_Data_Max_Rows)
     }
+    
     
     #*********************
     # calculate indicators
@@ -1052,6 +1076,7 @@ Run_Simulation=function(Data_Params, Model_Param_Sets){
         MACD_Data=Live_Data[, MACD(Close)]
       }
     }
+    
     
     #***********
     # run models
@@ -1081,34 +1106,6 @@ Run_Simulation=function(Data_Params, Model_Param_Sets){
       }else{
         
       }
-    }
-    
-    
-    
-    #**************
-    # fill position
-    #**************
-    # buy
-    if(nrow(Order_Transmit[Action=="Buy"&Fill==0, ])>0){
-      
-      Unfilled_Buy_Position_Times=Order_Transmit[Action=="Buy"&Fill==0, Submit_Time]
-      Unfilled_Buy_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
-      Which_Buy_Position_to_Fill=which(tail(Live_Data, 1)[, Low]<Unfilled_Buy_Position_Prices)[1] # fill the earlier one among positions that have met the price criterion
-      
-      Order_Transmit[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
-                     `:=`(Filled_Time=tail(Live_Data, 1)[, Time],
-                          Fill=1)]
-    }
-    # sell
-    if(nrow(Order_Transmit[Action=="Sell"&Fill==0, ])>0){
-      
-      Unfilled_Sell_Position_Times=Order_Transmit[Action=="Sell"&Fill==0, Submit_Time]
-      Unfilled_Sell_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
-      Which_Sell_Position_to_Fill=which(tail(Live_Data, 1)[, High]>Unfilled_Sell_Position_Prices)[1] # fill the earlier one among positions that have met the price criterion
-      
-      Order_Transmit[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
-                     `:=`(Filled_Time=tail(Live_Data, 1)[, Time],
-                          Fill=1)]
     }
     
     
@@ -1152,6 +1149,32 @@ Run_Simulation=function(Data_Params, Model_Param_Sets){
       }
     }
     
+    
+    #**************
+    # fill position
+    #**************
+    # buy
+    if(nrow(Order_Transmit[Action=="Buy"&Fill==0, ])>0){
+      
+      Unfilled_Buy_Position_Times=Order_Transmit[Action=="Buy"&Fill==0, Submit_Time]
+      Unfilled_Buy_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
+      Which_Buy_Position_to_Fill=which(Collapsed_BarData[i+1, Low]<Unfilled_Buy_Position_Prices)[1] # fill the earlier one among positions that have met the price criterion
+      
+      Order_Transmit[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
+                     `:=`(Filled_Time=Collapsed_BarData[i+1, Time],
+                          Fill=1)]
+    }
+    # sell
+    if(nrow(Order_Transmit[Action=="Sell"&Fill==0, ])>0){
+      
+      Unfilled_Sell_Position_Times=Order_Transmit[Action=="Sell"&Fill==0, Submit_Time]
+      Unfilled_Sell_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
+      Which_Sell_Position_to_Fill=which(Collapsed_BarData[i+1, High]>Unfilled_Sell_Position_Prices)[1] # fill the earlier one among positions that have met the price criterion
+      
+      Order_Transmit[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
+                     `:=`(Filled_Time=Collapsed_BarData[i+1, Time],
+                          Fill=1)]
+    }
     
   }
   
