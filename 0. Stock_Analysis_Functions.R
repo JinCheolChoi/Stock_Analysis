@@ -447,17 +447,18 @@ System_Break=function(Rerun_Trading=0, Log=F){
     # put the system to sleep
     message("market closed : 14:00:00 to 15:00:00 PDT")
     
-  }else if(ToDay%in%c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday")&
-           (CurrentTime>=(as.ITime("23:40:00"))& # if time is between 23:40:00 and 23:45:00 PDT
-            CurrentTime<=(as.ITime("23:45:00")))){
-    
-    # (3) for 20 mins from 23:40:00 to 24:00:00 PDT (TWS automatic log-off)
-    Duration=60*20
-    
-    # put the system to sleep
-    message("TWS automatic log-off and restart")
-    
   }
+  # else if(ToDay%in%c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday")&
+  #          (CurrentTime>=(as.ITime("23:40:00"))& # if time is between 23:40:00 and 23:45:00 PDT
+  #           CurrentTime<=(as.ITime("23:45:00")))){
+  #   
+  #   # (3) for 20 mins from 23:40:00 to 24:00:00 PDT (TWS automatic log-off)
+  #   Duration=60*20
+  #   
+  #   # put the system to sleep
+  #   message("TWS automatic log-off and restart")
+  #   
+  # }
   
   #***********
   # Long break
