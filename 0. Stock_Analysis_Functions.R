@@ -859,7 +859,8 @@ Candle_Chart=function(BarData){
 # Merged_Data[is.na(Volume.y), ]
 # Merged_Data[is.na(Count.y), ]
 Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
-  
+  # `5SecsBarData`=`5SecsBarHistData`
+   
   if(BarSize==5){ # if BarSize=5, no additional process is required
     Collapsed_BarData=`5SecsBarData` %>% as.data.frame() %>% as.data.table()
     Collapsed_BarData[, Wap:=NULL]
@@ -963,7 +964,7 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
   # Data_Params=Input_Set$Data_Params
   # Order_Params=Input_Set$Order_Params
   # Model_Param_Sets=Input_Set$Model_Param_Sets
-  
+
   
   #****************
   # import packages
@@ -1044,6 +1045,11 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
     if(!exists("Live_Data")){
       # define Live_Data
       Live_Data=Collapsed_BarData[i, ]
+    }else{
+      Live_Data=rbind(Live_Data, Collapsed_BarData[i, ], fill=T) %>% tail(Parsed_Data_Max_Rows)
+    }
+    
+    if(!exists("Order_Transmit")){
       # define Order_Transmit
       Order_Transmit=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
                                 Submit_Time=tail(Live_Data, 1)[, Time],
@@ -1052,13 +1058,9 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
                                 TotalQuantity=0,
                                 OrderType=OrderType,
                                 LmtPrice=0,
-                                Fill=0)
-      # current filled orders
-      Current_Filled_Orders=Order_Transmit$Action
-    }else{
-      Live_Data=rbind(Live_Data, Collapsed_BarData[i, ], fill=T) %>% tail(Parsed_Data_Max_Rows)
+                                Filled=0)
+      Order_Transmit=Order_Transmit[-1,]
     }
-    
     
     #*********************
     # calculate indicators
@@ -1098,11 +1100,12 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
          exists("BBands_Data")){
         
         # Simple_BBands
-        N_Filled_Buys=nrow(Order_Transmit[Action=="Buy"&Fill==1, ]) # number of filled buy orders
-        N_Filled_Sells=nrow(Order_Transmit[Action=="Sell"&Fill==1, ]) # number of filled sell orders
+        # number of filled orders
+        N_Filled_Buys=nrow(Order_Transmit[Action=="Buy"&Filled==1, ]) # buy
+        N_Filled_Sells=nrow(Order_Transmit[Action=="Sell"&Filled==1, ]) # sell
         
         # determine a position by pctB
-        if(N_Filled_Buys-N_Filled_Sells==0){ # if there is no filled order
+        if(N_Filled_Buys-N_Filled_Sells==0){ # if there is no currently filled order
           Long_Sig_by_Simple_BBands=sum(tail(BBands_Data, Long_Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Long_Consec_Times
           Short_Sig_by_Simple_BBands=sum(tail(BBands_Data, Short_Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Short_Consec_Times
         }else if(N_Filled_Buys-N_Filled_Sells>0){ # if the currently filled order is buy order, generate signal to sell as soon as pctB>=Short_PctB
@@ -1155,7 +1158,7 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
                                         TotalQuantity=1,
                                         OrderType=OrderType,
                                         LmtPrice=tail(Live_Data, 1)[, Close],
-                                        Fill=0))
+                                        Filled=0))
       }
     }
     
@@ -1173,7 +1176,7 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
                                         TotalQuantity=1,
                                         OrderType=OrderType,
                                         LmtPrice=tail(Live_Data, 1)[, Close],
-                                        Fill=0))
+                                        Filled=0))
       }
     }
     
@@ -1182,32 +1185,29 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
     # fill order
     #***********
     # buy
-    if(nrow(Order_Transmit[Action=="Buy"&Fill==0, ])>0){ # if there is any transmitted buy order that has not been filled yet
+    if(nrow(Order_Transmit[Action=="Buy"&Filled==0, ])>0){ # if there is any transmitted buy order that has not been filled yet
       
-      Unfilled_Buy_Position_Times=Order_Transmit[Action=="Buy"&Fill==0, Submit_Time]
+      Unfilled_Buy_Position_Times=Order_Transmit[Action=="Buy"&Filled==0, Submit_Time]
       Unfilled_Buy_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
       Which_Buy_Position_to_Fill=which(Collapsed_BarData[i+1, Low]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
       Order_Transmit[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
                      `:=`(Filled_Time=Collapsed_BarData[i+1, Time],
-                          Fill=1)]
+                          Filled=1)]
     }
     # sell
-    if(nrow(Order_Transmit[Action=="Sell"&Fill==0, ])>0){ # if there is any transmitted sell order that has not been filled yet
+    if(nrow(Order_Transmit[Action=="Sell"&Filled==0, ])>0){ # if there is any transmitted sell order that has not been filled yet
       
-      Unfilled_Sell_Position_Times=Order_Transmit[Action=="Sell"&Fill==0, Submit_Time]
+      Unfilled_Sell_Position_Times=Order_Transmit[Action=="Sell"&Filled==0, Submit_Time]
       Unfilled_Sell_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
       Which_Sell_Position_to_Fill=which(Collapsed_BarData[i+1, High]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
       Order_Transmit[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
                      `:=`(Filled_Time=Collapsed_BarData[i+1, Time],
-                          Fill=1)]
+                          Filled=1)]
     }
     
   }
-  
-  # order history
-  Order_Transmit=Order_Transmit[-1, ] %>% as.data.table()
   
   
   #**********************

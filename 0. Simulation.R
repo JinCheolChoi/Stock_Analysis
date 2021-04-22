@@ -21,14 +21,14 @@ Input_Set=list(
     Symbol="MNQ",
     First_Date="2021-01-20",
     Last_Date=as.Date(format(Sys.time(), tz="PST8PDT")),
-    BarSize=60*30 # secs
+    BarSize=60*5 # secs (30 mins bar size seems to need a touch up in the code)
   ),
   
   #*****************
   # order parameters
   #*****************
   Order_Params=list(
-    Max_Orders=1, # the maximum number of orders to hold to average dollar cost
+    Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
     OrderType="MKT", # "LMT"
     Position_Direction="both", # direction of position ("both", "long", "short")
     Parsed_Data_Max_Rows=50 # the maximum number of rows in a temp dataset to parse
