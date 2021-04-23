@@ -1224,8 +1224,8 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
     Collapse_Order_Transmit=Collapse_Order_Transmit[-Duplicated_Row, ]
   }
   
-  Ind_Profit=Collapse_Order_Transmit[, Sell_Price-Buy_Price]
-  Net_Profit=2*sum(Ind_Profit)-2*0.52*nrow(Collapse_Order_Transmit)
+  Ind_Profit=2*Collapse_Order_Transmit[, Sell_Price-Buy_Price]-2*0.52
+  Net_Profit=sum(Ind_Profit)
   
   
   return(list(Collapsed_BarData=Collapsed_BarData,
