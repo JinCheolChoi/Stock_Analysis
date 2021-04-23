@@ -58,10 +58,6 @@ taskscheduler_create(taskname="Run_Live_Trading",
 # (2)
 # at 13:50:00
 # every "Monday", "Tuesday", "Wednesday", "Thursday", and "Friday"; and
-# 
-# (3)
-# at 23:40:00
-# every "Sunday", "Monday", "Tuesday", "Wednesday", and "Thursday"
 taskscheduler_create(taskname="Stop_Live_Trading",
                      rscript=paste0(working.dir, "Stop_Live_Trading.R"), 
                      starttime="13:10:00",
