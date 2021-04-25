@@ -16,7 +16,7 @@ working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 Symbol="MNQ"
 First_Date="2021-01-20"
 Last_Date=as.Date(format(Sys.time(), tz="PST8PDT"))
-BarSize=60 # secs (30 mins bar size seems to need a touch up in the code)
+BarSize=60*30 # secs (30 mins bar size seems to need a touch up in the code)
 
 #*****************
 #
@@ -354,8 +354,6 @@ Import_HistData(Location=paste0(working.dir, "Data/"),
 Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
                                         BarSize=BarSize,
                                         Convert_Tz=T)
-
-
 
 #****************
 #

@@ -894,31 +894,58 @@ Candle_Chart=function(BarData){
 # Merged_Data[is.na(Count.y), ]
 Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
   # `5SecsBarData`=`5SecsBarHistData`
+  if(BarSize%%5!=0){
+    return(message("BarSize must be a multiple of 5"))
+  }
   
-  if(BarSize==5){ # if BarSize=5, no additional process is required
+  # if BarSize=5, no additional process is required
+  if(BarSize==5){
     Collapsed_BarData=`5SecsBarData` %>% as.data.frame() %>% as.data.table()
     Collapsed_BarData[, Wap:=NULL]
-  }else if(BarSize>5 & BarSize%%5==0){ # if BarSize is a multiple of 5
-    `5SecsBarData`[, Group:=rep(1:(ceiling(nrow(`5SecsBarData`)/(BarSize/5))),
-                                each=(BarSize/5))[1:nrow(`5SecsBarData`)]]
-    # # generate Remainder to verify the process
-    # `5SecsBarData`[, Remainder:=as.numeric(as.POSIXct(format(as.POSIXct(`5SecsBarData`$Time), 
-    #                                                tz="PST8PDT"), 
-    #                                         tz="PST8PDT"))%%30]
-    Collapsed_BarData=`5SecsBarData`[, .(Symbol=unique(Symbol),
-                                         Time=min(Time),
-                                         Open=Open[Volume>0][Time==min(Time)], # open price at the earliest bar with non-zero volume
+  }
+  
+  # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
+  if(BarSize>5){
+    
+    # dates
+    Dates=seq(as.Date(min(`5SecsBarData`$Time)), # minimum Date
+              as.Date(max(`5SecsBarData`$Time)), # maximum Date
+              by="day")
+    
+    # time intervals
+    Times=as.ITime(seq(as.POSIXct(paste0(as.Date(format(Sys.time()))-1, " 00:00:00")),
+                       as.POSIXct(paste0(as.Date(format(Sys.time())), " 00:00:00"))-BarSize,
+                       by=BarSize))
+    
+    # Date_Time_From
+    Time_Intervals=data.table(
+      Date_Time_From=as.POSIXct(strptime(paste(rep(Dates, each = length(Times)), Times, sep = " "), 
+                                         "%Y-%m-%d %H:%M:%S"), 
+                                tz=attr(`5SecsBarData`$Time, "tzone"))
+    )
+    # Date_Time_To
+    Time_Intervals[, Date_Time_To:=shift(Time_Intervals$Date_Time_From, -1)]
+    
+    # non-equal left_join Time_Intervals to `5SecsBarData`
+    Time_Intervals=`5SecsBarData`[Time_Intervals, on=c("Time>=Date_Time_From", "Time<Date_Time_To"),
+                                  nomatch=0,
+                                  .(Symbol, Date_Time_From=Time, Open, High, Low, Close, Volume, Wap, Count, Date_Time_To)]
+    # Collapsed_BarData
+    Collapsed_BarData=Time_Intervals[, .(Symbol=unique(Symbol),
+                                         Open=Open[1], # first row by group (Date_Time_From)
                                          High=max(High),
-                                         Low=min(Low),
-                                         Close=Close[Time==max(Time)],
+                                         Low=min(Low), # row with minimum Low price by group
+                                         Close=Close[.N], # last row by group
                                          Volume=sum(Volume),
                                          Count=sum(Count)),
-                                     by="Group"]
+                                     by="Date_Time_From"]
     
-    Collapsed_BarData[, Group:=NULL]
-    `5SecsBarData`[, Group:=NULL]
-  }else{
-    message("BarSize must be a multiple of 5")
+    # rename Date_Time_From to Time
+    setnames(Collapsed_BarData, "Date_Time_From", "Time")
+    # switch the order "Symbol" and "Date_Time_From"
+    setcolorder(Collapsed_BarData, c("Symbol", "Time"))
+    
+    # `5SecsBarData`[, Group:=NULL]
   }
   
   # convert time zone
@@ -931,7 +958,6 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
   
   return(as.data.table(Collapsed_BarData))
 }
-
 
 
 
