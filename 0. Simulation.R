@@ -16,8 +16,8 @@ Input_Set=list(
   # data parameters
   #****************
   Data_Params=list(
-    #working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-    working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
+    working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/", # desktop
+    #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
     Symbol="MNQ",
     First_Date="2021-01-20",
     Last_Date=as.Date(format(Sys.time(), tz="PST8PDT")),
