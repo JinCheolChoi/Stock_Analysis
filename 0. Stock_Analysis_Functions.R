@@ -667,8 +667,8 @@ ReqRealTimeBars=function(BarSize=5, i, Log=F){
     New_Data=1
   }
   
-  # if BarSize>5 and it is a multiple of 5
-  if(BarSize>5 & BarSize%%5==0){
+  # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
+  if(BarSize>5){
     # if RealTimeBarData is not the new data
     if(exists("Archiv") & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
       # remove RealTimeBarData at the end of everytime iteration
@@ -1057,6 +1057,7 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
   # remove 5 seconds bar historical data set (`5SecsBarHistData`)
   rm(`5SecsBarHistData`)
   
+  
   #***************
   # order settings
   #***************
@@ -1095,6 +1096,7 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
                                 Filled=0)
       Order_Transmit=Order_Transmit[-1,]
     }
+    
     
     #*********************
     # calculate indicators
