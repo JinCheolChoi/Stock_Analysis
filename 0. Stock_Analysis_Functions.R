@@ -617,11 +617,11 @@ ReqRealTimeBars=function(BarSize=5, Log=F){
   New_Data=0
   
   # if BarSize is not a multiple of 5
-  if(BarSize%%5==0){
+  if(BarSize%%5!=0){
     message("BarSize must be a multiple of 5.")
     # round off BarSize to an integer
     BarSize<<-round(BarSize, -1)
-    message(paste0("So, it is rounded off from ", BarSize, " to ", get("BarSize", envir=.GlobalEnv), "."))
+    message(paste0("So, it is rounded off ", get("BarSize", envir=.GlobalEnv), "."))
     
     return(New_Data)
   }
@@ -645,7 +645,7 @@ ReqRealTimeBars=function(BarSize=5, Log=F){
   }
   
   # initial Recent_RealTimeBarData
-  if(!exists(Recent_RealTimeBarData)){
+  if(!exists("Recent_RealTimeBarData")){
     Recent_RealTimeBarData=RealTimeBarData
   }
   
