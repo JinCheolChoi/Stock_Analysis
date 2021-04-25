@@ -612,7 +612,7 @@ Daily_Hist_Data_Save=function(Force=T, Log=F){
 #*******************************************
 # output : BarData in the global environment
 # return New_Data=1 if the new data is derived; and 0 if not
-ReqRealTimeBars=function(BarSize=5, Log=F){
+ReqRealTimeBars=function(BarSize=5, i, Log=F){
   # New_Data : 1 if RealTimeBarData is the new data; and 0 if not
   New_Data=0
   
@@ -649,19 +649,19 @@ ReqRealTimeBars=function(BarSize=5, Log=F){
     Recent_RealTimeBarData=RealTimeBarData
   }
   
-  # if RealTimeBarData is not the new data
-  if(!is.null(BarData) & Recent_RealTimeBarData==RealTimeBarData){
-    # remove RealTimeBarData at the end of everytime iteration
-    rm(RealTimeBarData, envir=.GlobalEnv)
-    
-    return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
-  }
-  
   # remove Wap (redundant variable)
-  RealTimeBarData[, Wap:=NULL]
+  #RealTimeBarData[, Wap:=NULL]
   
   # if BarSize=5, no additional process is required
   if(BarSize==5){
+    # if RealTimeBarData is not the new data
+    if(!is.null(BarData) & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
+      # remove RealTimeBarData at the end of everytime iteration
+      rm(RealTimeBarData, envir=.GlobalEnv)
+      
+      return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
+    }
+    
     BarData<<-rbind(BarData, RealTimeBarData)
     
     New_Data=1
@@ -669,6 +669,14 @@ ReqRealTimeBars=function(BarSize=5, Log=F){
   
   # if BarSize>5 and it is a multiple of 5
   if(BarSize>5 & BarSize%%5==0){
+    # if RealTimeBarData is not the new data
+    if(exists("Archiv") & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
+      # remove RealTimeBarData at the end of everytime iteration
+      rm(RealTimeBarData, envir=.GlobalEnv)
+      
+      return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
+    }
+    
     # initiate archiving RealTimeBarData info once the remainder of time/BarSize is 0
     if(as.numeric(RealTimeBarData$Time)%%BarSize==0){
       Archiv<<-1
@@ -762,6 +770,9 @@ ReqRealTimeBars=function(BarSize=5, Log=F){
   return(New_Data) # terminate the algorithm by retunning New_Data
   
 }
+
+
+
 
 
 #*********************
