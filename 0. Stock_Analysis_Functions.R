@@ -442,8 +442,8 @@ System_Break=function(Rerun_Trading=0, Log=F){
   
   # if time is between 13:50:00 and 14:00:00 PDT
   if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday")&
-           (CurrentTime>=(as.ITime("13:50:00"))&
-            CurrentTime<=(as.ITime("14:00:00")))){
+     (CurrentTime>=(as.ITime("13:50:00"))&
+      CurrentTime<=(as.ITime("14:00:00")))){
     
     # (2) for 75 mins from 13:50:00 to 15:05:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
     Duration=60*75
@@ -612,7 +612,21 @@ Daily_Hist_Data_Save=function(Force=T, Log=F){
 #*******************************************
 # output : BarData in the global environment
 # return New_Data=1 if the new data is derived; and 0 if not
-ReqRealTimeBars=function(BarSize=5, Log=F){
+ReqRealTimeBars=function(BarSize=5, i, Log=F){
+  # New_Data : 1 if RealTimeBarData is the new data; and 0 if not
+  New_Data=0
+  
+  # if BarSize is not a multiple of 5
+  if(BarSize%%5!=0){
+    message("BarSize must be a multiple of 5.")
+    # round off BarSize to an integer
+    BarSize<<-round(BarSize, -1)
+    message(paste0("So, it is rounded off ", get("BarSize", envir=.GlobalEnv), "."))
+    
+    return(New_Data)
+  }
+  
+  #****************************************************************
   # RealTimeBarData is stored temporarily in the global environment
   #*************************************************************************************************
   # -> once RealTimeBarData is available, reqRealTimeBars is executed every 5 seconds automatically, 
@@ -624,127 +638,141 @@ ReqRealTimeBars=function(BarSize=5, Log=F){
                             eventWrapper=eWrapper_cust(),
                             CALLBACK=twsCALLBACK_cust)
   
-  # New_Data : 1 if RealTimeBarData is the new data; and 0 if not
-  New_Data=0
-  
-  # if it fails to create RealTimeBarData, suspend execution for a while to prevent the system from breaking
+  # if it fails to create RealTimeBarData
   if(!exists("RealTimeBarData")){
-    Sys.sleep(0.5)
-    return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
-    
-  }else if(exists("RealTimeBarData")){
-    # remove Wap (redundant variable)
-    RealTimeBarData[, Wap:=NULL]
-    
-    # generate BarData
-    if(BarSize==5){ # if BarSize=5, no additional process is required
-      if(!is.null(BarData) & (sum(tail(BarData, 1)==RealTimeBarData)==ncol(RealTimeBarData))){ # if RealTimeBarData is not the new data
-        # remove RealTimeBarData at the end of everytime iteration
-        rm(RealTimeBarData, envir=.GlobalEnv)
-        
-        return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
-        
-      }else{ # if RealTimeBarData is the new data
-        BarData<<-unique(rbind(BarData, RealTimeBarData))
-        
-        New_Data=1
-      }
-      
-    }else if(BarSize>5 & BarSize%%5==0){ # additional process given that BarSize>5 and it is a multiple of 5
-      if(as.numeric(RealTimeBarData$Time)%%BarSize==0){Init<<-1} # initiate when the remainder is 0
-      if(exists("Init", envir=.GlobalEnv)){ # main process part
-        if(as.numeric(RealTimeBarData$Time)%%BarSize==0){ # open info
-          Symbol<<-RealTimeBarData$Symbol
-          Time<<-RealTimeBarData$Time
-          Open<<-RealTimeBarData$Open
-          High<<-RealTimeBarData$High
-          Low<<-RealTimeBarData$Low
-          Volume<<-RealTimeBarData$Volume
-          Count<<-RealTimeBarData$Count
-        }else if(as.numeric(RealTimeBarData$Time)%%BarSize>0){
-          High<<-max(High, RealTimeBarData$High)
-          Low<<-min(Low, RealTimeBarData$Low)
-          Volume<<-Volume+RealTimeBarData$Volume
-          Count<<-Count+RealTimeBarData$Count
-        }
-        
-        # close info
-        if(as.numeric(RealTimeBarData$Time)%%BarSize==(BarSize-5)){
-          if(!is.null(BarData) & (sum(tail(BarData, 1)==RealTimeBarData)==ncol(RealTimeBarData))){ # if RealTimeBarData is not the new data
-            # remove RealTimeBarData at the end of everytime iteration
-            rm(RealTimeBarData, envir=.GlobalEnv)
-            
-            return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
-            
-          }else{ # if RealTimeBarData is the new data
-            BarData<<-unique(rbind(BarData, RealTimeBarData))
-            
-            Close<<-RealTimeBarData$Close
-            
-            BarData<<-unique(rbind(BarData, 
-                                   data.table(
-                                     Symbol=Symbol,
-                                     Time=Time,
-                                     Open=Open,
-                                     High=High,
-                                     Low=Low,
-                                     Close=Close,
-                                     Volume=Volume,
-                                     Count=Count
-                                   )))
-            
-            # remove values in the global environment after generating a data point
-            rm(Init, envir=.GlobalEnv)
-            rm(Symbol, envir=.GlobalEnv)
-            rm(Time, envir=.GlobalEnv)
-            rm(Open, envir=.GlobalEnv)
-            rm(High, envir=.GlobalEnv)
-            rm(Low, envir=.GlobalEnv)
-            rm(Close, envir=.GlobalEnv)
-            rm(Volume, envir=.GlobalEnv)
-            rm(Count, envir=.GlobalEnv)
-            
-            New_Data=1
-          }
-        }
-      }
-    }else{
-      message("BarSize must be a multiple of 5.")
-      # round off BarSize to an integer
-      BarSize<<-round(BarSize, -1)
-      message(paste0("So, it is rounded off from ", BarSize, " to ", get("BarSize", envir=.GlobalEnv), "."))
-      
+    Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
+    return(New_Data) # terminate the algorithm by retunning New_Data
+  }
+  
+  # initial Recent_RealTimeBarData
+  if(!exists("Recent_RealTimeBarData")){
+    Recent_RealTimeBarData=RealTimeBarData
+  }
+  
+  # remove Wap (redundant variable)
+  #RealTimeBarData[, Wap:=NULL]
+  
+  # if BarSize=5, no additional process is required
+  if(BarSize==5){
+    # if RealTimeBarData is not the new data
+    if(!is.null(BarData) & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
       # remove RealTimeBarData at the end of everytime iteration
       rm(RealTimeBarData, envir=.GlobalEnv)
       
       return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
     }
     
-    # if the new data is added
-    if(New_Data==1){
-      # echo the updated data
-      print(tail(BarData, 1))
+    BarData<<-rbind(BarData, RealTimeBarData)
+    
+    New_Data=1
+  }
+  
+  # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
+  if(BarSize>5){
+    # if RealTimeBarData is not the new data
+    if(exists("Archiv") & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
+      # remove RealTimeBarData at the end of everytime iteration
+      rm(RealTimeBarData, envir=.GlobalEnv)
       
-      # write log everytime new data is added
-      if(Log==T){
-        if(file.exists(paste0(working.dir, "/Log/Live_Trading_Log.csv"))){
-          Log=data.table(Time=Sys.time())
-          Log=rbind(Log,
-                    fread(paste0(working.dir, "/Log/Live_Trading_Log.csv")))
-          fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
-        }else{
-          Log=data.table(Time=Sys.time())
-          fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
-        }
-      }
+      return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
     }
     
-    # remove RealTimeBarData at the end of everytime iteration
-    rm(RealTimeBarData, envir=.GlobalEnv)
+    # initiate archiving RealTimeBarData info once the remainder of time/BarSize is 0
+    if(as.numeric(RealTimeBarData$Time)%%BarSize==0){
+      Archiv<<-1
+    }
     
-    return(New_Data) # terminate the algorithm by retunning New_Data
+    # if no need to archive RealTimeBarData
+    if(!exists("Archiv", envir=.GlobalEnv)){
+      return(New_Data)
+    }
+    
+    # archive RealTimeBarData
+    # open info
+    if(as.numeric(RealTimeBarData$Time)%%BarSize==0){
+      Symbol<<-RealTimeBarData$Symbol
+      Time<<-RealTimeBarData$Time
+      Open<<-RealTimeBarData$Open
+      High<<-RealTimeBarData$High
+      Low<<-RealTimeBarData$Low
+      Volume<<-RealTimeBarData$Volume
+      Count<<-RealTimeBarData$Count
+    }
+    
+    # interim into
+    if(as.numeric(RealTimeBarData$Time)%%BarSize>0){
+      High<<-max(High, RealTimeBarData$High)
+      Low<<-min(Low, RealTimeBarData$Low)
+      Volume<<-Volume+RealTimeBarData$Volume
+      Count<<-Count+RealTimeBarData$Count
+    }
+    
+    # close info
+    if(as.numeric(RealTimeBarData$Time)%%BarSize==(BarSize-5)){
+      # remove the Archive indicator
+      rm(Archiv, envir=.GlobalEnv)
+      
+      Close<<-RealTimeBarData$Close
+      
+      BarData<<-unique(rbind(BarData, 
+                             data.table(
+                               Symbol=Symbol,
+                               Time=Time,
+                               Open=Open,
+                               High=High,
+                               Low=Low,
+                               Close=Close,
+                               Volume=Volume,
+                               Count=Count
+                             )))
+      
+      # remove values in the global environment after generating a data point
+      rm(Symbol, envir=.GlobalEnv)
+      rm(Time, envir=.GlobalEnv)
+      rm(Open, envir=.GlobalEnv)
+      rm(High, envir=.GlobalEnv)
+      rm(Low, envir=.GlobalEnv)
+      rm(Close, envir=.GlobalEnv)
+      rm(Volume, envir=.GlobalEnv)
+      rm(Count, envir=.GlobalEnv)
+      
+      New_Data=1
+      
+    }
+    
   }
+  
+  # if the new data is added
+  if(New_Data==1){
+    # echo the updated data
+    print(tail(BarData, 1))
+    
+    # write log everytime new data is added
+    if(Log==T){
+      if(file.exists(paste0(working.dir, "/Log/Live_Trading_Log.csv"))){
+        Log=data.table(Time=Sys.time())
+        Log=rbind(Log,
+                  fread(paste0(working.dir, "/Log/Live_Trading_Log.csv")))
+        fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
+      }else{
+        Log=data.table(Time=Sys.time())
+        fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
+      }
+    }
+  }
+  
+  # save Recent_RealTimeBarData
+  Recent_RealTimeBarData<<-RealTimeBarData
+  
+  # remove RealTimeBarData at the end of everytime iteration
+  rm(RealTimeBarData, envir=.GlobalEnv)
+  
+  return(New_Data) # terminate the algorithm by retunning New_Data
+  
 }
+
+
+
 
 
 #*********************
@@ -866,31 +894,58 @@ Candle_Chart=function(BarData){
 # Merged_Data[is.na(Count.y), ]
 Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
   # `5SecsBarData`=`5SecsBarHistData`
-   
-  if(BarSize==5){ # if BarSize=5, no additional process is required
+  if(BarSize%%5!=0){
+    return(message("BarSize must be a multiple of 5"))
+  }
+  
+  # if BarSize=5, no additional process is required
+  if(BarSize==5){
     Collapsed_BarData=`5SecsBarData` %>% as.data.frame() %>% as.data.table()
     Collapsed_BarData[, Wap:=NULL]
-  }else if(BarSize>5 & BarSize%%5==0){ # if BarSize is a multiple of 5
-    `5SecsBarData`[, Group:=rep(1:(ceiling(nrow(`5SecsBarData`)/(BarSize/5))),
-                                each=(BarSize/5))[1:nrow(`5SecsBarData`)]]
-    # # generate Remainder to verify the process
-    # `5SecsBarData`[, Remainder:=as.numeric(as.POSIXct(format(as.POSIXct(`5SecsBarData`$Time), 
-    #                                                tz="PST8PDT"), 
-    #                                         tz="PST8PDT"))%%30]
-    Collapsed_BarData=`5SecsBarData`[, .(Symbol=unique(Symbol),
-                                         Time=min(Time),
-                                         Open=Open[Volume>0][Time==min(Time)], # open price at the earliest bar with non-zero volume
+  }
+  
+  # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
+  if(BarSize>5){
+    
+    # dates
+    Dates=seq(as.Date(min(`5SecsBarData`$Time)), # minimum Date
+              as.Date(max(`5SecsBarData`$Time)), # maximum Date
+              by="day")
+    
+    # time intervals
+    Times=as.ITime(seq(as.POSIXct(paste0(as.Date(format(Sys.time()))-1, " 00:00:00")),
+                       as.POSIXct(paste0(as.Date(format(Sys.time())), " 00:00:00"))-BarSize,
+                       by=BarSize))
+    
+    # Date_Time_From
+    Time_Intervals=data.table(
+      Date_Time_From=as.POSIXct(strptime(paste(rep(Dates, each = length(Times)), Times, sep = " "), 
+                                         "%Y-%m-%d %H:%M:%S"), 
+                                tz=attr(`5SecsBarData`$Time, "tzone"))
+    )
+    # Date_Time_To
+    Time_Intervals[, Date_Time_To:=shift(Time_Intervals$Date_Time_From, -1)]
+    
+    # non-equal left_join Time_Intervals to `5SecsBarData`
+    Time_Intervals=`5SecsBarData`[Time_Intervals, on=c("Time>=Date_Time_From", "Time<Date_Time_To"),
+                                  nomatch=0,
+                                  .(Symbol, Date_Time_From=Time, Open, High, Low, Close, Volume, Wap, Count, Date_Time_To)]
+    # Collapsed_BarData
+    Collapsed_BarData=Time_Intervals[, .(Symbol=unique(Symbol),
+                                         Open=Open[1], # first row by group (Date_Time_From)
                                          High=max(High),
-                                         Low=min(Low),
-                                         Close=Close[Time==max(Time)],
+                                         Low=min(Low), # row with minimum Low price by group
+                                         Close=Close[.N], # last row by group
                                          Volume=sum(Volume),
                                          Count=sum(Count)),
-                                     by="Group"]
+                                     by="Date_Time_From"]
     
-    Collapsed_BarData[, Group:=NULL]
-    `5SecsBarData`[, Group:=NULL]
-  }else{
-    message("BarSize must be a multiple of 5")
+    # rename Date_Time_From to Time
+    setnames(Collapsed_BarData, "Date_Time_From", "Time")
+    # switch the order "Symbol" and "Date_Time_From"
+    setcolorder(Collapsed_BarData, c("Symbol", "Time"))
+    
+    # `5SecsBarData`[, Group:=NULL]
   }
   
   # convert time zone
@@ -903,7 +958,6 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
   
   return(as.data.table(Collapsed_BarData))
 }
-
 
 
 
@@ -970,7 +1024,7 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
   # Data_Params=Input_Set$Data_Params
   # Order_Params=Input_Set$Order_Params
   # Model_Param_Sets=Input_Set$Model_Param_Sets
-
+  
   
   #****************
   # import packages
@@ -1029,6 +1083,7 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
   # remove 5 seconds bar historical data set (`5SecsBarHistData`)
   rm(`5SecsBarHistData`)
   
+  
   #***************
   # order settings
   #***************
@@ -1067,6 +1122,7 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
                                 Filled=0)
       Order_Transmit=Order_Transmit[-1,]
     }
+    
     
     #*********************
     # calculate indicators
