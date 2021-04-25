@@ -427,8 +427,9 @@ System_Break=function(Rerun_Trading=0, Log=F){
   
   #**********************
   # Daily temporary break
+  # if time is between 13:10:00 and 13:15:00 PDT
   if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")&
-     (CurrentTime>=(as.ITime("13:10:00"))& # if time is between 13:10:00 and 13:15:00 PDT
+     (CurrentTime>=(as.ITime("13:10:00"))&
       CurrentTime<=(as.ITime("13:15:00")))){
     
     # (1) for 25 mins from 13:10:00 to 13:35:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
@@ -437,8 +438,11 @@ System_Break=function(Rerun_Trading=0, Log=F){
     # put the system to sleep
     message("market closed : 13:15:00 to 13:30:00 PDT")
     
-  }else if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday")&
-           (CurrentTime>=(as.ITime("13:50:00"))& # if time is between 13:50:00 and 14:00:00 PDT
+  }
+  
+  # if time is between 13:50:00 and 14:00:00 PDT
+  if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday")&
+           (CurrentTime>=(as.ITime("13:50:00"))&
             CurrentTime<=(as.ITime("14:00:00")))){
     
     # (2) for 75 mins from 13:50:00 to 15:05:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
@@ -448,16 +452,18 @@ System_Break=function(Rerun_Trading=0, Log=F){
     message("market closed : 14:00:00 to 15:00:00 PDT")
     
   }
-  # else if(ToDay%in%c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday")&
-  #          (CurrentTime>=(as.ITime("23:40:00"))& # if time is between 23:40:00 and 23:45:00 PDT
+  
+  # # if time is between 23:40:00 and 23:45:00 PDT
+  # if(ToDay%in%c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday")&
+  #          (CurrentTime>=(as.ITime("23:40:00"))& 
   #           CurrentTime<=(as.ITime("23:45:00")))){
-  #   
+  # 
   #   # (3) for 20 mins from 23:40:00 to 24:00:00 PDT (TWS automatic log-off)
   #   Duration=60*20
-  #   
+  # 
   #   # put the system to sleep
   #   message("TWS automatic log-off and restart")
-  #   
+  # 
   # }
   
   #***********
