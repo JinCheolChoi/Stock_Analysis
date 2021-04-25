@@ -355,11 +355,11 @@ Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
                                         BarSize=BarSize,
                                         Convert_Tz=T)
 
-#****************
+#*************************
 #
-# Test algorithm
+# Benchmark two algorithms
 #
-#****************
+#*************************
 # BarData5Secs=c()
 T1=system.time({
   BarData=c()
