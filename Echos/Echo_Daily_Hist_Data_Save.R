@@ -1,0 +1,5 @@
+message("|--------------------------------------------|")
+message("|                                            |")
+message("|       Saving Daily 5 Seconds Bar Data      |")
+message("|                                            |")
+message("|--------------------------------------------|")
