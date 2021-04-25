@@ -11,8 +11,8 @@ rm(list=ls())
 # parameters
 #
 #***********
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
+#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 Symbol="MNQ"
 First_Date="2021-01-20"
 Last_Date=as.Date(format(Sys.time(), tz="PST8PDT"))
@@ -47,8 +47,6 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
     # round off BarSize to an integer
     BarSize<<-round(BarSize, -1)
     message(paste0("So, it is rounded off ", get("BarSize", envir=.GlobalEnv), "."))
-    
-    return(New_Data)
   }
   
   #****************************************************************
@@ -72,9 +70,6 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
     Recent_RealTimeBarData=RealTimeBarData
   }
   
-  # remove Wap (redundant variable)
-  #RealTimeBarData[, Wap:=NULL]
-  
   # if BarSize=5, no additional process is required
   if(BarSize==5){
     # if RealTimeBarData is not the new data
@@ -90,8 +85,8 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
     New_Data=1
   }
   
-  # if BarSize>5 and it is a multiple of 5
-  if(BarSize>5 & BarSize%%5==0){
+  # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
+  if(BarSize>5){
     # if RealTimeBarData is not the new data
     if(exists("Archiv") & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
       # remove RealTimeBarData at the end of everytime iteration
@@ -100,19 +95,13 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
       return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
     }
     
-    # initiate archiving RealTimeBarData info once the remainder of time/BarSize is 0
-    if(as.numeric(RealTimeBarData$Time)%%BarSize==0){
-      Archiv<<-1
-    }
-    
-    # if no need to archive RealTimeBarData
-    if(!exists("Archiv", envir=.GlobalEnv)){
-      return(New_Data)
-    }
-    
     # archive RealTimeBarData
+    # initiate archiving RealTimeBarData info once the remainder of time/BarSize is 0
     # open info
     if(as.numeric(RealTimeBarData$Time)%%BarSize==0){
+      # define the Archive indicator
+      Archiv<<-1
+      
       Symbol<<-RealTimeBarData$Symbol
       Time<<-RealTimeBarData$Time
       Open<<-RealTimeBarData$Open
@@ -122,7 +111,12 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
       Count<<-RealTimeBarData$Count
     }
     
-    # interim into
+    # if Archiv hasn't been defined yet, no need to proceed further
+    if(!exists("Archiv", envir=.GlobalEnv)){
+      return(New_Data)
+    }
+    
+    # interim info (update High, Low, Volum, and Count)
     if(as.numeric(RealTimeBarData$Time)%%BarSize>0){
       High<<-max(High, RealTimeBarData$High)
       Low<<-min(Low, RealTimeBarData$Low)
@@ -199,11 +193,6 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
 
 
 
-
-
-
-
-
 #
 ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
   # RealTimeBarData is stored temporarily in the global environment
@@ -269,7 +258,7 @@ ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
             return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
             
           }else{ # if RealTimeBarData is the new data
-            BarData<<-unique(rbind(BarData, RealTimeBarData))
+            #BarData<<-unique(rbind(BarData, RealTimeBarData))
             
             Close<<-RealTimeBarData$Close
             
@@ -403,4 +392,5 @@ T2=system.time({
 })
 
 
-
+T1
+T2
