@@ -50,10 +50,10 @@ for(Package in
 # import data
 #************
 # collapse data to the chosen-sized bar data
-Collapsed_BarData.Original=Get_Data(Symbol,
-                                    BarSize,
-                                    First_Date, 
-                                    Last_Date)
+Get_Data(Symbol,
+         BarSize,
+         First_Date, 
+         Last_Date)
 
 
 
@@ -77,22 +77,22 @@ tws=twsConnect(port=Port)
 HistData.Original=as.data.table(reqHistoricalData(tws, contract, barSize="30 mins", duration="2 M", useRTH="0")) # useRTH="0" : not limited to regular trading hours
 colnames(HistData.Original)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
 HistData.Original[, `:=`(Wap=NULL, hasGaps=NULL)]
-Time_From=Collapsed_BarData.Original$Time[1]
-Time_To=tail(Collapsed_BarData.Original$Time, 1)
+Time_From=MNQ$Time[1]
+Time_To=tail(MNQ$Time, 1)
 # Time_From=as.POSIXct(
 #   format(as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-2, " 15:00:00"), tz="America/Los_Angeles"),
-#          tz=attr(Collapsed_BarData.Original$Time, "tzone")),
-#   tz=attr(Collapsed_BarData.Original$Time, "tzone")
+#          tz=attr(MNQ$Time, "tzone")),
+#   tz=attr(MNQ$Time, "tzone")
 # )
 # Time_To=as.POSIXct(
 #   format(as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 15:00:00"), tz="America/Los_Angeles"),
-#          tz=attr(Collapsed_BarData.Original$Time, "tzone")),
-#   tz=attr(Collapsed_BarData.Original$Time, "tzone")
+#          tz=attr(MNQ$Time, "tzone")),
+#   tz=attr(MNQ$Time, "tzone")
 # )
 
 # 
-Collapsed_BarData=Collapsed_BarData.Original[Time>=Time_From &
-                                               Time<Time_To, ] %>% as.data.frame() %>% as.data.table()
+Collapsed_BarData=MNQ[Time>=Time_From &
+                        Time<Time_To, ] %>% as.data.frame() %>% as.data.table()
 
 HistData=data.table(Symbol="MNQ",
                     HistData.Original[Time>=Time_From &

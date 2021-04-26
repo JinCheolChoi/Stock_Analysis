@@ -13,7 +13,7 @@ rm(list=ls())
 #***********
 working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
-Symbol="MNQ"
+Symbols="MNQ"
 First_Date="2021-01-20"
 Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles"))
 BarSize=60*30 # secs (30 mins bar size seems to need a touch up in the code)
@@ -53,7 +53,7 @@ for(Package in c("IBrokers",
                  # "pander",
                  # "tidyr",
                  # "webshot"
-                 )){
+)){
   checkpackages(Package)
 }
 
@@ -62,51 +62,24 @@ for(Package in c("IBrokers",
 # import data
 #************
 # collapse data to the chosen-sized bar data
-Collapsed_BarData.Original=Get_Data(Symbol,
-                                    BarSize,
-                                    First_Date, 
-                                    Last_Date)
+Get_Data(Symbols,
+         BarSize,
+         First_Date, 
+         Last_Date)
 
 # convert xts.Collapsed_BarData
-xts.Collapsed_BarData=as.xts.data.table(Collapsed_BarData.Original[, -1])
+xts.Collapsed_BarData=as.xts.data.table(MNQ[, -1])
 
 # create a chart
 system.time({
   chartSeries(xts.Collapsed_BarData,
-              name=Symbol,
+              name=Symbols,
               theme="white",
               TA=c("addMACD()"))
 })
 
 # performance summary chart
 charts.PerformanceSummary(ROC(xts.Collapsed_BarData$Close))
-
-
-
-symbols <- basic_symbols()
-getSymbols(Symbols = symbols, 
-           src = "yahoo", 
-           index.class = "POSIXct",
-           from = start_date, 
-           to = end_date, 
-           adjust = adjustment)
-
-
-
-
-basic_symbols()
-add.rule(strategy.st, 
-         name = "ruleSignal",
-         arguments = list(sigcol = "long", 
-                          sigval = TRUE,
-                          replace = TRUE,
-                          orderside = "short",
-                          ordertype = "market",
-                          TxnFees = .txnfees,
-                          orderqty = "all",
-                          orderset = "ocoshort"),
-         type = "exit",
-         label = "Exit2LONG")
 
 
 

@@ -13,7 +13,7 @@ rm(list=ls())
 #***********
 working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
-Symbol="MNQ"
+Symbols="MNQ"
 First_Date="2021-01-20"
 Last_Date=as.Date(format(Sys.time(), tz="PST8PDT"))
 BarSize=60*30 # secs (30 mins bar size seems to need a touch up in the code)
@@ -57,7 +57,7 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
   # -> nope... sometimes data is extracted faster than every 5 seconds
   # -> so, the code is modified to echo out the new data only when it is added
   #***************************************************************************
-  RealTimeBarData<<-`5SecsBarHistData`[i, ]
+  RealTimeBarData<<-MNQ[i, ]
   
   # if it fails to create RealTimeBarData
   if(!exists("RealTimeBarData")){
@@ -202,7 +202,7 @@ ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
   # -> nope... sometimes data is extracted faster than every 5 seconds
   # -> so, the code is modified to echo out the new data only when it is added
   #***************************************************************************
-  RealTimeBarData<<-`5SecsBarHistData`[i, ]
+  RealTimeBarData<<-MNQ[i, ]
   
   
   # New_Data : 1 if RealTimeBarData is the new data; and 0 if not
@@ -215,7 +215,7 @@ ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
     
   }else if(exists("RealTimeBarData")){
     # remove Wap (redundant variable)
-    RealTimeBarData[, Wap:=NULL]
+    #RealTimeBarData[, Wap:=NULL]
     
     # generate BarData
     if(BarSize==5){ # if BarSize=5, no additional process is required
@@ -334,10 +334,10 @@ ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
 # import data
 #************
 # collapse data to the chosen-sized bar data
-Collapsed_BarData.Original=Get_Data(Symbol,
-                                    BarSize,
-                                    First_Date, 
-                                    Last_Date)
+Get_Data(Symbols,
+         BarSize,
+         First_Date, 
+         Last_Date)
 
 #*************************
 #
@@ -347,7 +347,7 @@ Collapsed_BarData.Original=Get_Data(Symbol,
 # BarData5Secs=c()
 T1=system.time({
   BarData=c()
-  for(i in 1:nrow(`5SecsBarHistData`)){
+  for(i in 1:nrow(MNQ)){
     # connect to tws
     
     # request realtime bar data
@@ -368,7 +368,7 @@ T1=system.time({
 
 T2=system.time({
   BarData=c()
-  for(i in 1:nrow(`5SecsBarHistData`)){
+  for(i in 1:nrow(MNQ)){
     # connect to tws
     
     # request realtime bar data

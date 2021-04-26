@@ -47,24 +47,22 @@ Add.Indicator(Indicator="RSI",
               IndicatorParams=list(RSI_N=14))
 
 
-# add model (to decide to transmit an order)
+# add model (to run in combination with other included models to decide to transmit an order)
 Add.Model(Model="Simple_BBands",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
                            Long_PctB=0,
                            Short_PctB=1))
 Add.Model(Model="Simple_RSI",
-          ModelParams=list(Long_Consec_Times=2,
-                           Short_Consec_Times=2,
-                           Long_PctB=0,
-                           Short_PctB=1))
+          ModelParams=list())
 
 # import data
 Get_Data(Symbols=list("MNQ", "SPY"),
          BarSize=60*5)
 
 # bar data
-Param_Sets$BarData=MNQ
+# SPY
+BarData=MNQ
 
 
 #*********************
@@ -76,9 +74,6 @@ system.time({
   Sim_Results=do.call(Run_Simulation, Param_Sets)
 })
 Sim_Results
-
-
-
 
 
 #

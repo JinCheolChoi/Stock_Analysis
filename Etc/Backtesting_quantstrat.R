@@ -13,10 +13,10 @@ rm(list=ls())
 #***********
 working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
-Symbol="MNQ"
+Symbols="MNQ"
 First_Date="2021-01-20"
 Last_Date=as.Date(format(Sys.time(), tz="PST8PDT"))
-BarSize=60*30 # secs (30 mins bar size seems to need a touch up in the code)
+BarSize=60*5 # secs (30 mins bar size seems to need a touch up in the code)
 
 # account
 # margin account="U4524665"
@@ -63,13 +63,13 @@ for(Package in c("IBrokers",
 # import data
 #************
 # collapse data to the chosen-sized bar data
-Collapsed_BarData.Original=Get_Data(Symbol,
-                                    BarSize,
-                                    First_Date, 
-                                    Last_Date)
+Get_Data(Symbols,
+         BarSize,
+         First_Date, 
+         Last_Date)
 
-Collapsed_BarData=Collapsed_BarData.Original[, -1] %>% as.xts.data.table()
-MNQ=Collapsed_BarData
+MNQ=MNQ[, -1] %>% as.xts.data.table()
+
 
 #***********************
 # quantstrat backtesting
@@ -134,9 +134,9 @@ currency('USD')
 # SPY=as.xts.data.table(SPY)
 
 symbols="MNQ"
-init_date <- Collapsed_BarData.Original$Time[1]
-start_date <- Collapsed_BarData.Original$Time[100]
-end_date <- tail(Collapsed_BarData.Original$Time, 1)
+init_date <- index(MNQ)[1]
+start_date <- index(MNQ)[100]
+end_date <- tail(index(MNQ), 1)
 init_equity <- 1e4 # $10,000
 adjustment <- TRUE
 
