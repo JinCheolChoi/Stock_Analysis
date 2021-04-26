@@ -1372,9 +1372,9 @@ checkBlotterUpdate <- function(port.st = portfolio.st,
 #
 # Init.Strategy ----
 #
-#*************************************
+#***********************************
 # generate the initial Init.Strategy
-Init.Strategy=function(Name, BarData=c(), Indicators=list(), Order_Params=list(), Models=list()){
+Init_Strategy=function(Name, BarData=c(), Indicators=list(), Order_Params=list(), Models=list()){
   Strategy_temp=list(Indicators=Indicators, # indicators
                      Order_Params=Order_Params, # order parameters
                      Models=Models) # model parameters
@@ -1394,7 +1394,7 @@ Init.Strategy=function(Name, BarData=c(), Indicators=list(), Order_Params=list()
 #
 #********************************************
 # add an indicator to the object 'Param_Sets'
-Add.Indicator=function(Strategy, Indicator, IndicatorParams){
+Add_Indicator=function(Strategy, Indicator, IndicatorParams){
   if(!exists(paste0(Strategy), envir=.GlobalEnv)){
     Init.Strategy(Name=Strategy)
   }
@@ -1413,7 +1413,7 @@ Add.Indicator=function(Strategy, Indicator, IndicatorParams){
 #
 #***************************************
 # add a model to the object 'Param_Sets'
-Add.Model=function(Strategy, Model, ModelParams){
+Add_Model=function(Strategy, Model, ModelParams){
   if(!exists(paste0(Strategy), envir=.GlobalEnv)){
     Init.Strategy(Name=Strategy)
   }
