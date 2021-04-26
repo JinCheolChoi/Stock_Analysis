@@ -33,7 +33,6 @@ Port=7497 # tws : 7497, IB gateway : 4002
 #
 # required functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-source(paste0(working.dir, "/Echos/Echo_Daily_Hist_Data_Save.R"))
 
 # import packages
 for(Package in c("IBrokers",
@@ -62,17 +61,11 @@ for(Package in c("IBrokers",
 #************
 # import data
 #************
-# output : `5SecsBarHistData`
-Import_HistData(Location=paste0(working.dir, "Data/", Symbol, "/"),
-                Symbol=Symbol,
-                First_Date=First_Date,
-                Last_Date=Last_Date,
-                Convert_Tz=T)
-
 # collapse data to the chosen-sized bar data
-Collapsed_BarData.Original=Collapse_5SecsBarData(`5SecsBarHistData`,
-                                                 BarSize=60*30,
-                                                 Convert_Tz=T)
+Collapsed_BarData.Original=Get_Data(Symbol,
+                                    BarSize,
+                                    First_Date, 
+                                    Last_Date)
 
 # convert xts.Collapsed_BarData
 xts.Collapsed_BarData=as.xts.data.table(Collapsed_BarData.Original[, -1])

@@ -62,17 +62,12 @@ for(Package in c("IBrokers",
 #************
 # import data
 #************
-# output : `5SecsBarHistData`
-Import_HistData(Location=paste0(working.dir, "Data/", Symbol, "/"),
-                Symbol=Symbol,
-                First_Date=First_Date,
-                Last_Date=Last_Date,
-                Convert_Tz=F)
-
 # collapse data to the chosen-sized bar data
-Collapsed_BarData.Original=Collapse_5SecsBarData(`5SecsBarHistData`,
-                                                 BarSize=5*60,
-                                                 Convert_Tz=T)
+Collapsed_BarData.Original=Get_Data(Symbol,
+                                    BarSize,
+                                    First_Date, 
+                                    Last_Date)
+
 Collapsed_BarData=Collapsed_BarData.Original[, -1] %>% as.xts.data.table()
 MNQ=Collapsed_BarData
 

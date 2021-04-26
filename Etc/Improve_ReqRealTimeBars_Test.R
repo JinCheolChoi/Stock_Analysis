@@ -11,8 +11,8 @@ rm(list=ls())
 # parameters
 #
 #***********
-#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 Symbol="MNQ"
 First_Date="2021-01-20"
 Last_Date=as.Date(format(Sys.time(), tz="PST8PDT"))
@@ -333,16 +333,11 @@ ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
 #************
 # import data
 #************
-# output : `5SecsBarHistData`
-Import_HistData(Location=paste0(working.dir, "Data/", Symbol, "/"),
-                Symbol=Symbol,
-                First_Date=First_Date,
-                Last_Date=Last_Date)
-
 # collapse data to the chosen-sized bar data
-Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
-                                        BarSize=BarSize,
-                                        Convert_Tz=T)
+Collapsed_BarData.Original=Get_Data(Symbol,
+                                    BarSize,
+                                    First_Date, 
+                                    Last_Date)
 
 #*************************
 #
