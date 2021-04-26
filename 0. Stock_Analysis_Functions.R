@@ -318,8 +318,8 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
         
         #Corrected timezone
         Adj_Time=as.POSIXct(format(as.POSIXct(Data$Time), 
-                                   tz="PST8PDT"), 
-                            tz="PST8PDT") # fix the timezone to PDT
+                                   tz="America/Los_Angeles"), 
+                            tz="America/Los_Angeles") # fix the timezone to PDT
         
         Data[, Time:=NULL]
         Data[, Time:=Adj_Time]
@@ -422,8 +422,8 @@ System_Break=function(Rerun_Trading=0, Log=F){
   Duration=60
   
   # the market closes temporarily on weekdays
-  ToDay=weekdays(as.Date(format(Sys.time(), tz="PST8PDT")))
-  CurrentTime=as.ITime(format(Sys.time(), tz="PST8PDT")) # time zone : PDT
+  ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
+  CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
   
   #**********************
   # Daily temporary break
@@ -518,9 +518,9 @@ System_Break=function(Rerun_Trading=0, Log=F){
 Daily_Hist_Data_Save=function(Force=T, Log=F){
   # the market closes at 14:00:00 PDT on Friday; and
   # at 15:00:00 PDT on the other weekdays
-  ToDay=weekdays(as.Date(format(Sys.time(), tz="PST8PDT")))
-  CurrentTime=as.ITime(format(Sys.time(), tz="PST8PDT")) # time zone : PDT
-  File_Exist=file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
+  ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
+  CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
+  File_Exist=file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
   
   # if time is after 15:00:00 PDT on weekdays, proceed ot extract historical data
   if(!ToDay%in%c("Saturday", "Sunday") &
@@ -547,13 +547,13 @@ Daily_Hist_Data_Save=function(Force=T, Log=F){
       #                     HistData)
       #
       # # "for statement" to get and save bar data day-by-day
-      # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="PST8PDT")), by="day")){
+      # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="America/Los_Angeles")), by="day")){
       #   if(weekdays.Date(as.Date(Date))=="Saturday"|
       #      weekdays.Date(as.Date(Date))=="Sunday"){
       #     next
       #   }
       #
-      #   Time_Cutoff=as.POSIXct(paste0(as.Date(Date), " 15:00:00"), tz="PST8PDT")
+      #   Time_Cutoff=as.POSIXct(paste0(as.Date(Date), " 15:00:00"), tz="America/Los_Angeles")
       #
       #
       #   HistData[Time>=(Time_Cutoff-60*60*24)&
@@ -565,19 +565,19 @@ Daily_Hist_Data_Save=function(Force=T, Log=F){
       # }
       
       # remove redundant data
-      # different time zone examples : "GMT", "PST8PDT", "Europe/London"
-      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT"))-1, " 15:00:00"), tz="PST8PDT")
-      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT")), " 15:00:00"), tz="PST8PDT")
+      # different time zone examples : "GMT", "America/Los_Angeles", "Europe/London"
+      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 15:00:00"), tz="America/Los_Angeles")
+      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles")), " 15:00:00"), tz="America/Los_Angeles")
       HistData=HistData[Time>=Time_From &
                           Time<Time_To, ]
       
       HistData[, Time:=as.POSIXct(format(as.POSIXct(Time), 
-                                         tz="PST8PDT"), 
-                                  tz="PST8PDT")]
+                                         tz="America/Los_Angeles"), 
+                                  tz="America/Los_Angeles")]
       
       # save historical data up to today's market closed at 15:00:00 pm PDT
       fwrite(HistData,
-             paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
+             paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
     }
     
     # write log everytime historical data is extracted and saved
@@ -800,8 +800,8 @@ Import_HistData=function(Location, Symbol, First_Date, Last_Date, Convert_Tz=F){
   # this process of converting time to the PDT time zone can be skipped as needed for less processing time
   if(Convert_Tz==T){
     `5SecsBarHistData`[, Time:=as.POSIXct(format(as.POSIXct(Time),
-                                                 tz="PST8PDT"),
-                                          tz="PST8PDT")]
+                                                 tz="America/Los_Angeles"),
+                                          tz="America/Los_Angeles")]
   }
 }
 
@@ -946,8 +946,8 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
   # this process of converting time to the PDT time zone can be skipped as needed for less processing time
   if(Convert_Tz==T){
     Collapsed_BarData[, Time:=as.POSIXct(format(as.POSIXct(Time),
-                                                tz="PST8PDT"),
-                                         tz="PST8PDT")]
+                                                tz="America/Los_Angeles"),
+                                         tz="America/Los_Angeles")]
   }
   
   return(as.data.table(Collapsed_BarData))

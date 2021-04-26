@@ -20,7 +20,7 @@ Input_Set=list(
     #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
     Symbol="MNQ",
     First_Date="2021-01-20",
-    Last_Date=as.Date(format(Sys.time(), tz="PST8PDT")),
+    Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles")),
     BarSize=60*5 # secs (30 mins bar size seems to need a touch up in the code)
   ),
   

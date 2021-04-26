@@ -15,7 +15,7 @@ working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
 Symbol="MNQ"
 First_Date="2021-01-20"
-Last_Date=as.Date(format(Sys.time(), tz="PST8PDT"))
+Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles"))
 BarSize=60*30 # secs (30 mins bar size seems to need a touch up in the code)
 
 # account
@@ -87,12 +87,12 @@ HistData.Original[, `:=`(Wap=NULL, hasGaps=NULL)]
 Time_From=Collapsed_BarData.Original$Time[1]
 Time_To=tail(Collapsed_BarData.Original$Time, 1)
 # Time_From=as.POSIXct(
-#   format(as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT"))-2, " 15:00:00"), tz="PST8PDT"),
+#   format(as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-2, " 15:00:00"), tz="America/Los_Angeles"),
 #          tz=attr(Collapsed_BarData.Original$Time, "tzone")),
 #   tz=attr(Collapsed_BarData.Original$Time, "tzone")
 # )
 # Time_To=as.POSIXct(
-#   format(as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT"))-1, " 15:00:00"), tz="PST8PDT"),
+#   format(as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 15:00:00"), tz="America/Los_Angeles"),
 #          tz=attr(Collapsed_BarData.Original$Time, "tzone")),
 #   tz=attr(Collapsed_BarData.Original$Time, "tzone")
 # )

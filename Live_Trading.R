@@ -79,14 +79,14 @@ while(TRUE){
   # determine an action
   
   # place an order
-
+  
 }
 
 #
 Log=fread(paste0(working.dir, "Live_Trading_Log.csv"))
 Log[, Time:=as.POSIXct(format(as.POSIXct(Time),
-                              tz="PST8PDT"),
-                       tz="PST8PDT")]
+                              tz="America/Los_Angeles"),
+                       tz="America/Los_Angeles")]
 
 z=0
 T_1=system.time({
