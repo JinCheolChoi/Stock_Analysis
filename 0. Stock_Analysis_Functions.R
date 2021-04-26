@@ -1054,7 +1054,7 @@ BBands_Sim=function(Consec_Times, Long_PctB, Short_PctB, Commision=0.52){
 #********************
 # run a simulation
 #*****************
-Run_Simulation=function(Indicators, Order_Params, Models){
+Run_Simulation=function(BarData, Indicators, Order_Params, Models){
   # BarData=Param_Sets$BarData
   # Indicators=Param_Sets$Indicators
   # Order_Params=Param_Sets$Order_Params

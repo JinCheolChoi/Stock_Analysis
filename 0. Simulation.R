@@ -81,23 +81,25 @@ BarData=MNQ
 #
 # simulation algorithm
 #
-#*********************
-system.time({
-  Sim_Results=do.call(Run_Simulation, get(Strategies[1]))
-})
-Sim_Results
-
-
 #***********************************************
-#
 # all strategies saved in the global environment
+Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
+# run Run_Simulation
+system.time({
+  Sim_Results=do.call(Run_Simulation, c(list(BarData=MNQ), get(Strategies[1])))
+})
+
+
+
+
+#***********************************************
+#
+# 
 #
 #***********************************************
-Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
-
 names(unlist(as.list(args(Add.Model)))) # see all arguments in a function
-
 names(BBands_Strategy$Models)
+
 #********************************************************
 BBands_Strategy
 
