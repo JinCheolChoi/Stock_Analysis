@@ -509,18 +509,18 @@ System_Break=function(Rerun_Trading=0, Log=F){
 
 
 
-#**************************
+#*********************************
 #
-# Daily_Hist_Data_Save ----
+# Future_Daily_Hist_Data_Save ----
 #
-#**************************
+#*********************************
 # execute a daily save of 5 second bar data at 15:00:00 pm PDT
-Daily_Hist_Data_Save=function(Force=T, Log=F){
+Future_Daily_Hist_Data_Save=function(Contract, Working_dir, Force=T, Log=F){
   # the market closes at 14:00:00 PDT on Friday; and
   # at 15:00:00 PDT on the other weekdays
   ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
   CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
-  File_Exist=file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
+  File_Exist=file.exists(paste0(Working_dir, "Data/", Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
   
   # if time is after 15:00:00 PDT on weekdays, proceed ot extract historical data
   if(!ToDay%in%c("Saturday", "Sunday") &
@@ -530,20 +530,20 @@ Daily_Hist_Data_Save=function(Force=T, Log=F){
        Force==T){ # Force==1 (execute the saving process by force (overwrite the data))
       
       # request historical data of 5 seconds bar
-      HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+      HistData=as.data.table(reqHistoricalData(tws, Contract, barSize="5 secs", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
       colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
       
       HistData[, hasGaps:=NULL] # hasGaps is redundant
       
-      HistData=data.table(Symbol=contract$symbol,
+      HistData=data.table(Symbol=Contract$symbol,
                           HistData)
       
-      # HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="1 M", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+      # HistData=as.data.table(reqHistoricalData(tws, Contract, barSize="5 secs", duration="1 M", useRTH="0")) # useRTH="0" : not limited to regular trading hours
       # colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
       #
       # HistData[, hasGaps:=NULL] # hasGaps is redundant
       #
-      # HistData=data.table(Symbol=contract$symbol,
+      # HistData=data.table(Symbol=Contract$symbol,
       #                     HistData)
       #
       # # "for statement" to get and save bar data day-by-day
@@ -561,7 +561,7 @@ Daily_Hist_Data_Save=function(Force=T, Log=F){
       #
       #   fwrite(HistData[Time>=(Time_Cutoff-60*60*24)&
       #                     Time<Time_Cutoff, ],
-      #          paste0(working.dir, "Data/", contract$symbol, "_", as.Date(Date), ".csv"))
+      #          paste0(Working_dir, "Data/", Contract$symbol, "_", as.Date(Date), ".csv"))
       # }
       
       # remove redundant data
@@ -577,19 +577,19 @@ Daily_Hist_Data_Save=function(Force=T, Log=F){
       
       # save historical data up to today's market closed at 15:00:00 pm PDT
       fwrite(HistData,
-             paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
+             paste0(Working_dir, "Data/", Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
     }
     
     # write log everytime historical data is extracted and saved
     if(Log==T){
-      if(file.exists(paste0(working.dir, "/Log/Daily_Hist_Data_Save.csv"))){
+      if(file.exists(paste0(Working_dir, "/Log/Future_Daily_Hist_Data_Save.csv"))){
         Log=data.table(Time=Sys.time())
         Log=rbind(Log,
-                  fread(paste0(working.dir, "/Log/Daily_Hist_Data_Save.csv")))
-        fwrite(Log, paste0(working.dir, "/Log/Daily_Hist_Data_Save.csv"))
+                  fread(paste0(Working_dir, "/Log/Future_Daily_Hist_Data_Save.csv")))
+        fwrite(Log, paste0(Working_dir, "/Log/Future_Daily_Hist_Data_Save.csv"))
       }else{
         Log=data.table(Time=Sys.time())
-        fwrite(Log, paste0(working.dir, "/Log/Daily_Hist_Data_Save.csv"))
+        fwrite(Log, paste0(Working_dir, "/Log/Future_Daily_Hist_Data_Save.csv"))
       }
     }
   }else{
@@ -1065,7 +1065,7 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
   # import data
   #************
   # output : `5SecsBarHistData`
-  Import_HistData(Location=paste0(working.dir, "Data/"),
+  Import_HistData(Location=paste0(working.dir, "Data/", Symbol, "/"),
                   Symbol=Symbol,
                   First_Date=First_Date,
                   Last_Date=Last_Date)

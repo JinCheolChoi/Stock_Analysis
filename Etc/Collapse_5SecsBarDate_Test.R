@@ -51,7 +51,7 @@ for(Package in
 # import data
 #************
 # output : `5SecsBarHistData`
-Import_HistData(Location=paste0(working.dir, "Data/"),
+Import_HistData(Location=paste0(working.dir, "Data/", Symbol, "/"),
                 Symbol=Symbol,
                 First_Date=First_Date,
                 Last_Date=Last_Date,

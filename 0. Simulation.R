@@ -21,7 +21,7 @@ Input_Set=list(
     Symbol="MNQ",
     First_Date="2021-01-20",
     Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles")),
-    BarSize=60*5 # secs (30 mins bar size seems to need a touch up in the code)
+    BarSize=60*30 # secs (30 mins bar size seems to need a touch up in the code)
   ),
   
   #*****************

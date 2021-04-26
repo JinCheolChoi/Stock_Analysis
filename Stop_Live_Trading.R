@@ -64,10 +64,3 @@ if(Rerun_Live_Trading==1){
 }
 
 
-#
-Log=fread(paste0(working.dir, "Stop_Live_Trading_Log.csv"))
-Log[, Time:=as.POSIXct(format(as.POSIXct(Time),
-                              tz="America/Los_Angeles"),
-                       tz="America/Los_Angeles")]
-
-
