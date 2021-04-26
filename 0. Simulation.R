@@ -29,8 +29,7 @@ Symbols=c("MNQ", "SPY")
 #
 #*****************
 # required functions
-source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # desktop
-#source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # laptop
+source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
 
 # import libraries
 for(pack in c("IBrokers",
