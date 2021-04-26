@@ -809,12 +809,15 @@ Get_Data=function(Symbols, BarSize=60*30, First_Date="2021-01-20", Last_Date=as.
 #******************************************************
 # output : `5SecsBarHistData` in the global environment
 Get_5SecsBarHistData=function(Symbol, First_Date, Last_Date, Convert_Tz=F){
+  # data table
+  lapply("data.table", checkpackages)
+
   # remove `5SecsBarHistData` in the global environment
   if(exists("5SecsBarHistData")){rm(`5SecsBarHistData`, envir=.GlobalEnv)}
   
   # import
-  for(Date in seq(as.Date(First_Date), Last_Date, by="day")){
-    File_name=paste0(Symbol, "_", as.Date(Date), ".csv")
+  for(Date in as.character(seq(as.Date(First_Date), Last_Date, by="day"))){
+    File_name=paste0(Symbol, "_", Date, ".csv")
     if(!file.exists(paste0(working.dir, "Data/", Symbol, "/", File_name))){
       next
     }

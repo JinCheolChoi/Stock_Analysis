@@ -46,7 +46,6 @@ for(Package in
 #******************
 # add a part to clear all positions possessed
 
-
 # stop live trading
 taskscheduler_stop("Run_Live_Trading")
 
