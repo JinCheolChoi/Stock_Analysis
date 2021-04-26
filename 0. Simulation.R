@@ -27,7 +27,7 @@ Symbols=c("MNQ", "SPY")
 #
 # preliminary step
 #
-#*****************
+#*******************
 # required functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # desktop
 #source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # laptop
@@ -42,29 +42,29 @@ for(pack in c("IBrokers",
 }
 
 # initiate a strategy called "BBands_Strategy"
-Init.Strategy(Name="BBands_Strategy",
+Init_Strategy(Name="BBands_Strategy",
               Order_Params=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
                                 OrderType="MKT", # "LMT"
                                 Position_Direction="both", # direction of position ("both", "long", "short")
                                 Parsed_Data_Max_Rows=50)) # the maximum number of rows in a temp dataset to parse
 
 # add indicator
-Add.Indicator(Strategy="BBands_Strategy",
+Add_Indicator(Strategy="BBands_Strategy",
               Indicator="BBands",
               IndicatorParams=list(BBands_N=20,
                                    BBands_SD=2))
-Add.Indicator(Strategy="BBands_Strategy",
+Add_Indicator(Strategy="BBands_Strategy",
               Indicator="RSI",
               IndicatorParams=list(RSI_N=14))
 
 # add model (to run in combination with other included models to decide to transmit an order)
-Add.Model(Strategy="BBands_Strategy",
+Add_Model(Strategy="BBands_Strategy",
           Model="Simple_BBands",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
                            Long_PctB=0,
                            Short_PctB=1))
-Add.Model(Strategy="BBands_Strategy",
+Add_Model(Strategy="BBands_Strategy",
           Model="Simple_RSI",
           ModelParams=list())
 
@@ -97,7 +97,7 @@ system.time({
 # 
 #
 #***********************************************
-names(unlist(as.list(args(Add.Model)))) # see all arguments in a function
+names(unlist(as.list(args(Add_Model)))) # see all arguments in a function
 names(BBands_Strategy$Models)
 
 #********************************************************
