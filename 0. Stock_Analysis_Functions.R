@@ -773,26 +773,27 @@ ReqRealTimeBars=function(BarSize=5, i, Log=F){
 #
 # Get_Data ----
 #
-#******************************************************************************
-# get import historical data of a specified symbol saved in a repository folder
-#******************************************************************************
-Get_Data=function(Symbol, BarSize=60*30, First_Date, Last_Date, Convert_Tz=F){
+#**********************************************************************************
+# get import historical data sets of specified symbols saved in a repository folder
+#**********************************************************************************
+Get_Data=function(Symbols, BarSize=60*30, First_Date="2021-01-20", Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles")), Convert_Tz=F){
   #************
   # import data
   #************
   # output : `5SecsBarHistData`
-  Get_5SecsBarHistData(Symbol=Symbol,
-                       First_Date=First_Date,
-                       Last_Date=Last_Date,
-                       Convert_Tz=Convert_Tz)
-  
-  # collapse data to the chosen-sized bar data
-  Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
-                                          BarSize=BarSize,
-                                          Convert_Tz=Convert_Tz)
-  
-  # return imported data
-  return(Collapsed_BarData)
+  for(Symbol in Symbols){
+    Get_5SecsBarHistData(Symbol=Symbol,
+                         First_Date=First_Date,
+                         Last_Date=Last_Date,
+                         Convert_Tz=F)
+    
+    # collapse data to the chosen-sized bar data
+    assign(Symbol, 
+           Collapse_5SecsBarData(`5SecsBarHistData`,
+                                 BarSize=BarSize,
+                                 Convert_Tz=Convert_Tz),
+           envir=.GlobalEnv)
+  }
 }
 
 
@@ -1047,9 +1048,11 @@ BBands_Sim=function(Consec_Times, Long_PctB, Short_PctB, Commision=0.52){
 #********************
 # run a simulation
 #*****************
-Run_Simulation=function(BarData, Order_Params, Model_Param_Sets){
+Run_Simulation=function(BarData, Indicators, Order_Params, Models){
+  # BarData=Param_Sets$BarData
+  # Indicators=Param_Sets$Indicators
   # Order_Params=Param_Sets$Order_Params
-  # Model_Param_Sets=Param_Sets$Model_Param_Sets
+  # Models=Param_Sets$Models
   
   
   #****************
@@ -1075,15 +1078,15 @@ Run_Simulation=function(BarData, Order_Params, Model_Param_Sets){
   Position_Direction=Order_Params$Position_Direction
   Parsed_Data_Max_Rows=Order_Params$Parsed_Data_Max_Rows
   
-  # model parameters
-  Indicators=Model_Param_Sets$Indicators
-  Models=Model_Param_Sets$Models
-  Model_Params=Model_Param_Sets$Model_Params
+  # indicators
+  List_of_Indicators=names(Indicators)
+  List_of_Models=names(Models)
+  # Model_Params=Models
   
-  Long_Consec_Times=Model_Param_Sets$Model_Params$Simple_BBands["Long_Consec_Times"]
-  Short_Consec_Times=Model_Param_Sets$Model_Params$Simple_BBands["Short_Consec_Times"]
-  Long_PctB=Model_Param_Sets$Model_Params$Simple_BBands["Long_PctB"]
-  Short_PctB=Model_Param_Sets$Model_Params$Simple_BBands["Short_PctB"]
+  Long_Consec_Times=Models$Simple_BBands$Long_Consec_Times
+  Short_Consec_Times=Models$Simple_BBands$Short_Consec_Times
+  Long_PctB=Models$Simple_BBands$Long_PctB
+  Short_PctB=Models$Simple_BBands$Short_PctB
   
   
   #***************
@@ -1130,21 +1133,21 @@ Run_Simulation=function(BarData, Order_Params, Model_Param_Sets){
     # calculate indicators
     #*********************
     # bollinger bands
-    if("BBands"%in%Indicators){
-      if(nrow(Live_Data)>19){
-        BBands_Data=Live_Data[, BBands(Close)]
+    if("BBands"%in%List_of_Indicators){
+      if(nrow(Live_Data)>Indicators$BBands$BBands_N-1){
+        BBands_Data=Live_Data[, BBands(Close, n=Indicators$BBands$BBands_N, sd=Indicators$BBands$BBands_SD)]
       }
     }
     
     # rsi
-    if("RSI"%in%Indicators){
-      if(nrow(Live_Data)>15){
-        Live_Data[, RSI:=RSI(Close)]
+    if("RSI"%in%List_of_Indicators){
+      if(nrow(Live_Data)>Indicators$RSI$RSI_N+1){
+        Live_Data[, RSI:=RSI(Close, n=Indicators$RSI$RSI_N)]
       }
     }
     
     # macd
-    if("MACD"%in%Indicators){
+    if("MACD"%in%List_of_Indicators){
       if(nrow(Live_Data)>34){
         MACD_Data=Live_Data[, MACD(Close)]
       }
@@ -1155,12 +1158,12 @@ Run_Simulation=function(BarData, Order_Params, Model_Param_Sets){
     # fit models
     #***********
     # Simple_BBands
-    if("Simple_BBands"%in%Models){
+    if("Simple_BBands"%in%List_of_Models){
       # signal to enter a long (short) position determined by Simple_BBands
       Long_Sig_by_Simple_BBands=0
       Short_Sig_by_Simple_BBands=0
       
-      if("BBands"%in%Indicators&
+      if("BBands"%in%List_of_Indicators&
          exists("BBands_Data")){
         
         # Simple_BBands
@@ -1181,23 +1184,23 @@ Run_Simulation=function(BarData, Order_Params, Model_Param_Sets){
         }
         
       }else{
-        if(!"BBands"%in%Indicators){
+        if(!"BBands"%in%List_of_Indicators){
           stop("BBands required")
         }
       }
     }
     
     # Simple_RSI
-    if("Simple_RSI"%in%Models){
+    if("Simple_RSI"%in%List_of_Models){
       # signal to enter a long (short) position determined by Simple_RSI
       Long_Sig_by_Simple_RSI=0
       Short_Sig_by_Simple_RSI=0
       
-      if("RSI"%in%Indicators&
+      if("RSI"%in%List_of_Indicators&
          length(Live_Data$RSI)>0){
         
       }else{
-        if(!"RSI"%in%Indicators){
+        if(!"RSI"%in%List_of_Indicators){
           stop("RSI required")
         }
       }
@@ -1354,3 +1357,67 @@ checkBlotterUpdate <- function(port.st = portfolio.st,
   }
   return(ok)
 }
+
+
+
+
+
+#*********************
+#
+# Init.Param_Sets ----
+#
+#*************************************
+# generate the initial Init.Param_Sets
+Init.Param_Sets=function(BarData=c(), Indicators=list(), Order_Params=list(), Models=list()){
+  Param_Sets<<-list(
+    # BarData
+    BarData=BarData,
+    
+    # indicators
+    Indicators=Indicators,
+    
+    # order parameters
+    Order_Params=Order_Params,
+    
+    # model parameters
+    Models=Models
+  )
+}
+
+
+
+
+
+#***************
+#
+# Add.Model ----
+#
+#***************************************
+# add a model to the object 'Param_Sets'
+Add.Model=function(Model, ModelParams){
+  if(!exists("Param_Sets", envir=.GlobalEnv)){
+    Init.Param_Sets()
+  }
+  Param_Sets$Models[[Model]]<<-ModelParams
+}
+
+
+
+
+
+#*******************
+#
+# Add.Indicator ----
+#
+#********************************************
+# add an indicator to the object 'Param_Sets'
+Add.Indicator=function(Indicator, IndicatorParams){
+  if(!exists("Param_Sets", envir=.GlobalEnv)){
+    Init.Param_Sets()
+  }
+  Param_Sets$Indicators[[Indicator]]<<-IndicatorParams
+}
+
+
+
+

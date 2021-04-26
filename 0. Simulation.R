@@ -10,61 +10,61 @@ rm(list=ls())
 #
 # parameters
 #
-#***********
-Input_Set=list(
-  #****************
-  # data parameters
-  #****************
-  Data_Params=list(
-    working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/", # desktop
-    #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
-    Symbol="MNQ",
-    First_Date="2021-01-20",
-    Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles")),
-    BarSize=60*30 # secs (30 mins bar size seems to need a touch up in the code)
-  ),
-  
-  #*****************
-  # order parameters
-  #*****************
-  Order_Params=list(
-    Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
-    OrderType="MKT", # "LMT"
-    Position_Direction="both", # direction of position ("both", "long", "short")
-    Parsed_Data_Max_Rows=50 # the maximum number of rows in a temp dataset to parse
-  ),
-  
-  #*****************
-  # model parameters
-  #*****************
-  Model_Param_Sets=list(
-    # indicators to calculate
-    Indicators=c("BBands", "RSI"),
-    
-    # models to run in combination to decide to transmit an order
-    Models=c("Simple_BBands",
-             "Simple_RSI"),
-    
-    # model parameters
-    Model_Params=list(
-      Simple_BBands=c(Long_Consec_Times=2,
-                      Short_Consec_Times=2,
-                      Long_PctB=0,
-                      Short_PctB=1),
-      Simple_RSI=c()
-    )
-    
-  )
-)
+#******************
+# working directory
+#******************
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+
+
+#****************
+# data parameters
+#****************
+Symbols=c("MNQ", "SPY")
 
 
 #*****************
 #
 # preliminary step
 #
-#*******************
+#*****************
 # required functions
-source(paste0(Input_Set$Data_Params$working.dir, "0. Stock_Analysis_Functions.R"))
+source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # desktop
+#source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # laptop
+
+# initiate Param_Sets
+Init.Param_Sets(Order_Params=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
+                                  OrderType="MKT", # "LMT"
+                                  Position_Direction="both", # direction of position ("both", "long", "short")
+                                  Parsed_Data_Max_Rows=50 # the maximum number of rows in a temp dataset to parse
+                                  ))
+
+# add indicator
+Add.Indicator(Indicator="BBands",
+              IndicatorParams=list(BBands_N=20,
+                                   BBands_SD=2))
+Add.Indicator(Indicator="RSI",
+              IndicatorParams=list(RSI_N=14))
+
+
+# add model (to decide to transmit an order)
+Add.Model(Model="Simple_BBands",
+          ModelParams=list(Long_Consec_Times=1,
+                           Short_Consec_Times=1,
+                           Long_PctB=0,
+                           Short_PctB=1))
+Add.Model(Model="Simple_RSI",
+          ModelParams=list(Long_Consec_Times=2,
+                           Short_Consec_Times=2,
+                           Long_PctB=0,
+                           Short_PctB=1))
+
+# import data
+Get_Data(Symbols=list("MNQ", "SPY"),
+         BarSize=60*5)
+
+# bar data
+Param_Sets$BarData=MNQ
 
 
 #*********************
@@ -73,7 +73,7 @@ source(paste0(Input_Set$Data_Params$working.dir, "0. Stock_Analysis_Functions.R"
 #
 #*********************
 system.time({
-  Sim_Results=do.call(Run_Simulation, Input_Set)
+  Sim_Results=do.call(Run_Simulation, Param_Sets)
 })
 Sim_Results
 
