@@ -32,28 +32,41 @@ Symbols=c("MNQ", "SPY")
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # desktop
 #source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # laptop
 
-# initiate Param_Sets
-Init.Param_Sets(Order_Params=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
-                                  OrderType="MKT", # "LMT"
-                                  Position_Direction="both", # direction of position ("both", "long", "short")
-                                  Parsed_Data_Max_Rows=50 # the maximum number of rows in a temp dataset to parse
-                                  ))
+# import libraries
+for(pack in c("IBrokers",
+           "TTR",
+           "data.table",
+           "dplyr",
+           "DescTools")){ # candle chart
+  lapply(pack, checkpackages)
+}
+
+# initiate a strategy called "BBands_Strategy"
+Init.Strategy(Name="BBands_Strategy",
+              Order_Params=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
+                                OrderType="MKT", # "LMT"
+                                Position_Direction="both", # direction of position ("both", "long", "short")
+                                Parsed_Data_Max_Rows=50 # the maximum number of rows in a temp dataset to parse
+              ))
 
 # add indicator
-Add.Indicator(Indicator="BBands",
+Add.Indicator(Strategy="BBands_Strategy",
+              Indicator="BBands",
               IndicatorParams=list(BBands_N=20,
                                    BBands_SD=2))
-Add.Indicator(Indicator="RSI",
+Add.Indicator(Strategy="BBands_Strategy",
+              Indicator="RSI",
               IndicatorParams=list(RSI_N=14))
 
-
 # add model (to run in combination with other included models to decide to transmit an order)
-Add.Model(Model="Simple_BBands",
+Add.Model(Strategy="BBands_Strategy",
+          Model="Simple_BBands",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
                            Long_PctB=0,
                            Short_PctB=1))
-Add.Model(Model="Simple_RSI",
+Add.Model(Strategy="BBands_Strategy",
+          Model="Simple_RSI",
           ModelParams=list())
 
 # import data
@@ -70,18 +83,17 @@ BarData=MNQ
 # simulation algorithm
 #
 #*********************
+# all strategies in the global environment
+Strategies=ls()[sapply(ls(), function(var) any(class(get(var))=='Strategy'))]
 system.time({
-  Sim_Results=do.call(Run_Simulation, Param_Sets)
+  Sim_Results=do.call(Run_Simulation, get(Strategies[1]))
 })
 Sim_Results
 
 
+
+
 #
-
-
-
-
-
 
 
 

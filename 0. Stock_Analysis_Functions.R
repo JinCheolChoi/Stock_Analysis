@@ -811,7 +811,7 @@ Get_Data=function(Symbols, BarSize=60*30, First_Date="2021-01-20", Last_Date=as.
 Get_5SecsBarHistData=function(Symbol, First_Date, Last_Date, Convert_Tz=F){
   # data table
   lapply("data.table", checkpackages)
-
+  
   # remove `5SecsBarHistData` in the global environment
   if(exists("5SecsBarHistData")){rm(`5SecsBarHistData`, envir=.GlobalEnv)}
   
@@ -1367,41 +1367,18 @@ checkBlotterUpdate <- function(port.st = portfolio.st,
 
 #*********************
 #
-# Init.Param_Sets ----
+# Init.Strategy ----
 #
 #*************************************
-# generate the initial Init.Param_Sets
-Init.Param_Sets=function(BarData=c(), Indicators=list(), Order_Params=list(), Models=list()){
-  Param_Sets<<-list(
-    # BarData
-    # BarData=BarData,
-    
-    # indicators
-    Indicators=Indicators,
-    
-    # order parameters
-    Order_Params=Order_Params,
-    
-    # model parameters
-    Models=Models
-  )
-}
-
-
-
-
-
-#***************
-#
-# Add.Model ----
-#
-#***************************************
-# add a model to the object 'Param_Sets'
-Add.Model=function(Model, ModelParams){
-  if(!exists("Param_Sets", envir=.GlobalEnv)){
-    Init.Param_Sets()
-  }
-  Param_Sets$Models[[Model]]<<-ModelParams
+# generate the initial Init.Strategy
+Init.Strategy=function(Name, BarData=c(), Indicators=list(), Order_Params=list(), Models=list()){
+  Strategy_temp=list(Indicators=Indicators, # indicators
+                     Order_Params=Order_Params, # order parameters
+                     Models=Models) # model parameters
+  class(Strategy_temp)="Strategy"
+  assign(Name,
+         Strategy_temp,
+         envir=.GlobalEnv)
 }
 
 
@@ -1414,11 +1391,33 @@ Add.Model=function(Model, ModelParams){
 #
 #********************************************
 # add an indicator to the object 'Param_Sets'
-Add.Indicator=function(Indicator, IndicatorParams){
-  if(!exists("Param_Sets", envir=.GlobalEnv)){
-    Init.Param_Sets()
+Add.Indicator=function(Strategy, Indicator, IndicatorParams){
+  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
+    Init.Strategy(Name=Strategy)
   }
-  Param_Sets$Indicators[[Indicator]]<<-IndicatorParams
+  Strategy_temp=get(Strategy, envir=.GlobalEnv)
+  Strategy_temp$Indicators[[Indicator]]=IndicatorParams
+  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
+}
+
+
+
+
+
+#***************
+#
+# Add.Model ----
+#
+#***************************************
+# add a model to the object 'Param_Sets'
+Add.Model=function(Strategy, Model, ModelParams){
+  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
+    Init.Strategy(Name=Strategy)
+  }
+  # Param_Sets$Models[[Model]]<<-ModelParams
+  Strategy_temp=get(Strategy, envir=.GlobalEnv)
+  Strategy_temp$Models[[Model]]=ModelParams
+  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
 }
 
 
