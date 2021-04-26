@@ -24,7 +24,7 @@ Account_Code="DU2656942"
 Port=7497 # tws : 7497, IB gateway : 4002
 
 # BarSize
-BarSize=5
+BarSize=10
 
 #*****************
 #
@@ -79,26 +79,8 @@ while(TRUE){
   # determine an action
   
   # place an order
-
+  
 }
 
-#
-Log=fread(paste0(working.dir, "Live_Trading_Log.csv"))
-Log[, Time:=as.POSIXct(format(as.POSIXct(Time),
-                              tz="PST8PDT"),
-                       tz="PST8PDT")]
 
-z=0
-T_1=system.time({
-  for(i in 1:10000){
-    System_Break()
-    Daily_Hist_Data_Save(Force=F)
-    z=z+1
-  }
-})
-T_2=system.time({
-  for(i in 1:10000){
-    System_Break()
-    z=z+1
-  }
-})
+

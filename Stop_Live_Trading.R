@@ -46,7 +46,6 @@ for(Package in
 #******************
 # add a part to clear all positions possessed
 
-
 # stop live trading
 taskscheduler_stop("Run_Live_Trading")
 
@@ -62,12 +61,5 @@ Rerun_Live_Trading=System_Break(Log=T)
 if(Rerun_Live_Trading==1){
   taskscheduler_runnow("Run_Live_Trading")
 }
-
-
-#
-Log=fread(paste0(working.dir, "Stop_Live_Trading_Log.csv"))
-Log[, Time:=as.POSIXct(format(as.POSIXct(Time),
-                              tz="PST8PDT"),
-                       tz="PST8PDT")]
 
 

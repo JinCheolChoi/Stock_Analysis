@@ -58,7 +58,8 @@ tws=twsConnect(port=Port)
 # serverVersion(tws)
 
 # execute a daily save of 5 second bar data afterwards
-Daily_Hist_Data_Save(Force=T, Log=T) #
+Future_Daily_Hist_Data_Save(Contract=contract, Force=T, Log=T) #
+
 
 
 

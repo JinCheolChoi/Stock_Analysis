@@ -10,84 +10,98 @@ rm(list=ls())
 #
 # parameters
 #
-#***********
-Input_Set=list(
-  #****************
-  # data parameters
-  #****************
-  Data_Params=list(
-    working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/", # desktop
-    #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
-    Symbol="MNQ",
-    First_Date="2021-01-20",
-    Last_Date=as.Date(format(Sys.time(), tz="PST8PDT")),
-    BarSize=60*5 # secs (30 mins bar size seems to need a touch up in the code)
-  ),
-  
-  #*****************
-  # order parameters
-  #*****************
-  Order_Params=list(
-    Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
-    OrderType="MKT", # "LMT"
-    Position_Direction="both", # direction of position ("both", "long", "short")
-    Parsed_Data_Max_Rows=50 # the maximum number of rows in a temp dataset to parse
-  ),
-  
-  #*****************
-  # model parameters
-  #*****************
-  Model_Param_Sets=list(
-    # indicators to calculate
-    Indicators=c("BBands", "RSI"),
-    
-    # models to run in combination to decide to transmit an order
-    Models=c("Simple_BBands",
-             "Simple_RSI"),
-    
-    # model parameters
-    Model_Params=list(
-      Simple_BBands=c(Long_Consec_Times=2,
-                      Short_Consec_Times=2,
-                      Long_PctB=0,
-                      Short_PctB=1),
-      Simple_RSI=c()
-    )
-    
-  )
-)
+#******************
+# working directory
+#******************
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+
+
+#****************
+# data parameters
+#****************
+Symbols=c("MNQ", "SPY")
 
 
 #*****************
 #
 # preliminary step
 #
-#*******************
+#*****************
 # required functions
-source(paste0(Input_Set$Data_Params$working.dir, "0. Stock_Analysis_Functions.R"))
+source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # desktop
+#source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # laptop
+
+# import libraries
+for(pack in c("IBrokers",
+              "TTR",
+              "data.table",
+              "dplyr",
+              "DescTools")){ # candle chart
+  lapply(pack, checkpackages)
+}
+
+# initiate a strategy called "BBands_Strategy"
+Init.Strategy(Name="BBands_Strategy",
+              Order_Params=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
+                                OrderType="MKT", # "LMT"
+                                Position_Direction="both", # direction of position ("both", "long", "short")
+                                Parsed_Data_Max_Rows=50)) # the maximum number of rows in a temp dataset to parse
+
+# add indicator
+Add.Indicator(Strategy="BBands_Strategy",
+              Indicator="BBands",
+              IndicatorParams=list(BBands_N=20,
+                                   BBands_SD=2))
+Add.Indicator(Strategy="BBands_Strategy",
+              Indicator="RSI",
+              IndicatorParams=list(RSI_N=14))
+
+# add model (to run in combination with other included models to decide to transmit an order)
+Add.Model(Strategy="BBands_Strategy",
+          Model="Simple_BBands",
+          ModelParams=list(Long_Consec_Times=1,
+                           Short_Consec_Times=1,
+                           Long_PctB=0,
+                           Short_PctB=1))
+Add.Model(Strategy="BBands_Strategy",
+          Model="Simple_RSI",
+          ModelParams=list())
+
+# import data
+Get_Data(Symbols=list("MNQ", "SPY"),
+         BarSize=60*5)
+
+# bar data
+# SPY
+BarData=MNQ
 
 
 #*********************
 #
 # simulation algorithm
 #
-#*********************
+#***********************************************
+# all strategies saved in the global environment
+Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
+# run Run_Simulation
 system.time({
-  Sim_Results=do.call(Run_Simulation, Input_Set)
+  Sim_Results=do.call(Run_Simulation, c(list(BarData=MNQ), get(Strategies[1])))
 })
-Sim_Results
 
 
 
 
-
+#***********************************************
 #
+# 
+#
+#***********************************************
+names(unlist(as.list(args(Add.Model)))) # see all arguments in a function
+names(BBands_Strategy$Models)
 
-
-
-
-
-
+#********************************************************
+BBands_Strategy
 
 
 # compute indicators

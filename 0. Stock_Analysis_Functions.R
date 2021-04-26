@@ -19,6 +19,9 @@ checkpackages=function(package){
 }
 
 
+
+
+
 #**************
 #
 # snapShot ----
@@ -318,8 +321,8 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
         
         #Corrected timezone
         Adj_Time=as.POSIXct(format(as.POSIXct(Data$Time), 
-                                   tz="PST8PDT"), 
-                            tz="PST8PDT") # fix the timezone to PDT
+                                   tz="America/Los_Angeles"), 
+                            tz="America/Los_Angeles") # fix the timezone to PDT
         
         Data[, Time:=NULL]
         Data[, Time:=Adj_Time]
@@ -422,8 +425,8 @@ System_Break=function(Rerun_Trading=0, Log=F){
   Duration=60
   
   # the market closes temporarily on weekdays
-  ToDay=weekdays(as.Date(format(Sys.time(), tz="PST8PDT")))
-  CurrentTime=as.ITime(format(Sys.time(), tz="PST8PDT")) # time zone : PDT
+  ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
+  CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
   
   #**********************
   # Daily temporary break
@@ -509,18 +512,18 @@ System_Break=function(Rerun_Trading=0, Log=F){
 
 
 
-#**************************
+#*********************************
 #
-# Daily_Hist_Data_Save ----
+# Future_Daily_Hist_Data_Save ----
 #
-#**************************
+#*********************************
 # execute a daily save of 5 second bar data at 15:00:00 pm PDT
-Daily_Hist_Data_Save=function(Force=T, Log=F){
+Future_Daily_Hist_Data_Save=function(Contract, Force=T, Log=F){
   # the market closes at 14:00:00 PDT on Friday; and
   # at 15:00:00 PDT on the other weekdays
-  ToDay=weekdays(as.Date(format(Sys.time(), tz="PST8PDT")))
-  CurrentTime=as.ITime(format(Sys.time(), tz="PST8PDT")) # time zone : PDT
-  File_Exist=file.exists(paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
+  ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
+  CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
+  File_Exist=file.exists(paste0(working.dir, "Data/", Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
   
   # if time is after 15:00:00 PDT on weekdays, proceed ot extract historical data
   if(!ToDay%in%c("Saturday", "Sunday") &
@@ -530,30 +533,30 @@ Daily_Hist_Data_Save=function(Force=T, Log=F){
        Force==T){ # Force==1 (execute the saving process by force (overwrite the data))
       
       # request historical data of 5 seconds bar
-      HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+      HistData=as.data.table(reqHistoricalData(tws, Contract, barSize="5 secs", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
       colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
       
       HistData[, hasGaps:=NULL] # hasGaps is redundant
       
-      HistData=data.table(Symbol=contract$symbol,
+      HistData=data.table(Symbol=Contract$symbol,
                           HistData)
       
-      # HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 secs", duration="1 M", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+      # HistData=as.data.table(reqHistoricalData(tws, Contract, barSize="5 secs", duration="1 M", useRTH="0")) # useRTH="0" : not limited to regular trading hours
       # colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
       #
       # HistData[, hasGaps:=NULL] # hasGaps is redundant
       #
-      # HistData=data.table(Symbol=contract$symbol,
+      # HistData=data.table(Symbol=Contract$symbol,
       #                     HistData)
       #
       # # "for statement" to get and save bar data day-by-day
-      # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="PST8PDT")), by="day")){
+      # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="America/Los_Angeles")), by="day")){
       #   if(weekdays.Date(as.Date(Date))=="Saturday"|
       #      weekdays.Date(as.Date(Date))=="Sunday"){
       #     next
       #   }
       #
-      #   Time_Cutoff=as.POSIXct(paste0(as.Date(Date), " 15:00:00"), tz="PST8PDT")
+      #   Time_Cutoff=as.POSIXct(paste0(as.Date(Date), " 15:00:00"), tz="America/Los_Angeles")
       #
       #
       #   HistData[Time>=(Time_Cutoff-60*60*24)&
@@ -561,35 +564,35 @@ Daily_Hist_Data_Save=function(Force=T, Log=F){
       #
       #   fwrite(HistData[Time>=(Time_Cutoff-60*60*24)&
       #                     Time<Time_Cutoff, ],
-      #          paste0(working.dir, "Data/", contract$symbol, "_", as.Date(Date), ".csv"))
+      #          paste0(working.dir, "Data/", Contract$symbol, "_", as.Date(Date), ".csv"))
       # }
       
       # remove redundant data
-      # different time zone examples : "GMT", "PST8PDT", "Europe/London"
-      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT"))-1, " 15:00:00"), tz="PST8PDT")
-      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT")), " 15:00:00"), tz="PST8PDT")
+      # different time zone examples : "GMT", "America/Los_Angeles", "Europe/London"
+      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 15:00:00"), tz="America/Los_Angeles")
+      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles")), " 15:00:00"), tz="America/Los_Angeles")
       HistData=HistData[Time>=Time_From &
                           Time<Time_To, ]
       
       HistData[, Time:=as.POSIXct(format(as.POSIXct(Time), 
-                                         tz="PST8PDT"), 
-                                  tz="PST8PDT")]
+                                         tz="America/Los_Angeles"), 
+                                  tz="America/Los_Angeles")]
       
       # save historical data up to today's market closed at 15:00:00 pm PDT
       fwrite(HistData,
-             paste0(working.dir, "Data/", contract$symbol, "_", as.Date(format(Sys.time(), tz="PST8PDT")), ".csv"))
+             paste0(working.dir, "Data/", Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
     }
     
     # write log everytime historical data is extracted and saved
     if(Log==T){
-      if(file.exists(paste0(working.dir, "/Log/Daily_Hist_Data_Save.csv"))){
+      if(file.exists(paste0(working.dir, "/Log/Future_Daily_Hist_Data_Save.csv"))){
         Log=data.table(Time=Sys.time())
         Log=rbind(Log,
-                  fread(paste0(working.dir, "/Log/Daily_Hist_Data_Save.csv")))
-        fwrite(Log, paste0(working.dir, "/Log/Daily_Hist_Data_Save.csv"))
+                  fread(paste0(working.dir, "/Log/Future_Daily_Hist_Data_Save.csv")))
+        fwrite(Log, paste0(working.dir, "/Log/Future_Daily_Hist_Data_Save.csv"))
       }else{
         Log=data.table(Time=Sys.time())
-        fwrite(Log, paste0(working.dir, "/Log/Daily_Hist_Data_Save.csv"))
+        fwrite(Log, paste0(working.dir, "/Log/Future_Daily_Hist_Data_Save.csv"))
       }
     }
   }else{
@@ -769,30 +772,64 @@ ReqRealTimeBars=function(BarSize=5, i, Log=F){
 
 
 
+#**************
+#
+# Get_Data ----
+#
+#**********************************************************************************
+# get import historical data sets of specified symbols saved in a repository folder
+#**********************************************************************************
+Get_Data=function(Symbols, BarSize=60*30, First_Date="2021-01-20", Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles")), Convert_Tz=F){
+  #************
+  # import data
+  #************
+  # output : `5SecsBarHistData`
+  for(Symbol in Symbols){
+    Get_5SecsBarHistData(Symbol=Symbol,
+                         First_Date=First_Date,
+                         Last_Date=Last_Date,
+                         Convert_Tz=F)
+    
+    # collapse data to the chosen-sized bar data
+    assign(Symbol, 
+           Collapse_5SecsBarData(`5SecsBarHistData`,
+                                 BarSize=BarSize,
+                                 Convert_Tz=Convert_Tz),
+           envir=.GlobalEnv)
+  }
+}
+
+
+
+
+
 #*********************
 #
-# Import_HistData ----
+# Get_5SecsBarHistData ----
 #
 #****************************************************
 # import historical data saved in a repository folder
 #******************************************************
 # output : `5SecsBarHistData` in the global environment
-Import_HistData=function(Location, Symbol, First_Date, Last_Date, Convert_Tz=F){
+Get_5SecsBarHistData=function(Symbol, First_Date, Last_Date, Convert_Tz=F){
+  # data table
+  lapply("data.table", checkpackages)
+  
   # remove `5SecsBarHistData` in the global environment
   if(exists("5SecsBarHistData")){rm(`5SecsBarHistData`, envir=.GlobalEnv)}
   
   # import
-  for(Date in seq(as.Date(First_Date), Last_Date, by="day")){
-    File_name=paste0(Symbol, "_", as.Date(Date), ".csv")
-    if(!file.exists(paste0(Location, File_name))){
+  for(Date in as.character(seq(as.Date(First_Date), Last_Date, by="day"))){
+    File_name=paste0(Symbol, "_", Date, ".csv")
+    if(!file.exists(paste0(working.dir, "Data/", Symbol, "/", File_name))){
       next
     }
     
     if(!exists("5SecsBarHistData", envir=.GlobalEnv)){
-      `5SecsBarHistData`<<-fread(paste0(Location, File_name))
+      `5SecsBarHistData`<<-fread(paste0(working.dir, "Data/", Symbol, "/", File_name))
     }else{
       `5SecsBarHistData`<<-rbind(`5SecsBarHistData`,
-                                 fread(paste0(Location, File_name)))
+                                 fread(paste0(working.dir, "Data/", Symbol, "/", File_name)))
     }
   }
   
@@ -800,57 +837,12 @@ Import_HistData=function(Location, Symbol, First_Date, Last_Date, Convert_Tz=F){
   # this process of converting time to the PDT time zone can be skipped as needed for less processing time
   if(Convert_Tz==T){
     `5SecsBarHistData`[, Time:=as.POSIXct(format(as.POSIXct(Time),
-                                                 tz="PST8PDT"),
-                                          tz="PST8PDT")]
+                                                 tz="America/Los_Angeles"),
+                                          tz="America/Los_Angeles")]
   }
 }
 
 
-
-
-
-#******************
-#
-# Candle_Chart ----
-#
-#******************
-Candle_Chart=function(BarData){
-  if(!is.null(BarData)){
-    Temp_BarData=as.matrix(BarData[, 3:6])
-    rownames(Temp_BarData)=as.character(as.Date(BarData$Time)+(0:(nrow(Temp_BarData)-1)))
-    
-    # PlotCandlestick from "DescTools"
-    PlotCandlestick(x=as.Date(rownames(Temp_BarData)),
-                    y=Temp_BarData,
-                    border=NA,
-                    las=1,
-                    ylab="",
-                    xaxt="n")
-    
-    # x-axis labels
-    # year
-    j=Year(as.Date(BarData$Time))
-    j[!c(1, diff(j))]=NA
-    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=j, cex=1, line=0)
-    
-    # month
-    j=Month(as.Date(BarData$Time))
-    j[!c(1, diff(j))]=NA
-    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=month.name[j], cex=0.9, line=0.9)
-    
-    # day
-    j=Day(as.Date(BarData$Time))
-    j[!c(1, diff(j))]=NA
-    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=j, cex=0.8, line=1.7)
-    
-    # hour-min-sec
-    mtext(side=1,
-          at=as.Date(rownames(Temp_BarData)),
-          text=as.character(as.ITime(BarData$Time)),
-          cex=0.7,
-          line=2.4)
-  }
-}
 
 
 
@@ -946,12 +938,60 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
   # this process of converting time to the PDT time zone can be skipped as needed for less processing time
   if(Convert_Tz==T){
     Collapsed_BarData[, Time:=as.POSIXct(format(as.POSIXct(Time),
-                                                tz="PST8PDT"),
-                                         tz="PST8PDT")]
+                                                tz="America/Los_Angeles"),
+                                         tz="America/Los_Angeles")]
   }
   
   return(as.data.table(Collapsed_BarData))
 }
+
+
+
+
+
+#******************
+#
+# Candle_Chart ----
+#
+#******************
+Candle_Chart=function(BarData){
+  if(!is.null(BarData)){
+    Temp_BarData=as.matrix(BarData[, 3:6])
+    rownames(Temp_BarData)=as.character(as.Date(BarData$Time)+(0:(nrow(Temp_BarData)-1)))
+    
+    # PlotCandlestick from "DescTools"
+    PlotCandlestick(x=as.Date(rownames(Temp_BarData)),
+                    y=Temp_BarData,
+                    border=NA,
+                    las=1,
+                    ylab="",
+                    xaxt="n")
+    
+    # x-axis labels
+    # year
+    j=Year(as.Date(BarData$Time))
+    j[!c(1, diff(j))]=NA
+    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=j, cex=1, line=0)
+    
+    # month
+    j=Month(as.Date(BarData$Time))
+    j[!c(1, diff(j))]=NA
+    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=month.name[j], cex=0.9, line=0.9)
+    
+    # day
+    j=Day(as.Date(BarData$Time))
+    j[!c(1, diff(j))]=NA
+    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=j, cex=0.8, line=1.7)
+    
+    # hour-min-sec
+    mtext(side=1,
+          at=as.Date(rownames(Temp_BarData)),
+          text=as.character(as.ITime(BarData$Time)),
+          cex=0.7,
+          line=2.4)
+  }
+}
+
 
 
 
@@ -1014,10 +1054,11 @@ BBands_Sim=function(Consec_Times, Long_PctB, Short_PctB, Commision=0.52){
 #********************
 # run a simulation
 #*****************
-Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
-  # Data_Params=Input_Set$Data_Params
-  # Order_Params=Input_Set$Order_Params
-  # Model_Param_Sets=Input_Set$Model_Param_Sets
+Run_Simulation=function(BarData, Indicators, Order_Params, Models){
+  # BarData=Param_Sets$BarData
+  # Indicators=Param_Sets$Indicators
+  # Order_Params=Param_Sets$Order_Params
+  # Models=Param_Sets$Models
   
   
   #****************
@@ -1037,45 +1078,21 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
   #************************
   # assign local parameters
   #************************
-  # data parameters
-  working.dir=Data_Params$working.dir
-  Symbol=Data_Params$Symbol
-  First_Date=Data_Params$First_Date
-  Last_Date=Data_Params$Last_Date
-  BarSize=Data_Params$BarSize
-  
   # order parameters
   Max_Orders=Order_Params$Max_Orders
   OrderType=Order_Params$OrderType
   Position_Direction=Order_Params$Position_Direction
   Parsed_Data_Max_Rows=Order_Params$Parsed_Data_Max_Rows
   
-  # model parameters
-  Indicators=Model_Param_Sets$Indicators
-  Models=Model_Param_Sets$Models
-  Model_Params=Model_Param_Sets$Model_Params
+  # indicators
+  List_of_Indicators=names(Indicators)
+  List_of_Models=names(Models)
+  # Model_Params=Models
   
-  Long_Consec_Times=Model_Param_Sets$Model_Params$Simple_BBands["Long_Consec_Times"]
-  Short_Consec_Times=Model_Param_Sets$Model_Params$Simple_BBands["Short_Consec_Times"]
-  Long_PctB=Model_Param_Sets$Model_Params$Simple_BBands["Long_PctB"]
-  Short_PctB=Model_Param_Sets$Model_Params$Simple_BBands["Short_PctB"]
-  
-  
-  #************
-  # import data
-  #************
-  # output : `5SecsBarHistData`
-  Import_HistData(Location=paste0(working.dir, "Data/"),
-                  Symbol=Symbol,
-                  First_Date=First_Date,
-                  Last_Date=Last_Date)
-  
-  # collapse data to the chosen-sized bar data
-  Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
-                                          BarSize=BarSize)
-  
-  # remove 5 seconds bar historical data set (`5SecsBarHistData`)
-  rm(`5SecsBarHistData`)
+  Long_Consec_Times=Models$Simple_BBands$Long_Consec_Times
+  Short_Consec_Times=Models$Simple_BBands$Short_Consec_Times
+  Long_PctB=Models$Simple_BBands$Long_PctB
+  Short_PctB=Models$Simple_BBands$Short_PctB
   
   
   #***************
@@ -1095,13 +1112,13 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
   #*********************
   # simulation algorithm
   #*********************
-  for(i in 1:(nrow(Collapsed_BarData)-1)){
+  for(i in 1:(nrow(BarData)-1)){
     # i=90
     if(!exists("Live_Data")){
       # define Live_Data
-      Live_Data=Collapsed_BarData[i, ]
+      Live_Data=BarData[i, ]
     }else{
-      Live_Data=rbind(Live_Data, Collapsed_BarData[i, ], fill=T) %>% tail(Parsed_Data_Max_Rows)
+      Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Parsed_Data_Max_Rows)
     }
     
     if(!exists("Order_Transmit")){
@@ -1122,21 +1139,21 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
     # calculate indicators
     #*********************
     # bollinger bands
-    if("BBands"%in%Indicators){
-      if(nrow(Live_Data)>19){
-        BBands_Data=Live_Data[, BBands(Close)]
+    if("BBands"%in%List_of_Indicators){
+      if(nrow(Live_Data)>Indicators$BBands$BBands_N-1){
+        BBands_Data=Live_Data[, BBands(Close, n=Indicators$BBands$BBands_N, sd=Indicators$BBands$BBands_SD)]
       }
     }
     
     # rsi
-    if("RSI"%in%Indicators){
-      if(nrow(Live_Data)>15){
-        Live_Data[, RSI:=RSI(Close)]
+    if("RSI"%in%List_of_Indicators){
+      if(nrow(Live_Data)>Indicators$RSI$RSI_N+1){
+        Live_Data[, RSI:=RSI(Close, n=Indicators$RSI$RSI_N)]
       }
     }
     
     # macd
-    if("MACD"%in%Indicators){
+    if("MACD"%in%List_of_Indicators){
       if(nrow(Live_Data)>34){
         MACD_Data=Live_Data[, MACD(Close)]
       }
@@ -1147,12 +1164,12 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
     # fit models
     #***********
     # Simple_BBands
-    if("Simple_BBands"%in%Models){
+    if("Simple_BBands"%in%List_of_Models){
       # signal to enter a long (short) position determined by Simple_BBands
       Long_Sig_by_Simple_BBands=0
       Short_Sig_by_Simple_BBands=0
       
-      if("BBands"%in%Indicators&
+      if("BBands"%in%List_of_Indicators&
          exists("BBands_Data")){
         
         # Simple_BBands
@@ -1173,23 +1190,23 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
         }
         
       }else{
-        if(!"BBands"%in%Indicators){
+        if(!"BBands"%in%List_of_Indicators){
           stop("BBands required")
         }
       }
     }
     
     # Simple_RSI
-    if("Simple_RSI"%in%Models){
+    if("Simple_RSI"%in%List_of_Models){
       # signal to enter a long (short) position determined by Simple_RSI
       Long_Sig_by_Simple_RSI=0
       Short_Sig_by_Simple_RSI=0
       
-      if("RSI"%in%Indicators&
+      if("RSI"%in%List_of_Indicators&
          length(Live_Data$RSI)>0){
         
       }else{
-        if(!"RSI"%in%Indicators){
+        if(!"RSI"%in%List_of_Indicators){
           stop("RSI required")
         }
       }
@@ -1245,10 +1262,10 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
       
       Unfilled_Buy_Position_Times=Order_Transmit[Action=="Buy"&Filled==0, Submit_Time]
       Unfilled_Buy_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
-      Which_Buy_Position_to_Fill=which(Collapsed_BarData[i+1, Low]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
+      Which_Buy_Position_to_Fill=which(BarData[i+1, Low]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
       Order_Transmit[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
-                     `:=`(Filled_Time=Collapsed_BarData[i+1, Time],
+                     `:=`(Filled_Time=BarData[i+1, Time],
                           Filled=1)]
     }
     # sell
@@ -1256,10 +1273,10 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
       
       Unfilled_Sell_Position_Times=Order_Transmit[Action=="Sell"&Filled==0, Submit_Time]
       Unfilled_Sell_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
-      Which_Sell_Position_to_Fill=which(Collapsed_BarData[i+1, High]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
+      Which_Sell_Position_to_Fill=which(BarData[i+1, High]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
       Order_Transmit[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
-                     `:=`(Filled_Time=Collapsed_BarData[i+1, Time],
+                     `:=`(Filled_Time=BarData[i+1, Time],
                           Filled=1)]
     }
     
@@ -1284,13 +1301,127 @@ Run_Simulation=function(Data_Params, Order_Params, Model_Param_Sets){
   Net_Profit=sum(Ind_Profit)
   
   
-  return(list(Collapsed_BarData=Collapsed_BarData,
+  return(list(BarData=BarData,
               Order_Transmit=Order_Transmit,
               Ind_Profit=Ind_Profit,
               Net_Profit=Net_Profit))
   
 }
 
+
+
+
+
+#************************
+#
+# checkBlotterUpdate ----
+#
+#****************************************************************
+# a function in 'quantstrat' to check the update state of Blotter
+checkBlotterUpdate <- function(port.st = portfolio.st, 
+                               account.st = account.st, 
+                               verbose = TRUE) {
+  
+  ok <- TRUE
+  p <- getPortfolio(port.st)
+  a <- getAccount(account.st)
+  syms <- names(p$symbols)
+  port.tot <- sum(
+    sapply(
+      syms, 
+      FUN = function(x) eval(
+        parse(
+          text = paste("sum(p$symbols", 
+                       x, 
+                       "posPL.USD$Net.Trading.PL)", 
+                       sep = "$")))))
+  
+  port.sum.tot <- sum(p$summary$Net.Trading.PL)
+  
+  if(!isTRUE(all.equal(port.tot, port.sum.tot))) {
+    ok <- FALSE
+    if(verbose) print("portfolio P&L doesn't match sum of symbols P&L")
+  }
+  
+  initEq <- as.numeric(first(a$summary$End.Eq))
+  endEq <- as.numeric(last(a$summary$End.Eq))
+  
+  if(!isTRUE(all.equal(port.tot, endEq - initEq)) ) {
+    ok <- FALSE
+    if(verbose) print("portfolio P&L doesn't match account P&L")
+  }
+  
+  if(sum(duplicated(index(p$summary)))) {
+    ok <- FALSE
+    if(verbose)print("duplicate timestamps in portfolio summary")
+    
+  }
+  
+  if(sum(duplicated(index(a$summary)))) {
+    ok <- FALSE
+    if(verbose) print("duplicate timestamps in account summary")
+  }
+  return(ok)
+}
+
+
+
+
+
+#*********************
+#
+# Init.Strategy ----
+#
+#*************************************
+# generate the initial Init.Strategy
+Init.Strategy=function(Name, BarData=c(), Indicators=list(), Order_Params=list(), Models=list()){
+  Strategy_temp=list(Indicators=Indicators, # indicators
+                     Order_Params=Order_Params, # order parameters
+                     Models=Models) # model parameters
+  class(Strategy_temp)="Strategy"
+  assign(Name,
+         Strategy_temp,
+         envir=.GlobalEnv)
+}
+
+
+
+
+
+#*******************
+#
+# Add.Indicator ----
+#
+#********************************************
+# add an indicator to the object 'Param_Sets'
+Add.Indicator=function(Strategy, Indicator, IndicatorParams){
+  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
+    Init.Strategy(Name=Strategy)
+  }
+  Strategy_temp=get(Strategy, envir=.GlobalEnv)
+  Strategy_temp$Indicators[[Indicator]]=IndicatorParams
+  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
+}
+
+
+
+
+
+#***************
+#
+# Add.Model ----
+#
+#***************************************
+# add a model to the object 'Param_Sets'
+Add.Model=function(Strategy, Model, ModelParams){
+  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
+    Init.Strategy(Name=Strategy)
+  }
+  # Param_Sets$Models[[Model]]<<-ModelParams
+  Strategy_temp=get(Strategy, envir=.GlobalEnv)
+  Strategy_temp$Models[[Model]]=ModelParams
+  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
+}
 
 
 
