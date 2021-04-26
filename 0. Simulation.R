@@ -34,10 +34,10 @@ source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # desktop
 
 # import libraries
 for(pack in c("IBrokers",
-           "TTR",
-           "data.table",
-           "dplyr",
-           "DescTools")){ # candle chart
+              "TTR",
+              "data.table",
+              "dplyr",
+              "DescTools")){ # candle chart
   lapply(pack, checkpackages)
 }
 
@@ -46,8 +46,7 @@ Init.Strategy(Name="BBands_Strategy",
               Order_Params=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
                                 OrderType="MKT", # "LMT"
                                 Position_Direction="both", # direction of position ("both", "long", "short")
-                                Parsed_Data_Max_Rows=50 # the maximum number of rows in a temp dataset to parse
-              ))
+                                Parsed_Data_Max_Rows=50)) # the maximum number of rows in a temp dataset to parse
 
 # add indicator
 Add.Indicator(Strategy="BBands_Strategy",
@@ -83,18 +82,24 @@ BarData=MNQ
 # simulation algorithm
 #
 #*********************
-# all strategies in the global environment
-Strategies=ls()[sapply(ls(), function(var) any(class(get(var))=='Strategy'))]
 system.time({
   Sim_Results=do.call(Run_Simulation, get(Strategies[1]))
 })
 Sim_Results
 
 
-
-
+#***********************************************
 #
+# all strategies saved in the global environment
+#
+#***********************************************
+Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
 
+names(unlist(as.list(args(Add.Model)))) # see all arguments in a function
+
+names(BBands_Strategy$Models)
+#********************************************************
+BBands_Strategy
 
 
 # compute indicators
