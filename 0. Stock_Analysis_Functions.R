@@ -1047,14 +1047,18 @@ BBands_Sim=function(Consec_Times, Long_PctB, Short_PctB, Commision=0.52){
 
 
 
-#********************
-#
-# Run_Simulation ----
-#
-#********************
-# run a simulation
 #*****************
-Run_Simulation=function(BarData, Indicators, Order_Rules, Models){
+#
+# Backtesting ----
+#
+#***********************************************************
+# run a fast version of backtesting algorithm for simulation
+#***********************************************************
+Backtesting=function(BarData, Strategy){
+  Order_Rules=Strategy$Order_Rules
+  Indicators=Strategy$Indicators
+  Models=Strategy$Models
+  
   #****************
   # import packages
   #****************
@@ -1068,17 +1072,19 @@ Run_Simulation=function(BarData, Indicators, Order_Rules, Models){
   #************************
   # assign local parameters
   #************************
+  # general parameters
+  Max_Rows=Strategy$Max_Rows
+  
   # order parameters
-  Max_Orders=Order_Rules$Max_Orders
-  OrderType=Order_Rules$OrderType
-  Position_Direction=Order_Rules$Position_Direction
-  Parsed_Data_Max_Rows=Order_Rules$Parsed_Data_Max_Rows
+  Max_Orders=Order_Rules$General$Max_Orders
+  OrderType=Order_Rules$General$OrderType
+  Position_Direction=Order_Rules$General$Position_Direction
   
   # indicators
   Passed_Indicators=names(Indicators)
   Passed_Models=names(Models)
-  # Model_Params=Models
   
+  # models
   Long_Consec_Times=Models$Simple_BBands$Long_Consec_Times
   Short_Consec_Times=Models$Simple_BBands$Short_Consec_Times
   Long_PctB=Models$Simple_BBands$Long_PctB
@@ -1108,7 +1114,7 @@ Run_Simulation=function(BarData, Indicators, Order_Rules, Models){
       # define Live_Data
       Live_Data=BarData[i, ]
     }else{
-      Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Parsed_Data_Max_Rows)
+      Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
     }
     
     if(!exists("Order_Transmit")){
@@ -1130,15 +1136,15 @@ Run_Simulation=function(BarData, Indicators, Order_Rules, Models){
     #*********************
     # bollinger bands
     if("BBands"%in%Passed_Indicators){
-      if(nrow(Live_Data)>Indicators$BBands$BBands_N-1){
-        BBands_Data=Live_Data[, BBands(Close, n=Indicators$BBands$BBands_N, sd=Indicators$BBands$BBands_SD)]
+      if(nrow(Live_Data)>Indicators$BBands$n-1){
+        BBands_Data=Live_Data[, BBands(Close, n=Indicators$BBands$n, sd=Indicators$BBands$sd)]
       }
     }
     
     # rsi
     if("RSI"%in%Passed_Indicators){
-      if(nrow(Live_Data)>Indicators$RSI$RSI_N+1){
-        Live_Data[, RSI:=RSI(Close, n=Indicators$RSI$RSI_N)]
+      if(nrow(Live_Data)>Indicators$RSI$n+1){
+        Live_Data[, RSI:=RSI(Close, n=Indicators$RSI$n)]
       }
     }
     
@@ -1162,22 +1168,20 @@ Run_Simulation=function(BarData, Indicators, Order_Rules, Models){
       if("BBands"%in%Passed_Indicators&
          exists("BBands_Data")){
         
-        # Simple_BBands
         # number of filled orders
         N_Filled_Buys=nrow(Order_Transmit[Action=="Buy"&Filled==1, ]) # buy
         N_Filled_Sells=nrow(Order_Transmit[Action=="Sell"&Filled==1, ]) # sell
         
-        # determine a position by pctB
         if(N_Filled_Buys-N_Filled_Sells==0){ # if there is no currently filled order
-          Long_Sig_by_Simple_BBands=sum(tail(BBands_Data, Long_Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Long_Consec_Times
-          Short_Sig_by_Simple_BBands=sum(tail(BBands_Data, Short_Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Short_Consec_Times
+          Sigs_by_Simple_BBands=Simple_BBands(BBands_Data,Long_Consec_Times, Short_Consec_Times, Long_PctB, Short_PctB)
         }else if(N_Filled_Buys-N_Filled_Sells>0){ # if the currently filled order is buy order, generate signal to sell as soon as pctB>=Short_PctB
-          Long_Sig_by_Simple_BBands=sum(tail(BBands_Data, Long_Consec_Times)[,"pctB"]<=Long_PctB, na.rm=T)==Long_Consec_Times 
-          Short_Sig_by_Simple_BBands=sum(tail(BBands_Data, 1)[,"pctB"]>=Short_PctB, na.rm=T)==1
+          Sigs_by_Simple_BBands=Simple_BBands(BBands_Data, Long_Consec_Times, 1, Long_PctB, Short_PctB)
         }else if(N_Filled_Buys-N_Filled_Sells<0){ # if the currently filled order is short order, generate signal to sell as soon as pctB<=Long_PctB
-          Long_Sig_by_Simple_BBands=sum(tail(BBands_Data, 1)[,"pctB"]<=Long_PctB, na.rm=T)==1
-          Short_Sig_by_Simple_BBands=sum(tail(BBands_Data, Short_Consec_Times)[,"pctB"]>=Short_PctB, na.rm=T)==Short_Consec_Times
+          Sigs_by_Simple_BBands=Simple_BBands(BBands_Data, 1, Short_Consec_Times, Long_PctB, Short_PctB)
         }
+        # determined signals
+        Long_Sig_by_Simple_BBands=Sigs_by_Simple_BBands[1]
+        Short_Sig_by_Simple_BBands=Sigs_by_Simple_BBands[2]
         
       }else{
         if(!"BBands"%in%Passed_Indicators){
@@ -1185,6 +1189,254 @@ Run_Simulation=function(BarData, Indicators, Order_Rules, Models){
         }
       }
     }
+    
+    # Simple_RSI
+    if("Simple_RSI"%in%Passed_Models){
+      # signal to enter a long (short) position determined by Simple_RSI
+      Long_Sig_by_Simple_RSI=0
+      Short_Sig_by_Simple_RSI=0
+      
+      if("RSI"%in%Passed_Indicators&
+         length(Live_Data$RSI)>0){
+        
+      }else{
+        if(!"RSI"%in%Passed_Indicators){
+          stop("RSI required")
+        }
+      }
+    }
+    
+    
+    #***************
+    # transmit order
+    #***************
+    # buy
+    if(Long_Sig_by_Simple_BBands){
+      # determine the position
+      if(sum(Order_Transmit[Action=="Buy", TotalQuantity])-
+         sum(Order_Transmit[Action=="Sell", TotalQuantity])<=
+         (Max_Long_Orders)){ # the number of currently remaining filled or transmitted long positions is limited to Max_Orders(= Max_Long_Orders + 1)
+        print(paste0("buy : ", i))
+        Order_Transmit=rbind(Order_Transmit,
+                             data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                        Submit_Time=tail(Live_Data, 1)[, Time],
+                                        Filled_Time=tail(Live_Data, 1)[, Time],
+                                        Action="Buy",
+                                        TotalQuantity=1,
+                                        OrderType=OrderType,
+                                        LmtPrice=tail(Live_Data, 1)[, Close],
+                                        Filled=0))
+      }
+    }
+    
+    # sell
+    if(Short_Sig_by_Simple_BBands){
+      if(sum(Order_Transmit[Action=="Sell", TotalQuantity])-
+         sum(Order_Transmit[Action=="Buy", TotalQuantity])<=
+         (Max_Short_Orders)){ # the number of currently remaining filled or transmitted short positions is limited to Max_Orders(= Max_Short_Orders + 1)
+        print(paste0("sell : ", i))
+        Order_Transmit=rbind(Order_Transmit,
+                             data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                        Submit_Time=tail(Live_Data, 1)[, Time],
+                                        Filled_Time=tail(Live_Data, 1)[, Time],
+                                        Action="Sell",
+                                        TotalQuantity=1,
+                                        OrderType=OrderType,
+                                        LmtPrice=tail(Live_Data, 1)[, Close],
+                                        Filled=0))
+      }
+    }
+    
+    
+    #***********
+    # fill order
+    #***********
+    # buy
+    if(nrow(Order_Transmit[Action=="Buy"&Filled==0, ])>0){ # if there is any transmitted buy order that has not been filled yet
+      
+      Unfilled_Buy_Position_Times=Order_Transmit[Action=="Buy"&Filled==0, Submit_Time]
+      Unfilled_Buy_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
+      Which_Buy_Position_to_Fill=which(BarData[i+1, Low]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
+      
+      Order_Transmit[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
+                     `:=`(Filled_Time=BarData[i+1, Time],
+                          Filled=1)]
+    }
+    # sell
+    if(nrow(Order_Transmit[Action=="Sell"&Filled==0, ])>0){ # if there is any transmitted sell order that has not been filled yet
+      
+      Unfilled_Sell_Position_Times=Order_Transmit[Action=="Sell"&Filled==0, Submit_Time]
+      Unfilled_Sell_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
+      Which_Sell_Position_to_Fill=which(BarData[i+1, High]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
+      
+      Order_Transmit[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
+                     `:=`(Filled_Time=BarData[i+1, Time],
+                          Filled=1)]
+    }
+    
+  }
+  
+  
+  #**********************
+  # calculate the balance
+  #**********************
+  Collapse_Order_Transmit=cbind(Order_Transmit[Action=="Buy", 
+                                               c("Filled_Time", "LmtPrice")],
+                                Order_Transmit[Action=="Sell", 
+                                               c("Filled_Time", "LmtPrice")])
+  colnames(Collapse_Order_Transmit)=c("Buy_Time", "Buy_Price", "Sell_Time", "Sell_Price")
+  Duplicated_Row=unique(c(which(duplicated(Collapse_Order_Transmit[, c("Buy_Time", "Buy_Price")])), 
+                          which(duplicated(Collapse_Order_Transmit[, c("Sell_Time", "Sell_Price")]))))
+  if(length(Duplicated_Row)>0){
+    Collapse_Order_Transmit=Collapse_Order_Transmit[-Duplicated_Row, ]
+  }
+  
+  Ind_Profit=2*Collapse_Order_Transmit[, Sell_Price-Buy_Price]-2*0.52
+  Net_Profit=sum(Ind_Profit)
+  
+  
+  return(list(BarData=BarData,
+              Order_Transmit=Order_Transmit,
+              Ind_Profit=Ind_Profit,
+              Net_Profit=Net_Profit))
+  
+}
+
+
+
+
+
+#***************************
+#
+# Live_Trading_Imitator ----
+#
+#*********************************************
+# run an algorithm under the realistic setting
+#************************************************
+Live_Trading_Imitator=function(BarData, Strategy){
+  Order_Rules=Strategy$Order_Rules
+  Indicators=Strategy$Indicators
+  Models=Strategy$Models 
+  
+  #****************
+  # import packages
+  #****************
+  lapply(c("IBrokers",
+           "TTR",
+           "data.table",
+           "dplyr"),
+         checkpackages)
+  
+  
+  #************************
+  # assign local parameters
+  #************************
+  # general parameters
+  Max_Rows=Strategy$Max_Rows
+  
+  # order parameters
+  Max_Orders=Order_Rules$General$Max_Orders
+  OrderType=Order_Rules$General$OrderType
+  Position_Direction=Order_Rules$General$Position_Direction
+  
+  # indicators
+  Passed_Indicators=names(Indicators)
+  
+  # models
+  Passed_Models=names(Models)
+  Long_Consec_Times=Models$Simple_BBands$Long_Consec_Times
+  Short_Consec_Times=Models$Simple_BBands$Short_Consec_Times
+  Long_PctB=Models$Simple_BBands$Long_PctB
+  Short_PctB=Models$Simple_BBands$Short_PctB
+  
+  
+  #******************
+  # preliminary steps
+  #******************
+  if(Position_Direction=="both"){
+    Max_Long_Orders=Max_Short_Orders=Max_Orders-1
+  }else if(Position_Direction=="long"){
+    Max_Long_Orders=Max_Orders-1
+    Max_Short_Orders=-1
+  }else if(Position_Direction=="short"){
+    Max_Long_Orders=-1
+    Max_Short_Orders=Max_Orders-1
+  }
+  
+  # TTR_Objects
+  TTR_Objects=ls("package:TTR")
+  
+  #*********************
+  # simulation algorithm
+  #*********************
+  for(i in 1:(nrow(BarData)-1)){
+    # i=1
+    if(!exists("Live_Data")){
+      # define Live_Data
+      Live_Data=BarData[i, ]
+    }else{
+      Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
+    }
+    
+    if(!exists("Order_Transmit")){
+      # define Order_Transmit
+      Order_Transmit=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                Submit_Time=tail(Live_Data, 1)[, Time],
+                                Filled_Time=tail(Live_Data, 1)[, Time],
+                                Action="", 
+                                TotalQuantity=0,
+                                OrderType=OrderType,
+                                LmtPrice=0,
+                                Filled=0)
+      Order_Transmit=Order_Transmit[-1,]
+    }
+    
+    #*********************
+    # calculate indicators
+    #*********************
+    Calculated_Indicators=sapply(Passed_Indicators,
+                                 function(x) 
+                                   if(nrow(Live_Data)>Indicators[[x]]$n+1){
+                                     do.call(x, 
+                                             c(list(Live_Data$Close), # for now only using "Close price", 
+                                               # additional work would be required in the future if the indicator does not depend on "Close price"
+                                               Indicators[[x]]))
+                                   })
+    
+    #***********
+    # fit models
+    #***********
+    # Simple_BBands
+    if("Simple_BBands"%in%Passed_Models){
+      # signal to enter a long (short) position determined by Simple_BBands
+      Long_Sig_by_Simple_BBands=0
+      Short_Sig_by_Simple_BBands=0
+      
+      if("BBands"%in%Passed_Indicators&
+         !is.null(Calculated_Indicators[["BBands"]])){
+        
+        # number of filled orders
+        N_Filled_Buys=nrow(Order_Transmit[Action=="Buy"&Filled==1, ]) # buy
+        N_Filled_Sells=nrow(Order_Transmit[Action=="Sell"&Filled==1, ]) # sell
+        
+        if(N_Filled_Buys-N_Filled_Sells==0){ # if there is no currently filled order
+          Sigs_by_Simple_BBands=Simple_BBands(Calculated_Indicators[["BBands"]],Long_Consec_Times, Short_Consec_Times, Long_PctB, Short_PctB)
+        }else if(N_Filled_Buys-N_Filled_Sells>0){ # if the currently filled order is buy order, generate signal to sell as soon as pctB>=Short_PctB
+          Sigs_by_Simple_BBands=Simple_BBands(Calculated_Indicators[["BBands"]], Long_Consec_Times, 1, Long_PctB, Short_PctB)
+        }else if(N_Filled_Buys-N_Filled_Sells<0){ # if the currently filled order is short order, generate signal to sell as soon as pctB<=Long_PctB
+          Sigs_by_Simple_BBands=Simple_BBands(Calculated_Indicators[["BBands"]], 1, Short_Consec_Times, Long_PctB, Short_PctB)
+        }
+        # determined signals
+        Long_Sig_by_Simple_BBands=Sigs_by_Simple_BBands[1]
+        Short_Sig_by_Simple_BBands=Sigs_by_Simple_BBands[2]
+        
+      }else{
+        if(!"BBands"%in%Passed_Indicators){
+          stop("BBands required")
+        }
+      }
+    }
+    
     
     # Simple_RSI
     if("Simple_RSI"%in%Passed_Models){
@@ -1373,7 +1625,7 @@ checkBlotterUpdate <- function(port.st = portfolio.st,
 #          Strategy_temp,
 #          envir=.GlobalEnv)
 # }
-Init_Strategy=function(Name) {
+Init_Strategy=function(Name, Max_Rows=50){
   env_temp=environment()
   class(env_temp)="Strategy"
   
@@ -1383,8 +1635,8 @@ Init_Strategy=function(Name) {
   
   assign(Name, env_temp, envir = .GlobalEnv)
   
-  rm(env_temp)
-  rm(Name)
+  rm(list=c("Name", "env_temp"))
+  rm()
 }
 
 
@@ -1420,83 +1672,38 @@ Add_OrderRule=function(Strategy, OrderRule, OrderRuleParams){
 #********************************************
 # add an indicator to the object 'Param_Sets'
 Add_Indicator=function(Strategy, Indicator=NULL, IndicatorParams=NULL){
-  # 
+  # check TTR installation
+  checkpackages("TTR")
+  
   if(!exists(paste0(Strategy), envir=.GlobalEnv)){
     Init.Strategy(Name=Strategy)
   }
   
-  # list of available indicators
-  Available_Indicators=c("BBands", "RSI")
+  # TTR objects
+  TTR_Objects=ls("package:TTR")
   
-  # check the availability of the indicator to include
-  if(!Indicator%in%Available_Indicators){
-    stop("Available indicators : ", paste(Available_Indicators, collapse=", "))
+  # check the availability of Indicator in TTR
+  if(!Indicator%in%TTR_Objects){
+    stop("Available indicators in TTR : ", paste(TTR_Objects, collapse=", "))
   }
   
-  # check parameters by indicator
-  # BBands
-  if(Indicator=="BBands"){
-    BBands_N_default=20
-    BBands_SD_default=2
-    
-    if(is.null(IndicatorParams)){
-      BBands_N=BBands_N_default
-      BBands_SD=BBands_SD_default
-    }else{
-      if(!is.numeric(unlist(IndicatorParams))){
-        stop("Parameters must be numeric")
-      }
-      
-      # list of parameters
-      Valid_Params=c("BBands_N", "BBands_SD")
-      
-      # passed parameters
-      PassedParams=names(IndicatorParams)
-      
-      # detect redundant variables
-      if(sum(!PassedParams%in%Valid_Params)>0){
-        stop("Valid parameters : ", paste(Valid_Params, collapse=", "))
-      }
-      
-      # if not defined, assign the default value
-      if(!c("BBands_N")%in%PassedParams){
-        BBands_N=BBands_N_default
-      }
-      if(!c("BBands_SD")%in%PassedParams){
-        BBands_SD=BBands_SD_default
-      }
-    }
+  #*****************
+  # check parameters
+  #******************
+  # passed parameters
+  if(length(IndicatorParams)==0){
+    IndicatorParams=unlist(as.list(args(Indicator)))
+    IndicatorParams=IndicatorParams[IndicatorParams!=""] # remove arguments with blank
+    Passed_Arguments=names(IndicatorParams)
+  }else{
+    Passed_Arguments=names(IndicatorParams)
   }
   
-  
-  # RSI
-  if(Indicator=="RSI"){
-    RSI_N_default=14
-    if(is.null(IndicatorParams)){
-      RSI_N=RSI_N_default
-    }else{
-      if(!is.numeric(unlist(IndicatorParams))){
-        stop("Parameters must be numeric")
-      }
-      
-      # list of parameters
-      Valid_Params=c("RSI_N")
-      
-      # passed parameters
-      PassedParams=names(IndicatorParams)
-      
-      # detect redundant variables
-      if(sum(!PassedParams%in%c("RSI_N"))>0){
-        stop("Valid parameters : ", paste(Valid_Params, collapse=", "))
-      }
-      
-      # if not defined, assign the default value
-      if(!c("RSI_N")%in%PassedParams){
-        RSI_N=RSI_N_default
-      }
-    }
+  # arguments in the function calculating Indicator in TTR
+  TTR_Params=names(unlist(as.list(args(Indicator))))
+  if(sum(!Passed_Arguments%in%TTR_Params>0)){
+    stop("Valid parameters : ", paste(TTR_Params, collapse=", "))
   }
-  
   
   # update the corresponding strategy
   Strategy_temp=get(Strategy, envir=.GlobalEnv)
@@ -1523,6 +1730,7 @@ Add_Model=function(Strategy, Model, ModelParams){
   Strategy_temp$Models[[Model]]=ModelParams
   assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
 }
+
 
 
 

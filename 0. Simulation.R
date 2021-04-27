@@ -29,8 +29,8 @@ Symbols=c("MNQ", "SPY")
 #
 #*******************
 # required functions
-source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # desktop
-#source(paste0(working.dir, "0. Stock_Analysis_Functions.R")) # laptop
+source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
+source(paste0(working.dir, "0. Models.R"))
 
 # import libraries
 for(pack in c("IBrokers",
@@ -41,32 +41,8 @@ for(pack in c("IBrokers",
   lapply(pack, checkpackages)
 }
 
-# initiate a strategy called "BBands_Strategy"
-Init_Strategy(Name="BBands_Strategy",
-              Order_Params=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
-                                OrderType="MKT", # "LMT"
-                                Position_Direction="both", # direction of position ("both", "long", "short")
-                                Parsed_Data_Max_Rows=50)) # the maximum number of rows in a temp dataset to parse
-
-# add indicator
-Add_Indicator(Strategy="BBands_Strategy",
-              Indicator="BBands",
-              IndicatorParams=list(BBands_N=20,
-                                   BBands_SD=2))
-Add_Indicator(Strategy="BBands_Strategy",
-              Indicator="RSI",
-              IndicatorParams=list(RSI_N=14))
-
-# add model (to run in combination with other included models to decide to transmit an order)
-Add_Model(Strategy="BBands_Strategy",
-          Model="Simple_BBands",
-          ModelParams=list(Long_Consec_Times=1,
-                           Short_Consec_Times=1,
-                           Long_PctB=0,
-                           Short_PctB=1))
-Add_Model(Strategy="BBands_Strategy",
-          Model="Simple_RSI",
-          ModelParams=list())
+# import strategies
+source(paste0(working.dir, "/Strategies.R"))
 
 # import data
 Get_Data(Symbols=list("MNQ", "SPY"),
@@ -84,10 +60,16 @@ BarData=MNQ
 #***********************************************
 # all strategies saved in the global environment
 Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
-# run Run_Simulation
+# run Backtesting
 system.time({
-  Sim_Results=do.call(Run_Simulation, c(list(BarData=MNQ), get(Strategies[1])))
+  Sim_Results=Live_Trading_Imitator(BarData<-MNQ,
+                                    Strategy<-get(Strategies[1]))
 })
+# # run Backtesting
+# system.time({
+#   Sim_Results=Backtesting(BarData<-MNQ,
+#                                Strategy<-get(Strategies[1]))
+# })
 
 
 
@@ -98,10 +80,10 @@ system.time({
 #
 #***********************************************
 names(unlist(as.list(args(Add_Model)))) # see all arguments in a function
-names(BBands_Strategy$Models)
+names(Strategy_Simple_BBands$Models)
 
 #********************************************************
-BBands_Strategy
+Strategy_Simple_BBands
 
 
 # compute indicators
