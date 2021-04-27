@@ -1054,39 +1054,29 @@ BBands_Sim=function(Consec_Times, Long_PctB, Short_PctB, Commision=0.52){
 #********************
 # run a simulation
 #*****************
-Run_Simulation=function(BarData, Indicators, Order_Params, Models){
-  # BarData=Param_Sets$BarData
-  # Indicators=Param_Sets$Indicators
-  # Order_Params=Param_Sets$Order_Params
-  # Models=Param_Sets$Models
-  
-  
+Run_Simulation=function(BarData, Indicators, Order_Rules, Models){
   #****************
   # import packages
   #****************
-  lapply(
-    c(
-      "IBrokers",
-      "TTR",
-      "data.table",
-      "dplyr",
-      "DescTools" # candle chart
-    ), 
-    checkpackages)
+  lapply(c("IBrokers",
+           "TTR",
+           "data.table",
+           "dplyr"),
+         checkpackages)
   
   
   #************************
   # assign local parameters
   #************************
   # order parameters
-  Max_Orders=Order_Params$Max_Orders
-  OrderType=Order_Params$OrderType
-  Position_Direction=Order_Params$Position_Direction
-  Parsed_Data_Max_Rows=Order_Params$Parsed_Data_Max_Rows
+  Max_Orders=Order_Rules$Max_Orders
+  OrderType=Order_Rules$OrderType
+  Position_Direction=Order_Rules$Position_Direction
+  Parsed_Data_Max_Rows=Order_Rules$Parsed_Data_Max_Rows
   
   # indicators
-  List_of_Indicators=names(Indicators)
-  List_of_Models=names(Models)
+  Passed_Indicators=names(Indicators)
+  Passed_Models=names(Models)
   # Model_Params=Models
   
   Long_Consec_Times=Models$Simple_BBands$Long_Consec_Times
@@ -1095,9 +1085,9 @@ Run_Simulation=function(BarData, Indicators, Order_Params, Models){
   Short_PctB=Models$Simple_BBands$Short_PctB
   
   
-  #***************
-  # order settings
-  #***************
+  #******************
+  # preliminary steps
+  #******************
   if(Position_Direction=="both"){
     Max_Long_Orders=Max_Short_Orders=Max_Orders-1
   }else if(Position_Direction=="long"){
@@ -1113,7 +1103,7 @@ Run_Simulation=function(BarData, Indicators, Order_Params, Models){
   # simulation algorithm
   #*********************
   for(i in 1:(nrow(BarData)-1)){
-    # i=90
+    # i=1
     if(!exists("Live_Data")){
       # define Live_Data
       Live_Data=BarData[i, ]
@@ -1139,21 +1129,21 @@ Run_Simulation=function(BarData, Indicators, Order_Params, Models){
     # calculate indicators
     #*********************
     # bollinger bands
-    if("BBands"%in%List_of_Indicators){
+    if("BBands"%in%Passed_Indicators){
       if(nrow(Live_Data)>Indicators$BBands$BBands_N-1){
         BBands_Data=Live_Data[, BBands(Close, n=Indicators$BBands$BBands_N, sd=Indicators$BBands$BBands_SD)]
       }
     }
     
     # rsi
-    if("RSI"%in%List_of_Indicators){
+    if("RSI"%in%Passed_Indicators){
       if(nrow(Live_Data)>Indicators$RSI$RSI_N+1){
         Live_Data[, RSI:=RSI(Close, n=Indicators$RSI$RSI_N)]
       }
     }
     
     # macd
-    if("MACD"%in%List_of_Indicators){
+    if("MACD"%in%Passed_Indicators){
       if(nrow(Live_Data)>34){
         MACD_Data=Live_Data[, MACD(Close)]
       }
@@ -1164,12 +1154,12 @@ Run_Simulation=function(BarData, Indicators, Order_Params, Models){
     # fit models
     #***********
     # Simple_BBands
-    if("Simple_BBands"%in%List_of_Models){
+    if("Simple_BBands"%in%Passed_Models){
       # signal to enter a long (short) position determined by Simple_BBands
       Long_Sig_by_Simple_BBands=0
       Short_Sig_by_Simple_BBands=0
       
-      if("BBands"%in%List_of_Indicators&
+      if("BBands"%in%Passed_Indicators&
          exists("BBands_Data")){
         
         # Simple_BBands
@@ -1190,23 +1180,23 @@ Run_Simulation=function(BarData, Indicators, Order_Params, Models){
         }
         
       }else{
-        if(!"BBands"%in%List_of_Indicators){
+        if(!"BBands"%in%Passed_Indicators){
           stop("BBands required")
         }
       }
     }
     
     # Simple_RSI
-    if("Simple_RSI"%in%List_of_Models){
+    if("Simple_RSI"%in%Passed_Models){
       # signal to enter a long (short) position determined by Simple_RSI
       Long_Sig_by_Simple_RSI=0
       Short_Sig_by_Simple_RSI=0
       
-      if("RSI"%in%List_of_Indicators&
+      if("RSI"%in%Passed_Indicators&
          length(Live_Data$RSI)>0){
         
       }else{
-        if(!"RSI"%in%List_of_Indicators){
+        if(!"RSI"%in%Passed_Indicators){
           stop("RSI required")
         }
       }
@@ -1368,20 +1358,33 @@ checkBlotterUpdate <- function(port.st = portfolio.st,
 
 
 
-#*********************
+#*******************
 #
-# Init.Strategy ----
+# Init_Strategy ----
 #
 #***********************************
 # generate the initial Init.Strategy
-Init_Strategy=function(Name, BarData=c(), Indicators=list(), Order_Params=list(), Models=list()){
-  Strategy_temp=list(Indicators=Indicators, # indicators
-                     Order_Params=Order_Params, # order parameters
-                     Models=Models) # model parameters
-  class(Strategy_temp)="Strategy"
-  assign(Name,
-         Strategy_temp,
-         envir=.GlobalEnv)
+# Init_Strategy=function(Name){
+#   Strategy_temp=list(Indicators=list(),
+#                      Order_Rules=list(),
+#                      Models=list()) # model parameters
+#   class(Strategy_temp)="Strategy"
+#   assign(Name,
+#          Strategy_temp,
+#          envir=.GlobalEnv)
+# }
+Init_Strategy=function(Name) {
+  env_temp=environment()
+  class(env_temp)="Strategy"
+  
+  Indicators=list()
+  Order_Rules=list()
+  Models=list()
+  
+  assign(Name, env_temp, envir = .GlobalEnv)
+  
+  rm(env_temp)
+  rm(Name)
 }
 
 
@@ -1390,14 +1393,112 @@ Init_Strategy=function(Name, BarData=c(), Indicators=list(), Order_Params=list()
 
 #*******************
 #
-# Add.Indicator ----
+# Add_OrderRule ----
 #
 #********************************************
 # add an indicator to the object 'Param_Sets'
-Add_Indicator=function(Strategy, Indicator, IndicatorParams){
+Add_OrderRule=function(Strategy, OrderRule, OrderRuleParams){
+  # 
   if(!exists(paste0(Strategy), envir=.GlobalEnv)){
     Init.Strategy(Name=Strategy)
   }
+  
+  
+  Strategy_temp=get(Strategy, envir=.GlobalEnv)
+  Strategy_temp$Order_Rules[[OrderRule]]=OrderRuleParams
+  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
+}
+
+
+
+
+
+#*******************
+#
+# Add_Indicator ----
+#
+#********************************************
+# add an indicator to the object 'Param_Sets'
+Add_Indicator=function(Strategy, Indicator=NULL, IndicatorParams=NULL){
+  # 
+  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
+    Init.Strategy(Name=Strategy)
+  }
+  
+  # list of available indicators
+  Available_Indicators=c("BBands", "RSI")
+  
+  # check the availability of the indicator to include
+  if(!Indicator%in%Available_Indicators){
+    stop("Available indicators : ", paste(Available_Indicators, collapse=", "))
+  }
+  
+  # check parameters by indicator
+  # BBands
+  if(Indicator=="BBands"){
+    BBands_N_default=20
+    BBands_SD_default=2
+    
+    if(is.null(IndicatorParams)){
+      BBands_N=BBands_N_default
+      BBands_SD=BBands_SD_default
+    }else{
+      if(!is.numeric(unlist(IndicatorParams))){
+        stop("Parameters must be numeric")
+      }
+      
+      # list of parameters
+      Valid_Params=c("BBands_N", "BBands_SD")
+      
+      # passed parameters
+      PassedParams=names(IndicatorParams)
+      
+      # detect redundant variables
+      if(sum(!PassedParams%in%Valid_Params)>0){
+        stop("Valid parameters : ", paste(Valid_Params, collapse=", "))
+      }
+      
+      # if not defined, assign the default value
+      if(!c("BBands_N")%in%PassedParams){
+        BBands_N=BBands_N_default
+      }
+      if(!c("BBands_SD")%in%PassedParams){
+        BBands_SD=BBands_SD_default
+      }
+    }
+  }
+  
+  
+  # RSI
+  if(Indicator=="RSI"){
+    RSI_N_default=14
+    if(is.null(IndicatorParams)){
+      RSI_N=RSI_N_default
+    }else{
+      if(!is.numeric(unlist(IndicatorParams))){
+        stop("Parameters must be numeric")
+      }
+      
+      # list of parameters
+      Valid_Params=c("RSI_N")
+      
+      # passed parameters
+      PassedParams=names(IndicatorParams)
+      
+      # detect redundant variables
+      if(sum(!PassedParams%in%c("RSI_N"))>0){
+        stop("Valid parameters : ", paste(Valid_Params, collapse=", "))
+      }
+      
+      # if not defined, assign the default value
+      if(!c("RSI_N")%in%PassedParams){
+        RSI_N=RSI_N_default
+      }
+    }
+  }
+  
+  
+  # update the corresponding strategy
   Strategy_temp=get(Strategy, envir=.GlobalEnv)
   Strategy_temp$Indicators[[Indicator]]=IndicatorParams
   assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
@@ -1409,7 +1510,7 @@ Add_Indicator=function(Strategy, Indicator, IndicatorParams){
 
 #***************
 #
-# Add.Model ----
+# Add_Model ----
 #
 #***************************************
 # add a model to the object 'Param_Sets'
