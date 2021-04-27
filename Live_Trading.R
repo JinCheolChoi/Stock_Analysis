@@ -45,6 +45,8 @@ for(Package in
   checkpackages(Package)
 }
 
+# import strategies
+source(paste0(working.dir, "/Strategies.R"))
 
 #***********************
 #
