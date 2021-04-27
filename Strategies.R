@@ -34,7 +34,9 @@ Add_OrderRule(Strategy="Strategy_Simple_BBands",
 # add indicator
 #**************
 Add_Indicator(Strategy="Strategy_Simple_BBands",
-              Indicator="BBands") # default n=20, sd=2
+              Indicator="BBands",
+              IndicatorParams=list(n=20,
+                                   sd=2)) # default n=20, sd=2
 
 Add_Indicator(Strategy="Strategy_Simple_BBands",
               Indicator="RSI",
@@ -50,8 +52,19 @@ Add_Model(Strategy="Strategy_Simple_BBands",
                            Short_Consec_Times=1,
                            Long_PctB=0,
                            Short_PctB=1))
-Add_Model(Strategy="Strategy_Simple_BBands",
-          Model="Simple_RSI",
-          ModelParams=list())
 
+# Add_Model(Strategy="Strategy_Simple_BBands",
+#           Model="Simple_RSI",
+#           ModelParams=list(Long_Consec_Times=1,
+#                            Short_Consec_Times=1,
+#                            Long_PctB=0.2,
+#                            Short_PctB=0.8))
+
+Add_Model(Strategy="Strategy_Simple_BBands",
+          Model="Simple_Test",
+          ModelParams=list(x=0.2,
+                           y=0.8))
+
+# Strategy_Simple_BBands$Indicators$BBands
+# Strategy_Simple_BBands$Models$Simple_BBands
 

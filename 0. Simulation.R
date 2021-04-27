@@ -32,6 +32,9 @@ Symbols=c("MNQ", "SPY")
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
 source(paste0(working.dir, "0. Models.R"))
 
+# import strategies
+source(paste0(working.dir, "/Strategies.R"))
+
 # import libraries
 for(pack in c("IBrokers",
               "TTR",
@@ -41,8 +44,6 @@ for(pack in c("IBrokers",
   lapply(pack, checkpackages)
 }
 
-# import strategies
-source(paste0(working.dir, "/Strategies.R"))
 
 # import data
 Get_Data(Symbols=list("MNQ", "SPY"),
@@ -60,16 +61,17 @@ BarData=MNQ
 #***********************************************
 # all strategies saved in the global environment
 Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
+
 # run Backtesting
-system.time({
+T1=system.time({
   Sim_Results=Live_Trading_Imitator(BarData<-MNQ,
                                     Strategy<-get(Strategies[1]))
 })
-# # run Backtesting
-# system.time({
-#   Sim_Results=Backtesting(BarData<-MNQ,
-#                                Strategy<-get(Strategies[1]))
-# })
+# run Backtesting
+T2=system.time({
+  Sim_Results=Backtesting(BarData<-MNQ,
+                          Strategy<-get(Strategies[1]))
+})
 
 
 

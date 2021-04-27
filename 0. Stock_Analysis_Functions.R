@@ -1059,6 +1059,9 @@ Backtesting=function(BarData, Strategy){
   Indicators=Strategy$Indicators
   Models=Strategy$Models
   
+  Simple_BBands_Info=get("Simple_BBands", envir=Models_Env)
+  assign("Simple_BBands", Simple_BBands_Info$Function, envir=.GlobalEnv)
+  
   #****************
   # import packages
   #****************
@@ -1318,6 +1321,7 @@ Live_Trading_Imitator=function(BarData, Strategy){
   Indicators=Strategy$Indicators
   Models=Strategy$Models 
   
+  
   #****************
   # import packages
   #****************
@@ -1395,105 +1399,76 @@ Live_Trading_Imitator=function(BarData, Strategy){
     # calculate indicators
     #*********************
     Calculated_Indicators=sapply(Passed_Indicators,
-                                 function(x) 
-                                   if(nrow(Live_Data)>Indicators[[x]]$n+1){
+                                 function(x)
+                                   if(nrow(Live_Data)>Indicators[[x]]$n+1){ # BBands : n-1, RSI : n+1
                                      do.call(x, 
-                                             c(list(Live_Data$Close), # for now only using "Close price", 
-                                               # additional work would be required in the future if the indicator does not depend on "Close price"
+                                             c(list(Live_Data$Close), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
                                                Indicators[[x]]))
                                    })
+
     
     #***********
     # fit models
     #***********
-    # Simple_BBands
-    if("Simple_BBands"%in%Passed_Models){
-      # signal to enter a long (short) position determined by Simple_BBands
-      Long_Sig_by_Simple_BBands=0
-      Short_Sig_by_Simple_BBands=0
-      
-      if("BBands"%in%Passed_Indicators&
-         !is.null(Calculated_Indicators[["BBands"]])){
-        
-        # number of filled orders
-        N_Filled_Buys=nrow(Order_Transmit[Action=="Buy"&Filled==1, ]) # buy
-        N_Filled_Sells=nrow(Order_Transmit[Action=="Sell"&Filled==1, ]) # sell
-        
-        if(N_Filled_Buys-N_Filled_Sells==0){ # if there is no currently filled order
-          Sigs_by_Simple_BBands=Simple_BBands(Calculated_Indicators[["BBands"]],Long_Consec_Times, Short_Consec_Times, Long_PctB, Short_PctB)
-        }else if(N_Filled_Buys-N_Filled_Sells>0){ # if the currently filled order is buy order, generate signal to sell as soon as pctB>=Short_PctB
-          Sigs_by_Simple_BBands=Simple_BBands(Calculated_Indicators[["BBands"]], Long_Consec_Times, 1, Long_PctB, Short_PctB)
-        }else if(N_Filled_Buys-N_Filled_Sells<0){ # if the currently filled order is short order, generate signal to sell as soon as pctB<=Long_PctB
-          Sigs_by_Simple_BBands=Simple_BBands(Calculated_Indicators[["BBands"]], 1, Short_Consec_Times, Long_PctB, Short_PctB)
-        }
-        # determined signals
-        Long_Sig_by_Simple_BBands=Sigs_by_Simple_BBands[1]
-        Short_Sig_by_Simple_BBands=Sigs_by_Simple_BBands[2]
-        
-      }else{
-        if(!"BBands"%in%Passed_Indicators){
-          stop("BBands required")
-        }
-      }
-    }
+    Signals=sapply(Passed_Models,
+                   function(x){
+                     Model_Info=get(x, envir=Models_Env) # variables and functions defined for the model object
+                     Calculated_Indicators_Combined=do.call(cbind, Calculated_Indicators) # combined Calculated_Indicators
+                     Calculated_Indicators_Names=names(Calculated_Indicators)[unlist(lapply(Calculated_Indicators, function(x) !is.null(x)))] #
+                     if(sum(!Model_Info[["Essential_Indicators"]]%in%Calculated_Indicators_Names)==0){ # if none of essential indicators hasn't been calculated in Calculated_Indicators, proceed to run the model
+                       do.call(Model_Info[["Function"]],
+                               c(list(Calculated_Indicators_Combined),
+                                 Models[[x]]))}
+                   }) %>% as.data.table()
     
-    
-    # Simple_RSI
-    if("Simple_RSI"%in%Passed_Models){
-      # signal to enter a long (short) position determined by Simple_RSI
-      Long_Sig_by_Simple_RSI=0
-      Short_Sig_by_Simple_RSI=0
-      
-      if("RSI"%in%Passed_Indicators&
-         length(Live_Data$RSI)>0){
-        
-      }else{
-        if(!"RSI"%in%Passed_Indicators){
-          stop("RSI required")
-        }
-      }
-    }
     
     
     #***************
     # transmit order
     #***************
-    # buy
-    if(Long_Sig_by_Simple_BBands){
-      # determine the position
-      if(sum(Order_Transmit[Action=="Buy", TotalQuantity])-
-         sum(Order_Transmit[Action=="Sell", TotalQuantity])<=
-         (Max_Long_Orders)){ # the number of currently remaining filled or transmitted long positions is limited to Max_Orders(= Max_Long_Orders + 1)
-        print(paste0("buy : ", i))
-        Order_Transmit=rbind(Order_Transmit,
-                             data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                        Submit_Time=tail(Live_Data, 1)[, Time],
-                                        Filled_Time=tail(Live_Data, 1)[, Time],
-                                        Action="Buy",
-                                        TotalQuantity=1,
-                                        OrderType=OrderType,
-                                        LmtPrice=tail(Live_Data, 1)[, Close],
-                                        Filled=0))
+    if(!is.null(Signals$Simple_BBands)){
+      # buy
+      Long_Sig_by_Simple_BBands=Signals[1, "Simple_BBands"]
+      if(Long_Sig_by_Simple_BBands==TRUE){
+        # determine the position
+        if(sum(Order_Transmit[Action=="Buy", TotalQuantity])-
+           sum(Order_Transmit[Action=="Sell", TotalQuantity])<=
+           (Max_Long_Orders)){ # the number of currently remaining filled or transmitted long positions is limited to Max_Orders(= Max_Long_Orders + 1)
+          print(paste0("buy : ", i))
+          Order_Transmit=rbind(Order_Transmit,
+                               data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                          Submit_Time=tail(Live_Data, 1)[, Time],
+                                          Filled_Time=tail(Live_Data, 1)[, Time],
+                                          Action="Buy",
+                                          TotalQuantity=1,
+                                          OrderType=OrderType,
+                                          LmtPrice=tail(Live_Data, 1)[, Close],
+                                          Filled=0))
+        }
       }
+      
+      # sell
+      Short_Sig_by_Simple_BBands=Signals[2, "Simple_BBands"]
+      if(Short_Sig_by_Simple_BBands==TRUE){
+        if(sum(Order_Transmit[Action=="Sell", TotalQuantity])-
+           sum(Order_Transmit[Action=="Buy", TotalQuantity])<=
+           (Max_Short_Orders)){ # the number of currently remaining filled or transmitted short positions is limited to Max_Orders(= Max_Short_Orders + 1)
+          print(paste0("sell : ", i))
+          Order_Transmit=rbind(Order_Transmit,
+                               data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                          Submit_Time=tail(Live_Data, 1)[, Time],
+                                          Filled_Time=tail(Live_Data, 1)[, Time],
+                                          Action="Sell",
+                                          TotalQuantity=1,
+                                          OrderType=OrderType,
+                                          LmtPrice=tail(Live_Data, 1)[, Close],
+                                          Filled=0))
+        }
+      }
+      
+      rm(Signals)
     }
     
-    # sell
-    if(Short_Sig_by_Simple_BBands){
-      if(sum(Order_Transmit[Action=="Sell", TotalQuantity])-
-         sum(Order_Transmit[Action=="Buy", TotalQuantity])<=
-         (Max_Short_Orders)){ # the number of currently remaining filled or transmitted short positions is limited to Max_Orders(= Max_Short_Orders + 1)
-        print(paste0("sell : ", i))
-        Order_Transmit=rbind(Order_Transmit,
-                             data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                        Submit_Time=tail(Live_Data, 1)[, Time],
-                                        Filled_Time=tail(Live_Data, 1)[, Time],
-                                        Action="Sell",
-                                        TotalQuantity=1,
-                                        OrderType=OrderType,
-                                        LmtPrice=tail(Live_Data, 1)[, Close],
-                                        Filled=0))
-      }
-    }
     
     
     #***********
@@ -1614,8 +1589,9 @@ checkBlotterUpdate <- function(port.st = portfolio.st,
 #
 # Init_Strategy ----
 #
-#***********************************
-# generate the initial Init.Strategy
+#*****************************************************************************
+# initialize an environment with lists of parameters to function as a strategy
+#*****************************************************************************
 # Init_Strategy=function(Name){
 #   Strategy_temp=list(Indicators=list(),
 #                      Order_Rules=list(),
@@ -1650,11 +1626,9 @@ Init_Strategy=function(Name, Max_Rows=50){
 #********************************************
 # add an indicator to the object 'Param_Sets'
 Add_OrderRule=function(Strategy, OrderRule, OrderRuleParams){
-  # 
   if(!exists(paste0(Strategy), envir=.GlobalEnv)){
     Init.Strategy(Name=Strategy)
   }
-  
   
   Strategy_temp=get(Strategy, envir=.GlobalEnv)
   Strategy_temp$Order_Rules[[OrderRule]]=OrderRuleParams
@@ -1669,8 +1643,8 @@ Add_OrderRule=function(Strategy, OrderRule, OrderRuleParams){
 #
 # Add_Indicator ----
 #
-#********************************************
-# add an indicator to the object 'Param_Sets'
+#*****************************
+# add an indicator to Strategy
 Add_Indicator=function(Strategy, Indicator=NULL, IndicatorParams=NULL){
   # check TTR installation
   checkpackages("TTR")
@@ -1690,24 +1664,45 @@ Add_Indicator=function(Strategy, Indicator=NULL, IndicatorParams=NULL){
   #*****************
   # check parameters
   #******************
-  # passed parameters
-  if(length(IndicatorParams)==0){
-    IndicatorParams=unlist(as.list(args(Indicator)))
-    IndicatorParams=IndicatorParams[IndicatorParams!=""] # remove arguments with blank
-    Passed_Arguments=names(IndicatorParams)
-  }else{
-    Passed_Arguments=names(IndicatorParams)
+  # names of passed arguments
+  Passed_IndicatorParams_Names=names(IndicatorParams)
+  
+  # arguments/parameters in the function of Model in Models_Env
+  TTR_Params=unlist(as.list(args(Indicator)))
+  
+  # names
+  TTR_Params_Names=names(TTR_Params)
+  
+  # error if any of passed arguments is not defined in the function
+  if(sum(!Passed_IndicatorParams_Names%in%TTR_Params_Names>0)){
+    stop("Valid parameters : ", paste(TTR_Params_Names, collapse=", "))
   }
   
-  # arguments in the function calculating Indicator in TTR
-  TTR_Params=names(unlist(as.list(args(Indicator))))
-  if(sum(!Passed_Arguments%in%TTR_Params>0)){
-    stop("Valid parameters : ", paste(TTR_Params, collapse=", "))
+  #***********************************************
+  # assign default values to unspecified arguments
+  #***********************************************
+  # arguments/parameters with defined default values
+  TTR_Params_with_Default=TTR_Params[TTR_Params!=""]
+  TTR_Params_with_Default_Names=names(TTR_Params_with_Default)
+  
+  New_IndicatorParams=c(IndicatorParams,
+                        TTR_Params_with_Default[!TTR_Params_with_Default_Names%in%Passed_IndicatorParams_Names])
+  
+  # revise Passed_IndicatorParams_Names
+  Passed_IndicatorParams_Names=names(New_IndicatorParams)
+  
+  # error if any of passed arguments is not defined in the function
+  if(sum(!Passed_IndicatorParams_Names%in%TTR_Params_Names>0)){
+    stop("Valid parameters : ", paste(TTR_Params_Names, collapse=", "))
   }
   
-  # update the corresponding strategy
+  # sort the arguments (not important)
+  Ordered_Arguments=Passed_IndicatorParams_Names[order(match(Passed_IndicatorParams_Names, TTR_Params_Names))]
+  New_IndicatorParams=New_IndicatorParams[Ordered_Arguments]
+  
+  # add an indicator to the corresponding strategy
   Strategy_temp=get(Strategy, envir=.GlobalEnv)
-  Strategy_temp$Indicators[[Indicator]]=IndicatorParams
+  Strategy_temp$Indicators[[Indicator]]=New_IndicatorParams
   assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
 }
 
@@ -1719,18 +1714,71 @@ Add_Indicator=function(Strategy, Indicator=NULL, IndicatorParams=NULL){
 #
 # Add_Model ----
 #
-#***************************************
-# add a model to the object 'Param_Sets'
-Add_Model=function(Strategy, Model, ModelParams){
+#************************
+# add a model to Strategy
+Add_Model=function(Strategy, Model=NULL, ModelParams=NULL){
   if(!exists(paste0(Strategy), envir=.GlobalEnv)){
     Init.Strategy(Name=Strategy)
   }
-  # Param_Sets$Models[[Model]]<<-ModelParams
+  
+  # available models
+  Available_Models=ls(Models_Env)
+  
+  # check the availability of Model in Models_Env
+  if(!Model%in%Available_Models){
+    stop("Available models : ", paste(Available_Models, collapse=", "))
+  }
+  
+  # pull the info for Model
+  Model_Info=get(Model, envir=Models_Env)
+  
+  # check required indicators
   Strategy_temp=get(Strategy, envir=.GlobalEnv)
-  Strategy_temp$Models[[Model]]=ModelParams
+  Essential_Indicators=Model_Info$Essential_Indicators
+  Excluded_Indicators=Essential_Indicators[!Essential_Indicators%in%names(Strategy_temp[["Indicators"]])]
+  if(length(Excluded_Indicators)>0){
+    stop("Add necessary indicators : ", paste(Excluded_Indicators, collapse=", "))
+  }
+  
+  #*****************
+  # check parameters
+  #**************************
+  # names of passed arguments
+  Passed_Arguments_Names=names(ModelParams)
+  
+  # arguments/parameters in the function of Model in Models_Env
+  Model_Params=unlist(as.list(args(Model_Info$Function)))
+  
+  # names
+  Model_Params_Names=names(Model_Params)
+  
+  # error if any of passed arguments is not defined in the function
+  if(sum(!Passed_Arguments_Names%in%Model_Params_Names>0)){
+    stop("Valid parameters : ", paste(Model_Params_Names, collapse=", "))
+  }
+  
+  #***********************************************
+  # assign default values to unspecified arguments
+  #***********************************************
+  # arguments/parameters with defined default values
+  Model_Params_with_Default=Model_Params[Model_Params!=""]
+  Model_Params_with_Default_Names=names(Model_Params_with_Default)
+  
+  New_ModelParams=c(ModelParams,
+                    Model_Params_with_Default[!Model_Params_with_Default_Names%in%Passed_Arguments_Names])
+  
+  # revise Passed_Arguments_Names
+  Passed_Arguments_Names=names(New_ModelParams)
+  
+  # sort the arguments (not important)
+  Ordered_Arguments=Passed_Arguments_Names[order(match(Passed_Arguments_Names, Model_Params_Names))]
+  New_ModelParams=New_ModelParams[Ordered_Arguments]
+  
+  # add a model to the corresponding strategy
+  Strategy_temp=get(Strategy, envir=.GlobalEnv)
+  Strategy_temp$Models[[Model]]=New_ModelParams
   assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
 }
-
 
 
 
