@@ -15,7 +15,7 @@ Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="General",
               OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
                                    Position_Direction="both")) # direction of position ("both", "long", "short")
-                                   
+
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="BuyToOpen",
               OrderRuleParams=list(OrderType="MKT"))

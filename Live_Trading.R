@@ -26,6 +26,7 @@ Port=7497 # tws : 7497, IB gateway : 4002
 # BarSize
 BarSize=10
 
+
 #*****************
 #
 # preliminary step
@@ -33,7 +34,8 @@ BarSize=10
 #*******************
 # required functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-source(paste0(working.dir, "/Echos/Echo_Live_Trading.R"))
+source(paste0(working.dir, "Echos/Echo_Live_Trading.R"))
+source(paste0(working.dir, "0. Models.R"))
 
 # import packages
 for(Package in
@@ -47,6 +49,7 @@ for(Package in
 
 # import strategies
 source(paste0(working.dir, "/Strategies.R"))
+
 
 #***********************
 #

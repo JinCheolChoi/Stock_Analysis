@@ -15,6 +15,7 @@ rm(list=ls())
 #******************
 working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
 
 
 #****************
@@ -33,7 +34,7 @@ source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
 source(paste0(working.dir, "0. Models.R"))
 
 # import strategies
-source(paste0(working.dir, "/Strategies.R"))
+source(paste0(working.dir, "Strategies.R"))
 
 # import libraries
 for(pack in c("IBrokers",
@@ -47,6 +48,7 @@ for(pack in c("IBrokers",
 
 # import data
 Get_Data(Symbols=list("MNQ", "SPY"),
+         Data_Dir=data.dir,
          BarSize=60*5)
 
 # bar data

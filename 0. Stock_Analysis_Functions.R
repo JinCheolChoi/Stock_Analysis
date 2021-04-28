@@ -416,7 +416,8 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
 #******************************************************************************
 # Output : return Rerun_Live_Trading=1 (1) after break during market closure or 
 #                                      (2) after a temporary break (for test) during the market open time
-System_Break=function(Rerun_Trading=0, Log=F){
+System_Break=function(Rerun_Trading=0,
+                      Log=F){
   
   #**************************
   # No break (market is open)
@@ -485,14 +486,14 @@ System_Break=function(Rerun_Trading=0, Log=F){
   
   # write log everytime System_Break is run
   if(Log==T){
-    if(file.exists(paste0(working.dir, "/Log/Stop_Live_Trading_Log.csv"))){
+    if(file.exists(paste0(working.dir, "Log/Stop_Live_Trading_Log.csv"))){
       Log=data.table(Time=Sys.time())
       Log=rbind(Log,
-                fread(paste0(working.dir, "/Log/Stop_Live_Trading_Log.csv")))
-      fwrite(Log, paste0(working.dir, "/Log/Stop_Live_Trading_Log.csv"))
+                fread(paste0(working.dir, "Log/Stop_Live_Trading_Log.csv")))
+      fwrite(Log, paste0(working.dir, "Log/Stop_Live_Trading_Log.csv"))
     }else{
       Log=data.table(Time=Sys.time())
-      fwrite(Log, paste0(working.dir, "/Log/Stop_Live_Trading_Log.csv"))
+      fwrite(Log, paste0(working.dir, "Log/Stop_Live_Trading_Log.csv"))
     }
   }
   
@@ -512,18 +513,22 @@ System_Break=function(Rerun_Trading=0, Log=F){
 
 
 
-#*********************************
+#**************************
 #
-# Future_Daily_Hist_Data_Save ----
+# Daily_Hist_Data_Save ----
 #
-#*********************************
+#*************************************************************
 # execute a daily save of 5 second bar data at 15:00:00 pm PDT
-Future_Daily_Hist_Data_Save=function(Contract, Force=T, Log=F){
+Daily_Hist_Data_Save=function(Contract,
+                              Data_Dir,
+                              Log_Dir,
+                              Force=T,
+                              Log=F){
   # the market closes at 14:00:00 PDT on Friday; and
   # at 15:00:00 PDT on the other weekdays
   ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
   CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
-  File_Exist=file.exists(paste0(working.dir, "Data/", Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
+  File_Exist=file.exists(paste0(Data_Dir, Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
   
   # if time is after 15:00:00 PDT on weekdays, proceed ot extract historical data
   if(!ToDay%in%c("Saturday", "Sunday") &
@@ -564,7 +569,7 @@ Future_Daily_Hist_Data_Save=function(Contract, Force=T, Log=F){
       #
       #   fwrite(HistData[Time>=(Time_Cutoff-60*60*24)&
       #                     Time<Time_Cutoff, ],
-      #          paste0(working.dir, "Data/", Contract$symbol, "_", as.Date(Date), ".csv"))
+      #          paste0(Data_Dir, Contract$symbol, "_", as.Date(Date), ".csv"))
       # }
       
       # remove redundant data
@@ -580,19 +585,30 @@ Future_Daily_Hist_Data_Save=function(Contract, Force=T, Log=F){
       
       # save historical data up to today's market closed at 15:00:00 pm PDT
       fwrite(HistData,
-             paste0(working.dir, "Data/", Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
+             paste0(Data_Dir, Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
+    }
+    
+    # create a folder if not exist
+    if(!dir.exists(paste0(Data_Dir, Contract$symbol))){
+      dir.create(paste0(Data_Dir, Contract$symbol))
     }
     
     # write log everytime historical data is extracted and saved
     if(Log==T){
-      if(file.exists(paste0(working.dir, "/Log/Future_Daily_Hist_Data_Save.csv"))){
-        Log=data.table(Time=Sys.time())
+      if(!dir.exists(paste0(Log_Dir, "Log"))){
+        dir.create(paste0(Log_Dir, "Log"))
+      }
+      
+      if(file.exists(paste0(Log_Dir, "Log/Daily_Hist_Data_Save.csv"))){
+        Log=data.table(Symbol=Contract$symbol,
+                       Time=Sys.time())
         Log=rbind(Log,
-                  fread(paste0(working.dir, "/Log/Future_Daily_Hist_Data_Save.csv")))
-        fwrite(Log, paste0(working.dir, "/Log/Future_Daily_Hist_Data_Save.csv"))
+                  fread(paste0(Log_Dir, "Log/Daily_Hist_Data_Save.csv")))
+        fwrite(Log, paste0(Log_Dir, "Log/Daily_Hist_Data_Save.csv"))
       }else{
-        Log=data.table(Time=Sys.time())
-        fwrite(Log, paste0(working.dir, "/Log/Future_Daily_Hist_Data_Save.csv"))
+        Log=data.table(Symbol=Contract$symbol,
+                       Time=Sys.time())
+        fwrite(Log, paste0(Log_Dir, "Log/Daily_Hist_Data_Save.csv"))
       }
     }
   }else{
@@ -615,7 +631,8 @@ Future_Daily_Hist_Data_Save=function(Contract, Force=T, Log=F){
 #*******************************************
 # output : BarData in the global environment
 # return New_Data=1 if the new data is derived; and 0 if not
-ReqRealTimeBars=function(BarSize=5, i, Log=F){
+ReqRealTimeBars=function(BarSize=5,
+                         Log=F){
   # New_Data : 1 if the new bar data with the size of interest is added in BarData; and 0 if not
   New_Data=0
   
@@ -746,14 +763,14 @@ ReqRealTimeBars=function(BarSize=5, i, Log=F){
     
     # write log everytime new data is added
     if(Log==T){
-      if(file.exists(paste0(working.dir, "/Log/Live_Trading_Log.csv"))){
+      if(file.exists(paste0(working.dir, "Log/Live_Trading_Log.csv"))){
         Log=data.table(Time=Sys.time())
         Log=rbind(Log,
-                  fread(paste0(working.dir, "/Log/Live_Trading_Log.csv")))
-        fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
+                  fread(paste0(working.dir, "Log/Live_Trading_Log.csv")))
+        fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
       }else{
         Log=data.table(Time=Sys.time())
-        fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
+        fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
       }
     }
   }
@@ -779,13 +796,19 @@ ReqRealTimeBars=function(BarSize=5, i, Log=F){
 #**********************************************************************************
 # get import historical data sets of specified symbols saved in a repository folder
 #**********************************************************************************
-Get_Data=function(Symbols, BarSize=60*30, First_Date="2021-01-20", Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles")), Convert_Tz=F){
+Get_Data=function(Symbols,
+                  Data_Dir,
+                  BarSize=60*30,
+                  First_Date="2021-01-20",
+                  Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles")),
+                  Convert_Tz=F){
   #************
   # import data
   #************
   # output : `5SecsBarHistData`
   for(Symbol in Symbols){
     Get_5SecsBarHistData(Symbol=Symbol,
+                         Data_Dir=Data_Dir,
                          First_Date=First_Date,
                          Last_Date=Last_Date,
                          Convert_Tz=F)
@@ -796,6 +819,9 @@ Get_Data=function(Symbols, BarSize=60*30, First_Date="2021-01-20", Last_Date=as.
                                  BarSize=BarSize,
                                  Convert_Tz=Convert_Tz),
            envir=.GlobalEnv)
+    
+    # remove `5SecsBarHistData`
+    rm(`5SecsBarHistData`, envir=.GlobalEnv)
   }
 }
 
@@ -803,7 +829,7 @@ Get_Data=function(Symbols, BarSize=60*30, First_Date="2021-01-20", Last_Date=as.
 
 
 
-#*********************
+#**************************
 #
 # Get_5SecsBarHistData ----
 #
@@ -811,7 +837,11 @@ Get_Data=function(Symbols, BarSize=60*30, First_Date="2021-01-20", Last_Date=as.
 # import historical data saved in a repository folder
 #******************************************************
 # output : `5SecsBarHistData` in the global environment
-Get_5SecsBarHistData=function(Symbol, First_Date, Last_Date, Convert_Tz=F){
+Get_5SecsBarHistData=function(Symbol,
+                              Data_Dir,
+                              First_Date,
+                              Last_Date,
+                              Convert_Tz=F){
   # data table
   lapply("data.table", checkpackages)
   
@@ -821,15 +851,15 @@ Get_5SecsBarHistData=function(Symbol, First_Date, Last_Date, Convert_Tz=F){
   # import
   for(Date in as.character(seq(as.Date(First_Date), Last_Date, by="day"))){
     File_name=paste0(Symbol, "_", Date, ".csv")
-    if(!file.exists(paste0(working.dir, "Data/", Symbol, "/", File_name))){
+    if(!file.exists(paste0(Data_Dir, Symbol, "/", File_name))){
       next
     }
     
     if(!exists("5SecsBarHistData", envir=.GlobalEnv)){
-      `5SecsBarHistData`<<-fread(paste0(working.dir, "Data/", Symbol, "/", File_name))
+      `5SecsBarHistData`<<-fread(paste0(Data_Dir, Symbol, "/", File_name))
     }else{
       `5SecsBarHistData`<<-rbind(`5SecsBarHistData`,
-                                 fread(paste0(working.dir, "Data/", Symbol, "/", File_name)))
+                                 fread(paste0(Data_Dir, Symbol, "/", File_name)))
     }
   }
   
@@ -878,7 +908,9 @@ Get_5SecsBarHistData=function(Symbol, First_Date, Last_Date, Convert_Tz=F){
 # Merged_Data[is.na(Close.y), ]
 # Merged_Data[is.na(Volume.y), ]
 # Merged_Data[is.na(Count.y), ]
-Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
+Collapse_5SecsBarData=function(`5SecsBarData`,
+                               BarSize,
+                               Convert_Tz=F){
   # `5SecsBarData`=`5SecsBarHistData`
   if(BarSize%%5!=0){
     return(message("BarSize must be a multiple of 5"))
@@ -909,6 +941,7 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
                                          "%Y-%m-%d %H:%M:%S"), 
                                 tz=attr(`5SecsBarData`$Time, "tzone"))
     )
+    
     # Date_Time_To
     Time_Intervals[, Date_Time_To:=shift(Time_Intervals$Date_Time_From, -1)]
     
@@ -916,6 +949,7 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
     Time_Intervals=`5SecsBarData`[Time_Intervals, on=c("Time>=Date_Time_From", "Time<Date_Time_To"),
                                   nomatch=0,
                                   .(Symbol, Date_Time_From=Time, Open, High, Low, Close, Volume, Wap, Count, Date_Time_To)]
+    
     # Collapsed_BarData
     Collapsed_BarData=Time_Intervals[, .(Symbol=unique(Symbol),
                                          Open=Open[1], # first row by group (Date_Time_From)
@@ -928,6 +962,7 @@ Collapse_5SecsBarData=function(`5SecsBarData`, BarSize, Convert_Tz=F){
     
     # rename Date_Time_From to Time
     setnames(Collapsed_BarData, "Date_Time_From", "Time")
+    
     # switch the order "Symbol" and "Date_Time_From"
     setcolorder(Collapsed_BarData, c("Symbol", "Time"))
     
@@ -1003,7 +1038,10 @@ Candle_Chart=function(BarData){
 #**************************************************
 # Fast simulation based on bollinger bands strategy
 #**************************************************
-BBands_Sim=function(Consec_Times, Long_PctB, Short_PctB, Commision=0.52){
+BBands_Sim=function(Consec_Times,
+                    Long_PctB,
+                    Short_PctB,
+                    Commision=0.52){
   # Long_Pos_Ind : indice of rows to which a long position is filled
   # fill long positions if PctB is below Long_PctB for consecutive times (Consec_Times) in the recent bar data
   if(Consec_Times==1){
@@ -1054,7 +1092,8 @@ BBands_Sim=function(Consec_Times, Long_PctB, Short_PctB, Commision=0.52){
 #***********************************************************
 # run a fast version of backtesting algorithm for simulation
 #***********************************************************
-Backtesting=function(BarData, Strategy){
+Backtesting=function(BarData,
+                     Strategy){
   Order_Rules=Strategy$Order_Rules
   Indicators=Strategy$Indicators
   Models=Strategy$Models
@@ -1316,7 +1355,8 @@ Backtesting=function(BarData, Strategy){
 #*********************************************
 # run an algorithm under the realistic setting
 #************************************************
-Live_Trading_Imitator=function(BarData, Strategy){
+Live_Trading_Imitator=function(BarData,
+                               Strategy){
   Order_Rules=Strategy$Order_Rules
   Indicators=Strategy$Indicators
   Models=Strategy$Models 
@@ -1405,7 +1445,7 @@ Live_Trading_Imitator=function(BarData, Strategy){
                                              c(list(Live_Data$Close), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
                                                Indicators[[x]]))
                                    })
-
+    
     
     #***********
     # fit models
@@ -1601,7 +1641,8 @@ checkBlotterUpdate <- function(port.st = portfolio.st,
 #          Strategy_temp,
 #          envir=.GlobalEnv)
 # }
-Init_Strategy=function(Name, Max_Rows=50){
+Init_Strategy=function(Name,
+                       Max_Rows=50){
   env_temp=environment()
   class(env_temp)="Strategy"
   
@@ -1625,7 +1666,9 @@ Init_Strategy=function(Name, Max_Rows=50){
 #
 #********************************************
 # add an indicator to the object 'Param_Sets'
-Add_OrderRule=function(Strategy, OrderRule, OrderRuleParams){
+Add_OrderRule=function(Strategy,
+                       OrderRule,
+                       OrderRuleParams){
   if(!exists(paste0(Strategy), envir=.GlobalEnv)){
     Init.Strategy(Name=Strategy)
   }
@@ -1645,7 +1688,10 @@ Add_OrderRule=function(Strategy, OrderRule, OrderRuleParams){
 #
 #*****************************
 # add an indicator to Strategy
-Add_Indicator=function(Strategy, Indicator=NULL, IndicatorParams=NULL){
+Add_Indicator=function(Strategy,
+                       Indicator=NULL,
+                       IndicatorParams=NULL){
+  
   # check TTR installation
   checkpackages("TTR")
   
@@ -1660,6 +1706,7 @@ Add_Indicator=function(Strategy, Indicator=NULL, IndicatorParams=NULL){
   if(!Indicator%in%TTR_Objects){
     stop("Available indicators in TTR : ", paste(TTR_Objects, collapse=", "))
   }
+  
   
   #*****************
   # check parameters
@@ -1677,6 +1724,7 @@ Add_Indicator=function(Strategy, Indicator=NULL, IndicatorParams=NULL){
   if(sum(!Passed_IndicatorParams_Names%in%TTR_Params_Names>0)){
     stop("Valid parameters : ", paste(TTR_Params_Names, collapse=", "))
   }
+  
   
   #***********************************************
   # assign default values to unspecified arguments
@@ -1716,7 +1764,9 @@ Add_Indicator=function(Strategy, Indicator=NULL, IndicatorParams=NULL){
 #
 #************************
 # add a model to Strategy
-Add_Model=function(Strategy, Model=NULL, ModelParams=NULL){
+Add_Model=function(Strategy,
+                   Model=NULL,
+                   ModelParams=NULL){
   if(!exists(paste0(Strategy), envir=.GlobalEnv)){
     Init.Strategy(Name=Strategy)
   }
@@ -1740,6 +1790,7 @@ Add_Model=function(Strategy, Model=NULL, ModelParams=NULL){
     stop("Add necessary indicators : ", paste(Excluded_Indicators, collapse=", "))
   }
   
+  
   #*****************
   # check parameters
   #**************************
@@ -1756,6 +1807,7 @@ Add_Model=function(Strategy, Model=NULL, ModelParams=NULL){
   if(sum(!Passed_Arguments_Names%in%Model_Params_Names>0)){
     stop("Valid parameters : ", paste(Model_Params_Names, collapse=", "))
   }
+  
   
   #***********************************************
   # assign default values to unspecified arguments

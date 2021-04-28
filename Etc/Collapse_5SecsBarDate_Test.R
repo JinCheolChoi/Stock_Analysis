@@ -13,6 +13,7 @@ rm(list=ls())
 #***********
 working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
+data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
 Symbol="MNQ"
 First_Date="2021-01-20"
 Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles"))
@@ -51,6 +52,7 @@ for(Package in
 #************
 # collapse data to the chosen-sized bar data
 Get_Data(Symbol,
+         Data_Dir=data.dir,
          BarSize,
          First_Date, 
          Last_Date)
