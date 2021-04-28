@@ -1438,9 +1438,9 @@ Live_Trading_Imitator=function(BarData,
     #*********************
     Calculated_Indicators=sapply(Passed_Indicators,
                                  function(x)
-                                   if(nrow(Live_Data)>Indicators[[x]]$n+1){ # BBands : n-1, RSI : n+1
+                                   if(nrow(Live_Data)>Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
                                      do.call(x, 
-                                             c(list(Live_Data$Close), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
+                                             c(list(Live_Data[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
                                                Indicators[[x]]))
                                    })
     
@@ -1461,10 +1461,50 @@ Live_Trading_Imitator=function(BarData,
     
     
     
+    
+    
     #***************
     # transmit order
     #***************
-    if(!is.null(Signals$Simple_BBands)){
+    # Strategy$Order_Rules$General
+    # 
+    # Strategy$Order_Rules$BuyToOpen
+    # Strategy$Order_Rules$BuyToClose
+    # Strategy$Order_Rules$SellToOpen
+    # Strategy$Order_Rules$SellToClose
+    # 
+    # 
+    # 
+    # 
+    # 
+    # if(nrow(Signals)>0){
+    #   if(abs(nrow(Order_Transmit[Action=="Buy", ])-
+    #          nrow(Order_Transmit[Action=="Sell", ]))>=
+    #      Strategy$Order_Rules$General$Max_Orders){
+    #     next
+    #   }
+    #   
+    #   
+    #   Order_Rules_Names=names(Strategy$Order_Rules)
+    #   Order_Rules_Names=Order_Rules_Names[Order_Rules_Names!="General"]
+    #   
+    #   sapply(Order_Rules_Names,
+    #          function(x){
+    #            if(Order_Transmit){Order_Rules[[x]];apply(Signals, 1, sum)}
+    #          })
+    #   
+    #   if(){
+    # 
+    #   }
+    # }
+
+    
+    # 
+    # sum(Signals[2, ])
+    # 
+    # Max_Orders
+
+    if(nrow(Signals)>0){
       # buy
       Long_Sig_by_Simple_BBands=Signals[1, "Simple_BBands"]
       if(Long_Sig_by_Simple_BBands==TRUE){
@@ -1890,6 +1930,7 @@ Add_OrderRule=function(Strategy,
   Strategy_temp$Order_Rules[[OrderRule]]=New_OrderRuleParams
   assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
 }
+
 
 
 

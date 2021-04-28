@@ -23,15 +23,15 @@ Models_Env$Simple_BBands=list(
                     Long_PctB=0,
                     Short_PctB=1){
     # positive long signal if pctB<=Long_PctB in the past `Long_Consec_Times` consecutive times
-    Long_Sig_by_Simple_BBands=sum(tail(BBands_Data, Long_Consec_Times)[, "pctB"]<=Long_PctB,
-                                  na.rm=T)==Long_Consec_Times
+    Long_Sig=sum(tail(BBands_Data, Long_Consec_Times)[, "pctB"]<=Long_PctB,
+                 na.rm=T)==Long_Consec_Times
     
     # positive short signal if pctB<=Long_PctB in the past `Long_Consec_Times` consecutive times
-    Short_Sig_by_Simple_BBands=sum(tail(BBands_Data, Short_Consec_Times)[, "pctB"]>=Short_PctB,
-                                   na.rm=T)==Short_Consec_Times
+    Short_Sig=sum(tail(BBands_Data, Short_Consec_Times)[, "pctB"]>=Short_PctB,
+                  na.rm=T)==Short_Consec_Times
     
     # return signals
-    return(c(Long_Sig_by_Simple_BBands, Short_Sig_by_Simple_BBands))
+    return(c(Long_Sig, Short_Sig))
   }
 )
 
@@ -53,15 +53,15 @@ Models_Env$Simple_RSI=list(
                     Long_PctB=0,
                     Short_PctB=1){
     # positive long signal if pctB<=Long_PctB in the past `Long_Consec_Times` consecutive times
-    Long_Sig_by_Simple_BBands=sum(tail(BBands_Data, Long_Consec_Times)[, "pctB"]<=Long_PctB,
-                                  na.rm=T)==Long_Consec_Times
+    Long_Sig=sum(tail(BBands_Data, Long_Consec_Times)[, "pctB"]<=Long_PctB,
+                 na.rm=T)==Long_Consec_Times
     
     # positive short signal if pctB<=Long_PctB in the past `Long_Consec_Times` consecutive times
-    Short_Sig_by_Simple_BBands=sum(tail(BBands_Data, Short_Consec_Times)[, "pctB"]>=Short_PctB,
-                                   na.rm=T)==Short_Consec_Times
+    Short_Sig=sum(tail(BBands_Data, Short_Consec_Times)[, "pctB"]>=Short_PctB,
+                  na.rm=T)==Short_Consec_Times
     
     # return signals
-    return(c(Long_Sig_by_Simple_BBands, Short_Sig_by_Simple_BBands))
+    return(c(Long_Sig, Short_Sig))
   }
 )
 
