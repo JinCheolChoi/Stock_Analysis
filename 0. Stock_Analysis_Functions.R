@@ -1406,9 +1406,7 @@ Live_Trading_Imitator=function(BarData,
     Max_Long_Orders=-1
     Max_Short_Orders=Max_Orders-1
   }
-  Strategy_Simple_BBands$Order_Rules$General$
-    # TTR_Objects
-    TTR_Objects=ls("package:TTR")
+  
   
   #*********************
   # simulation algorithm
