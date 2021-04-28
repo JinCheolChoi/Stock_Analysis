@@ -1406,9 +1406,9 @@ Live_Trading_Imitator=function(BarData,
     Max_Long_Orders=-1
     Max_Short_Orders=Max_Orders-1
   }
-  
-  # TTR_Objects
-  TTR_Objects=ls("package:TTR")
+  Strategy_Simple_BBands$Order_Rules$General$
+    # TTR_Objects
+    TTR_Objects=ls("package:TTR")
   
   #*********************
   # simulation algorithm
@@ -1662,28 +1662,6 @@ Init_Strategy=function(Name,
 
 #*******************
 #
-# Add_OrderRule ----
-#
-#********************************************
-# add an indicator to the object 'Param_Sets'
-Add_OrderRule=function(Strategy,
-                       OrderRule,
-                       OrderRuleParams){
-  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
-    Init.Strategy(Name=Strategy)
-  }
-  
-  Strategy_temp=get(Strategy, envir=.GlobalEnv)
-  Strategy_temp$Order_Rules[[OrderRule]]=OrderRuleParams
-  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
-}
-
-
-
-
-
-#*******************
-#
 # Add_Indicator ----
 #
 #*****************************
@@ -1696,7 +1674,8 @@ Add_Indicator=function(Strategy,
   checkpackages("TTR")
   
   if(!exists(paste0(Strategy), envir=.GlobalEnv)){
-    Init.Strategy(Name=Strategy)
+    #Init.Strategy(Name=Strategy)
+    stop(paste0("No strategy found named ", Strategy))
   }
   
   # TTR objects
@@ -1736,16 +1715,16 @@ Add_Indicator=function(Strategy,
   New_IndicatorParams=c(IndicatorParams,
                         TTR_Params_with_Default[!TTR_Params_with_Default_Names%in%Passed_IndicatorParams_Names])
   
-  # revise Passed_IndicatorParams_Names
-  Passed_IndicatorParams_Names=names(New_IndicatorParams)
+  # New_Passed_IndicatorParams_Names
+  New_Passed_IndicatorParams_Names=names(New_IndicatorParams)
   
   # error if any of passed arguments is not defined in the function
-  if(sum(!Passed_IndicatorParams_Names%in%TTR_Params_Names>0)){
+  if(sum(!New_Passed_IndicatorParams_Names%in%TTR_Params_Names>0)){
     stop("Valid parameters : ", paste(TTR_Params_Names, collapse=", "))
   }
   
   # sort the arguments (not important)
-  Ordered_Arguments=Passed_IndicatorParams_Names[order(match(Passed_IndicatorParams_Names, TTR_Params_Names))]
+  Ordered_Arguments=New_Passed_IndicatorParams_Names[order(match(New_Passed_IndicatorParams_Names, TTR_Params_Names))]
   New_IndicatorParams=New_IndicatorParams[Ordered_Arguments]
   
   # add an indicator to the corresponding strategy
@@ -1768,7 +1747,8 @@ Add_Model=function(Strategy,
                    Model=NULL,
                    ModelParams=NULL){
   if(!exists(paste0(Strategy), envir=.GlobalEnv)){
-    Init.Strategy(Name=Strategy)
+    #Init.Strategy(Name=Strategy)
+    stop(paste0("No strategy found named ", Strategy))
   }
   
   # available models
@@ -1819,11 +1799,11 @@ Add_Model=function(Strategy,
   New_ModelParams=c(ModelParams,
                     Model_Params_with_Default[!Model_Params_with_Default_Names%in%Passed_Arguments_Names])
   
-  # revise Passed_Arguments_Names
-  Passed_Arguments_Names=names(New_ModelParams)
+  # New_Passed_Arguments_Names
+  New_Passed_Arguments_Names=names(New_ModelParams)
   
   # sort the arguments (not important)
-  Ordered_Arguments=Passed_Arguments_Names[order(match(Passed_Arguments_Names, Model_Params_Names))]
+  Ordered_Arguments=New_Passed_Arguments_Names[order(match(New_Passed_Arguments_Names, Model_Params_Names))]
   New_ModelParams=New_ModelParams[Ordered_Arguments]
   
   # add a model to the corresponding strategy
@@ -1832,6 +1812,86 @@ Add_Model=function(Strategy,
   assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
 }
 
+
+
+
+#*******************
+#
+# Add_OrderRule ----
+#
+#******************************
+# add an order rule to Strategy
+Add_OrderRule=function(Strategy,
+                       OrderRule=NULL,
+                       OrderRuleParams=NULL){
+  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
+    #Init.Strategy(Name=Strategy)
+    stop(paste0("No strategy found named ", Strategy))
+  }
+  
+  # available Orders
+  Available_OrderRules=ls(OrderRules_Env)
+  
+  # check the availability of OrderRule in OrderRules_Env
+  if(!OrderRule%in%Available_OrderRules){
+    stop("Available Orders : ", paste(Available_OrderRules, collapse=", "))
+  }
+  
+  # pull the info for OrderRule
+  OrderRules_Info=get(OrderRule, envir=OrderRules_Env)
+  
+  #*****************
+  # check parameters
+  #**************************
+  # names of passed arguments
+  Passed_Arguments_Names=names(OrderRuleParams)
+  
+  # arguments/parameters in the function of Model in Models_Env
+  OrderRules_Params=OrderRules_Info
+  
+  # names
+  OrderRules_Params_Names=names(OrderRules_Params)
+  
+  # error if any of passed arguments is not defined in the function
+  if(sum(!Passed_Arguments_Names%in%OrderRules_Params_Names>0)){
+    stop("Valid parameters : ", paste(OrderRules_Params_Names, collapse=", "))
+  }
+  
+  #***********************************************
+  # assign default values to unspecified arguments
+  #***********************************************
+  # arguments/parameters with defined default values
+  OrderRules_Params_with_Default=OrderRules_Params[OrderRules_Params!=""]
+  OrderRules_Params_with_Default_Names=names(OrderRules_Params_with_Default)
+  
+  New_OrderRuleParams=c(OrderRuleParams,
+                        OrderRules_Params_with_Default[!OrderRules_Params_with_Default_Names%in%Passed_Arguments_Names])
+  
+  # New_Passed_Arguments_Names
+  New_Passed_Arguments_Names=names(New_OrderRuleParams)
+  
+  # sort the arguments (not important)
+  Ordered_Arguments=New_Passed_Arguments_Names[order(match(New_Passed_Arguments_Names, OrderRules_Params_Names))]
+  New_OrderRuleParams=New_OrderRuleParams[Ordered_Arguments]
+  
+  # passed direction
+  if("Position_Direction"%in%OrderRules_Params_Names){
+    Position_Directions=c("both", "long", "short") # available directions of position
+    if(!New_OrderRuleParams$Position_Direction%in%Position_Directions){
+      stop("Valid Position_Direction : ", paste(Position_Directions, collapse=", "))
+    }
+  }else if("OrderType"%in%OrderRules_Params_Names){
+    OrderTypes=c("MKT") # available types of order
+    if(!New_OrderRuleParams$OrderType%in%OrderTypes){
+      stop("Valid OrderTypes : ", paste(OrderTypes, collapse=", "))
+    }
+  }
+  
+  # add a OrderRule to the corresponding strategy
+  Strategy_temp=get(Strategy, envir=.GlobalEnv)
+  Strategy_temp$Order_Rules[[OrderRule]]=New_OrderRuleParams
+  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
+}
 
 
 

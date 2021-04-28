@@ -29,10 +29,6 @@ Symbols=c("MNQ", "SPY")
 # preliminary step
 #
 #*******************
-# required functions
-source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-source(paste0(working.dir, "0. Models.R"))
-
 # import strategies
 source(paste0(working.dir, "Strategies.R"))
 
@@ -49,7 +45,7 @@ for(pack in c("IBrokers",
 # import data
 Get_Data(Symbols=list("MNQ", "SPY"),
          Data_Dir=data.dir,
-         BarSize=60*5)
+         BarSize=60*30)
 
 # bar data
 # SPY
