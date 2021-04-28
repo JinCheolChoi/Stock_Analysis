@@ -45,7 +45,7 @@ for(pack in c("IBrokers",
 # import data
 Get_Data(Symbols=list("MNQ", "SPY"),
          Data_Dir=data.dir,
-         BarSize=60*30)
+         BarSize=60*1)
 
 # bar data
 # SPY
@@ -70,8 +70,8 @@ T2=system.time({
   Sim_Results=Backtesting(BarData<-MNQ,
                           Strategy<-get(Strategies[1]))
 })
-
-
+T1
+T2
 
 
 #***********************************************

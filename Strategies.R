@@ -74,6 +74,6 @@ Add_Model(Strategy="Strategy_Simple_BBands",
           ModelParams=list(x=0.2,
                            y=0.8))
 
-Strategy_Simple_BBands$Indicators$BBands
-Strategy_Simple_BBands$Models$Simple_BBands
-Strategy_Simple_BBands$Order_Rules$SellToClose
+# Strategy_Simple_BBands$Indicators$BBands
+# Strategy_Simple_BBands$Models$Simple_BBands
+# Strategy_Simple_BBands$Order_Rules$SellToClose

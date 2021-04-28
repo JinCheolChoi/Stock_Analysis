@@ -1925,6 +1925,9 @@ Add_OrderRule=function(Strategy,
     }
   }
   
+  # match the class
+  class(New_OrderRuleParams)=class(OrderRules_Info)
+  
   # add a OrderRule to the corresponding strategy
   Strategy_temp=get(Strategy, envir=.GlobalEnv)
   Strategy_temp$Order_Rules[[OrderRule]]=New_OrderRuleParams
