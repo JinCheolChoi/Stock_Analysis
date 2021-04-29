@@ -1691,7 +1691,6 @@ Init_Strategy=function(Name,
   assign(Name, env_temp, envir = .GlobalEnv)
   
   rm(list=c("Name", "env_temp"))
-  rm()
 }
 
 
