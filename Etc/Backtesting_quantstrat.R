@@ -13,6 +13,8 @@ rm(list=ls())
 #***********
 working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
+data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+
 Symbols="MNQ"
 First_Date="2021-01-20"
 Last_Date=as.Date(format(Sys.time(), tz="PST8PDT"))
@@ -33,7 +35,7 @@ Port=7497 # tws : 7497, IB gateway : 4002
 #
 # required functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-source(paste0(working.dir, "/Echos/Echo_Daily_Hist_Data_Save.R"))
+source(paste0(working.dir, "Echos/Echo_Daily_Hist_Data_Save.R"))
 
 # import packages
 for(Package in c("IBrokers",
@@ -64,6 +66,7 @@ for(Package in c("IBrokers",
 #************
 # collapse data to the chosen-sized bar data
 Get_Data(Symbols,
+         Data_Dir=data.dir,
          BarSize,
          First_Date, 
          Last_Date)

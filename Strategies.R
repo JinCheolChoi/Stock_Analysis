@@ -1,3 +1,13 @@
+#************************
+#
+# Required functions ---- 
+#
+#***********************************************************
+source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
+source(paste0(working.dir, "0. Models.R"))
+source(paste0(working.dir, "0. OrderRules.R"))
+
+
 #****************************
 #
 # Strategy_Simple_BBands ---- 
@@ -15,19 +25,18 @@ Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="General",
               OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
                                    Position_Direction="both")) # direction of position ("both", "long", "short")
-                                   
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="BuyToOpen",
               OrderRuleParams=list(OrderType="MKT"))
+
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
-              OrderRule="BuyToClose",
-              OrderRuleParams=list(OrderType="MKT"))
+              OrderRule="BuyToClose")
+
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
-              OrderRule="SellToOpen",
-              OrderRuleParams=list(OrderType="MKT"))
+              OrderRule="SellToOpen")
+
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
-              OrderRule="SellToClose",
-              OrderRuleParams=list(OrderType="MKT"))
+              OrderRule="SellToClose")
 
 
 #**************
@@ -67,4 +76,4 @@ Add_Model(Strategy="Strategy_Simple_BBands",
 
 # Strategy_Simple_BBands$Indicators$BBands
 # Strategy_Simple_BBands$Models$Simple_BBands
-
+# Strategy_Simple_BBands$Order_Rules$SellToClose

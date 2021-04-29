@@ -13,6 +13,7 @@ rm(list=ls())
 #***********
 working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
 Symbols="MNQ"
 First_Date="2021-01-20"
 Last_Date=as.Date(format(Sys.time(), tz="PST8PDT"))
@@ -166,14 +167,14 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
     
     # write log everytime new data is added
     if(Log==T){
-      if(file.exists(paste0(working.dir, "/Log/Live_Trading_Log.csv"))){
+      if(file.exists(paste0(working.dir, "Log/Live_Trading_Log.csv"))){
         Log=data.table(Time=Sys.time())
         Log=rbind(Log,
-                  fread(paste0(working.dir, "/Log/Live_Trading_Log.csv")))
-        fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
+                  fread(paste0(working.dir, "Log/Live_Trading_Log.csv")))
+        fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
       }else{
         Log=data.table(Time=Sys.time())
-        fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
+        fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
       }
     }
   }
@@ -308,14 +309,14 @@ ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
       
       # write log everytime new data is added
       if(Log==T){
-        if(file.exists(paste0(working.dir, "/Log/Live_Trading_Log.csv"))){
+        if(file.exists(paste0(working.dir, "Log/Live_Trading_Log.csv"))){
           Log=data.table(Time=Sys.time())
           Log=rbind(Log,
-                    fread(paste0(working.dir, "/Log/Live_Trading_Log.csv")))
-          fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
+                    fread(paste0(working.dir, "Log/Live_Trading_Log.csv")))
+          fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
         }else{
           Log=data.table(Time=Sys.time())
-          fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
+          fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
         }
       }
     }
@@ -335,6 +336,7 @@ ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
 #************
 # collapse data to the chosen-sized bar data
 Get_Data(Symbols,
+         Data_Dir=data.dir,
          BarSize,
          First_Date, 
          Last_Date)
