@@ -12,7 +12,7 @@ rm(list=ls())
 #
 #***********
 # working directory
-log.dir=working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
 
@@ -41,7 +41,8 @@ for(Package in
       "TTR",
       "data.table",
       "dplyr",
-      "DescTools")){ # candle chart
+      "DescTools", # candle chart
+      "slackr")){
   checkpackages(Package)
 }
 
@@ -61,6 +62,12 @@ Equities=c("ARKK", "ARKF", "ARKX", "QQQ", "SPY", "IWM")
 pb=txtProgressBar(min=0, max=length(Futures)+length(Equities), style=3)
 i=0
 
+# set up slackr
+slackr_setup(
+    channel="#stanalytics",
+    incoming_webhook_url="https://hooks.slack.com/services/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",
+    bot_user_oauth_token='xoxb-2015929948418-2028585561121-7O3bYbbAcNgwSunc8abSWCCT'
+    )
 
 #***************
 #
@@ -70,6 +77,7 @@ i=0
 # Futures
 tws=twsConnect(port=Port)
 for(Future in Futures){
+  #Future=Futures[1]
   i=i+1
   # connect to tws
   while(!isConnected(tws)){
@@ -83,7 +91,7 @@ for(Future in Futures){
   
   # execute a daily save of 5 second bar data afterwards
   message("\n")
-  Daily_Hist_Data_Save(Contract=contract, Data_Dir=data.dir, Log_Dir=log.dir, Force=T, Log=T) #
+  Daily_Hist_Data_Save(Contract=contract, Data_Dir=data.dir, Working_Dir=working.dir, Force=T, Log=T) #
   
   # print out progress
   setTxtProgressBar(pb, i)
@@ -105,13 +113,41 @@ for(Equity in Equities){
   
   # execute a daily save of 5 second bar data afterwards
   message("\n")
-  Daily_Hist_Data_Save(Contract=contract, Data_Dir=data.dir, Log_Dir=log.dir, Force=T, Log=T) #
+  Daily_Hist_Data_Save(Contract=contract, Data_Dir=data.dir, Working_Dir=working.dir, Force=T, Log=T) #
   
   # print out progress
   setTxtProgressBar(pb, i)
   message("\n")
 }
 
+# check if market data of all symbols are saved
+Data_Summ=data.table(File=character(), N=numeric())
+for(Symbol in c(Futures, Equities)){
+  if(file.exists(paste0(data.dir, Symbol, "/", Symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))){
+    Temp=fread(paste0(data.dir, Symbol, "/", Symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
+    
+    Data_Summ=rbind(Data_Summ,
+                    data.table(
+                      File=paste0(Symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles"))),
+                      N=nrow(Temp)
+                      )
+                    )
+  }
+}
 
+# message
+if(nrow(Data_Summ)!=0){
+  Message=Data_Summ
+  print(Message) # echo Message in terminal
+  slackr("New data",
+         Message) # send Message to Slack
+}else{
+  Message=paste0("No new data on ", as.Date(format(Sys.time(), tz="America/Los_Angeles")))
+  print(Message) # echo Message in terminal
+  slackr(Message) # send Message to Slack
+}
+
+# put the systemp on sleep
+Sys.sleep(5)
 
 

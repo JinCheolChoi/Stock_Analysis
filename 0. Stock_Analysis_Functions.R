@@ -521,9 +521,10 @@ System_Break=function(Rerun_Trading=0,
 # execute a daily save of 5 second bar data at 15:00:00 pm PDT
 Daily_Hist_Data_Save=function(Contract,
                               Data_Dir,
-                              Log_Dir,
+                              Working_Dir,
                               Force=T,
                               Log=F){
+  
   # the market closes at 14:00:00 PDT on Friday; and
   # at 15:00:00 PDT on the other weekdays
   ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
@@ -532,7 +533,7 @@ Daily_Hist_Data_Save=function(Contract,
   
   # if time is after 15:00:00 PDT on weekdays, proceed ot extract historical data
   if(!ToDay%in%c("Saturday", "Sunday") &
-     CurrentTime>=(as.ITime("15:00:00"))){
+     CurrentTime>=(as.ITime("14:00:00"))){
     
     if(!File_Exist| # if 5 second bar has not been saved yet, or
        Force==T){ # Force==1 (execute the saving process by force (overwrite the data))
@@ -595,25 +596,24 @@ Daily_Hist_Data_Save=function(Contract,
     
     # write log everytime historical data is extracted and saved
     if(Log==T){
-      if(!dir.exists(paste0(Log_Dir, "Log"))){
-        dir.create(paste0(Log_Dir, "Log"))
+      if(!dir.exists(paste0(Working_Dir, "Log"))){
+        dir.create(paste0(Working_Dir, "Log"))
       }
       
-      if(file.exists(paste0(Log_Dir, "Log/Daily_Hist_Data_Save.csv"))){
+      if(file.exists(paste0(Working_Dir, "Log/Daily_Hist_Data_Save.csv"))){
         Log=data.table(Symbol=Contract$symbol,
                        Time=Sys.time())
         Log=rbind(Log,
-                  fread(paste0(Log_Dir, "Log/Daily_Hist_Data_Save.csv")))
-        fwrite(Log, paste0(Log_Dir, "Log/Daily_Hist_Data_Save.csv"))
+                  fread(paste0(Working_Dir, "Log/Daily_Hist_Data_Save.csv")))
+        fwrite(Log, paste0(Working_Dir, "Log/Daily_Hist_Data_Save.csv"))
       }else{
         Log=data.table(Symbol=Contract$symbol,
                        Time=Sys.time())
-        fwrite(Log, paste0(Log_Dir, "Log/Daily_Hist_Data_Save.csv"))
+        fwrite(Log, paste0(Working_Dir, "Log/Daily_Hist_Data_Save.csv"))
       }
     }
   }else{
-    message("No new data to save yet.")
-    Sys.sleep(60*5)
+    message("No new data to save yet.") # echo Message in terminal
   }
   
 }
