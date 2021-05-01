@@ -66,7 +66,7 @@ i=0
 slackr_setup(
     channel="#stanalytics",
     incoming_webhook_url="https://hooks.slack.com/services/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",
-    bot_user_oauth_token='xoxb-2015929948418-2028585561121-7O3bYbbAcNgwSunc8abSWCCT'
+    bot_user_oauth_token='xoxb-2015929948418-2028585561121-D72rvwpCZhaifkomzDUtYHOJ'
     )
 
 #***************
@@ -150,4 +150,4 @@ if(nrow(Data_Summ)!=0){
 # put the systemp on sleep
 Sys.sleep(5)
 
-
+#vignette('scoped-bot-setup', package = 'slackr')
