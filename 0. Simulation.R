@@ -70,8 +70,7 @@ T2=system.time({
   Sim_Results=Backtesting(BarData<-MNQ,
                           Strategy<-get(Strategies[1]))
 })
-T1
-T2
+
 
 
 #***********************************************

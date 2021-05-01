@@ -18,27 +18,6 @@ Init_Strategy(Name="Strategy_Simple_BBands",
               Max_Rows=50) # the maximum number of rows in a temp dataset to parse
 
 
-#***************
-# add order rule
-#***************
-Add_OrderRule(Strategy="Strategy_Simple_BBands",
-              OrderRule="General",
-              OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
-                                   Position_Direction="both")) # direction of position ("both", "long", "short")
-Add_OrderRule(Strategy="Strategy_Simple_BBands",
-              OrderRule="BuyToOpen",
-              OrderRuleParams=list(OrderType="MKT"))
-
-Add_OrderRule(Strategy="Strategy_Simple_BBands",
-              OrderRule="BuyToClose")
-
-Add_OrderRule(Strategy="Strategy_Simple_BBands",
-              OrderRule="SellToOpen")
-
-Add_OrderRule(Strategy="Strategy_Simple_BBands",
-              OrderRule="SellToClose")
-
-
 #**************
 # add indicator
 #**************
@@ -77,3 +56,23 @@ Add_Model(Strategy="Strategy_Simple_BBands",
 # Strategy_Simple_BBands$Indicators$BBands
 # Strategy_Simple_BBands$Models$Simple_BBands
 # Strategy_Simple_BBands$Order_Rules$SellToClose
+
+
+#***************
+# add order rule
+#***************
+Add_OrderRule(Strategy="Strategy_Simple_BBands",
+              OrderRule="General",
+              OrderRuleParams=list(Max_Orders=3)) # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
+Add_OrderRule(Strategy="Strategy_Simple_BBands",
+              OrderRule="Long",
+              OrderRuleParams=list(BuyToOpen=list(OrderType="MKsT",
+                                                  Quantity=2,
+                                                  Min_Sig_N=3),
+                                   SellToClose=list(OrderType="MKT",
+                                                    Quantity=1)))
+Add_OrderRule(Strategy="Strategy_Simple_BBands",
+              OrderRule="Short")
+
+
+

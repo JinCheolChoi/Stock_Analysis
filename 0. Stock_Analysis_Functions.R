@@ -1797,7 +1797,7 @@ Add_Model=function(Strategy,
   }
   
   # pull the info for Model
-  Model_Info=get(Model, envir=Models_Env)
+  Model_Info=Models_Env[[Model]]
   
   # check required indicators
   Strategy_temp=get(Strategy, envir=.GlobalEnv)
@@ -1875,7 +1875,7 @@ Add_OrderRule=function(Strategy,
   }
   
   # pull the info for OrderRule
-  OrderRules_Info=get(OrderRule, envir=OrderRules_Env)
+  OrderRules_Info=OrderRules_Env[[OrderRule]]
   
   #*****************
   # check parameters
@@ -1931,6 +1931,81 @@ Add_OrderRule=function(Strategy,
   Strategy_temp=get(Strategy, envir=.GlobalEnv)
   Strategy_temp$Order_Rules[[OrderRule]]=New_OrderRuleParams
   assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  # available Orders
+  Available_OrderRules=ls(OrderRules_Env)
+  
+  # check the availability of OrderRule in OrderRules_Env
+  if(!OrderRule%in%Available_OrderRules){
+    stop("Available Orders : ", paste(Available_OrderRules, collapse=", "))
+  }
+  
+  # pull the info for OrderRule
+  OrderRules_Info=OrderRules_Env[[OrderRule]]
+  
+  
+  # #********************
+  # # check element names
+  # #********************
+  # #
+  # OrderRules_Info=as.relistable(OrderRules_Info)
+  # All.default.elements=unlist(OrderRules_Info)
+  # #
+  # OrderRuleParams=as.relistable(OrderRuleParams)
+  # All.passed.elements=unlist(OrderRuleParams)
+  # #
+  # All.default.elements.concat.names=names(All.default.elements)
+  # All.passed.elements.concat.names=names(All.passed.elements)
+  # #
+  # All.default.elements.names=unique(unlist(strsplit(All.default.elements.concat.names, "[.]")))
+  # All.passed.elements.names=unique(unlist(strsplit(All.passed.elements.concat.names, "[.]")))
+  # if(sum(!All.passed.elements.names%in%All.default.elements.names)>0){
+  #   stop("Invalid parameters entered : ",
+  #        paste(All.passed.elements.names[!All.passed.elements.names%in%All.default.elements.names], collapse=", "),
+  #        
+  #        "\n 
+  #        Valid parameters : ",
+  #        paste(All.default.elements.names, collapse=", "))
+  # }
+  # 
+  # Passed.string.split=strsplit(All.passed.elements.concat.names, "[.]")
+  # Default.string.split=strsplit(All.default.elements.concat.names, "[.]")
+  # 
+  # # depth
+  # rbind.fill(lapply(Passed.string.split,
+  #                   function(y){as.data.frame(t(y))}))
+  # rbind.fill(lapply(Default.string.split,
+  #                   function(y){as.data.frame(t(y))}))
+  # 
+  # 
+  # 
+  # # compare values at each node
+  # comparing.table=data.table(Default=names(All.default.elements),
+  #                            Value=All.default.elements) %>% 
+  #   left_join(data.table(Default=names(All.passed.elements),
+  #                        Value=All.passed.elements),
+  #             by="Default")
+  # 
+  # # locations of elements with different values
+  # diff.loc=which(comparing.table$Value.x!=comparing.table$Value.y)
+  # 
+  # # update the values in the default list
+  # for(ui in diff.loc){
+  #   All.default.elements[ui]=comparing.table[ui, Value.y]
+  # }
+  # 
+  # #
+  # relist(All.default.elements)
 }
 
 
