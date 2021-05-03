@@ -44,7 +44,7 @@ OrderRules_Env$Long=list(
   
 )
 
-OrderRules_Env$Long_Function=function(Max_Orders, Sigs_N, N_Orders_held, Params){
+OrderRules_Env$Long_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_held, Params){
   if(0<=N_Orders_held & 
      N_Orders_held<Max_Orders &
      Sigs_N>0 & 
@@ -109,7 +109,7 @@ OrderRules_Env$Short=list(
 )
 
 
-OrderRules_Env$Short_Function=function(Max_Orders, Sigs_N, N_Orders_held, Params){
+OrderRules_Env$Short_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_held, Params){
   if(0>=N_Orders_held &
      N_Orders_held>(-Max_Orders) &
      Sigs_N<0 &

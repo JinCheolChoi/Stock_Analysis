@@ -72,7 +72,7 @@ Add_OrderRule(Strategy="Strategy_Simple_BBands",
                                    SellToClose=list(OrderType="MKT",
                                                     Quantity=1,
                                                     Min_Sig_N=1)))
-# Add_OrderRule(Strategy="Strategy_Simple_BBands",
-#               OrderRule="Short")
+Add_OrderRule(Strategy="Strategy_Simple_BBands",
+              OrderRule="Short")
 
 

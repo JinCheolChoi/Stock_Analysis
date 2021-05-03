@@ -1462,7 +1462,8 @@ Live_Trading_Imitator=function(BarData,
       Order_to_Transmit=sapply(names(Order_Rules),
                                function(x){
                                  do.call(OrderRules_Env[[paste0(x, "_Function")]],
-                                         c(list(Max_Orders=Max_Orders,
+                                         c(list(Live_Data=Live_Data,
+                                                Max_Orders=Max_Orders,
                                                 Sigs_N=Sigs_N,
                                                 N_Orders_held=N_Orders_held),
                                            Params=list(Order_Rules[[x]])))
@@ -1878,10 +1879,15 @@ Add_OrderRule=function(Strategy,
   Strategy_temp=get(Strategy, envir=.GlobalEnv)
   
   # Min_Sig_N must be smaller or equal to the number of models
-  if(OrderRule=="Long"|
-     OrderRule=="Short"){
+  if(OrderRule=="Long"){
     if((length(names(Strategy_temp$Models))<New_ModelParams[["BuyToOpen"]][["Min_Sig_N"]])|
        (length(names(Strategy_temp$Models))<New_ModelParams[["SellToClose"]][["Min_Sig_N"]])){
+      stop("Min_Sig_N must be smaller or equal to the number of models")
+    }
+  }
+  if(OrderRule=="Short"){
+    if((length(names(Strategy_temp$Models))<New_ModelParams[["SellToOpen"]][["Min_Sig_N"]])|
+       (length(names(Strategy_temp$Models))<New_ModelParams[["BuyToClose"]][["Min_Sig_N"]])){
       stop("Min_Sig_N must be smaller or equal to the number of models")
     }
   }
