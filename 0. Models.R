@@ -75,7 +75,7 @@ Models_Env$Simple_RSI=list(
 #
 #*****************
 Models_Env$Simple_Test=list(
-  Essential_Indicators=c("BBands", "RSI"), # list of required indicators
+  Essential_Indicators=c("BBands"), # list of required indicators
   
   Function=function(Data,
                     x=1,

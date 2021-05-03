@@ -1118,7 +1118,7 @@ Backtesting=function(BarData,
   Max_Rows=Strategy$Max_Rows
   
   # order parameters
-  Max_Orders=Order_Rules$General$Max_Orders
+  General=Order_Rules$General
   OrderType=Order_Rules$General$OrderType
   Position_Direction=Order_Rules$General$Position_Direction
   
@@ -1159,17 +1159,17 @@ Backtesting=function(BarData,
       Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
     }
     
-    if(!exists("Order_Transmit")){
-      # define Order_Transmit
-      Order_Transmit=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                Submit_Time=tail(Live_Data, 1)[, Time],
-                                Filled_Time=tail(Live_Data, 1)[, Time],
-                                Action="", 
-                                TotalQuantity=0,
-                                OrderType=OrderType,
-                                LmtPrice=0,
-                                Filled=0)
-      Order_Transmit=Order_Transmit[-1,]
+    if(!exists("Orders_Transmitted")){
+      # define Orders_Transmitted
+      Orders_Transmitted=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                    Submit_Time=tail(Live_Data, 1)[, Time],
+                                    Filled_Time=tail(Live_Data, 1)[, Time],
+                                    Action="", 
+                                    TotalQuantity=0,
+                                    OrderType=OrderType,
+                                    LmtPrice=0,
+                                    Filled=0)
+      Orders_Transmitted=Orders_Transmitted[-1,]
     }
     
     
@@ -1211,8 +1211,8 @@ Backtesting=function(BarData,
          exists("BBands_Data")){
         
         # number of filled orders
-        N_Filled_Buys=nrow(Order_Transmit[Action=="Buy"&Filled==1, ]) # buy
-        N_Filled_Sells=nrow(Order_Transmit[Action=="Sell"&Filled==1, ]) # sell
+        N_Filled_Buys=nrow(Orders_Transmitted[Action=="Buy"&Filled==1, ]) # buy
+        N_Filled_Sells=nrow(Orders_Transmitted[Action=="Sell"&Filled==1, ]) # sell
         
         if(N_Filled_Buys-N_Filled_Sells==0){ # if there is no currently filled order
           Sigs_by_Simple_BBands=Simple_BBands(BBands_Data,Long_Consec_Times, Short_Consec_Times, Long_PctB, Short_PctB)
@@ -1255,37 +1255,37 @@ Backtesting=function(BarData,
     # buy
     if(Long_Sig_by_Simple_BBands){
       # determine the position
-      if(sum(Order_Transmit[Action=="Buy", TotalQuantity])-
-         sum(Order_Transmit[Action=="Sell", TotalQuantity])<=
+      if(sum(Orders_Transmitted[Action=="Buy", TotalQuantity])-
+         sum(Orders_Transmitted[Action=="Sell", TotalQuantity])<=
          (Max_Long_Orders)){ # the number of currently remaining filled or transmitted long positions is limited to Max_Orders(= Max_Long_Orders + 1)
         print(paste0("buy : ", i))
-        Order_Transmit=rbind(Order_Transmit,
-                             data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                        Submit_Time=tail(Live_Data, 1)[, Time],
-                                        Filled_Time=tail(Live_Data, 1)[, Time],
-                                        Action="Buy",
-                                        TotalQuantity=1,
-                                        OrderType=OrderType,
-                                        LmtPrice=tail(Live_Data, 1)[, Close],
-                                        Filled=0))
+        Orders_Transmitted=rbind(Orders_Transmitted,
+                                 data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                            Submit_Time=tail(Live_Data, 1)[, Time],
+                                            Filled_Time=tail(Live_Data, 1)[, Time],
+                                            Action="Buy",
+                                            TotalQuantity=1,
+                                            OrderType=OrderType,
+                                            LmtPrice=tail(Live_Data, 1)[, Close],
+                                            Filled=0))
       }
     }
     
     # sell
     if(Short_Sig_by_Simple_BBands){
-      if(sum(Order_Transmit[Action=="Sell", TotalQuantity])-
-         sum(Order_Transmit[Action=="Buy", TotalQuantity])<=
+      if(sum(Orders_Transmitted[Action=="Sell", TotalQuantity])-
+         sum(Orders_Transmitted[Action=="Buy", TotalQuantity])<=
          (Max_Short_Orders)){ # the number of currently remaining filled or transmitted short positions is limited to Max_Orders(= Max_Short_Orders + 1)
         print(paste0("sell : ", i))
-        Order_Transmit=rbind(Order_Transmit,
-                             data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                        Submit_Time=tail(Live_Data, 1)[, Time],
-                                        Filled_Time=tail(Live_Data, 1)[, Time],
-                                        Action="Sell",
-                                        TotalQuantity=1,
-                                        OrderType=OrderType,
-                                        LmtPrice=tail(Live_Data, 1)[, Close],
-                                        Filled=0))
+        Orders_Transmitted=rbind(Orders_Transmitted,
+                                 data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                            Submit_Time=tail(Live_Data, 1)[, Time],
+                                            Filled_Time=tail(Live_Data, 1)[, Time],
+                                            Action="Sell",
+                                            TotalQuantity=1,
+                                            OrderType=OrderType,
+                                            LmtPrice=tail(Live_Data, 1)[, Close],
+                                            Filled=0))
       }
     }
     
@@ -1294,26 +1294,26 @@ Backtesting=function(BarData,
     # fill order
     #***********
     # buy
-    if(nrow(Order_Transmit[Action=="Buy"&Filled==0, ])>0){ # if there is any transmitted buy order that has not been filled yet
+    if(nrow(Orders_Transmitted[Action=="Buy"&Filled==0, ])>0){ # if there is any transmitted buy order that has not been filled yet
       
-      Unfilled_Buy_Position_Times=Order_Transmit[Action=="Buy"&Filled==0, Submit_Time]
-      Unfilled_Buy_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
+      Unfilled_Buy_Position_Times=Orders_Transmitted[Action=="Buy"&Filled==0, Submit_Time]
+      Unfilled_Buy_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
       Which_Buy_Position_to_Fill=which(BarData[i+1, Low]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
-      Order_Transmit[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
-                     `:=`(Filled_Time=BarData[i+1, Time],
-                          Filled=1)]
+      Orders_Transmitted[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
+                         `:=`(Filled_Time=BarData[i+1, Time],
+                              Filled=1)]
     }
     # sell
-    if(nrow(Order_Transmit[Action=="Sell"&Filled==0, ])>0){ # if there is any transmitted sell order that has not been filled yet
+    if(nrow(Orders_Transmitted[Action=="Sell"&Filled==0, ])>0){ # if there is any transmitted sell order that has not been filled yet
       
-      Unfilled_Sell_Position_Times=Order_Transmit[Action=="Sell"&Filled==0, Submit_Time]
-      Unfilled_Sell_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
+      Unfilled_Sell_Position_Times=Orders_Transmitted[Action=="Sell"&Filled==0, Submit_Time]
+      Unfilled_Sell_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
       Which_Sell_Position_to_Fill=which(BarData[i+1, High]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
-      Order_Transmit[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
-                     `:=`(Filled_Time=BarData[i+1, Time],
-                          Filled=1)]
+      Orders_Transmitted[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
+                         `:=`(Filled_Time=BarData[i+1, Time],
+                              Filled=1)]
     }
     
   }
@@ -1322,23 +1322,23 @@ Backtesting=function(BarData,
   #**********************
   # calculate the balance
   #**********************
-  Collapse_Order_Transmit=cbind(Order_Transmit[Action=="Buy", 
-                                               c("Filled_Time", "LmtPrice")],
-                                Order_Transmit[Action=="Sell", 
-                                               c("Filled_Time", "LmtPrice")])
-  colnames(Collapse_Order_Transmit)=c("Buy_Time", "Buy_Price", "Sell_Time", "Sell_Price")
-  Duplicated_Row=unique(c(which(duplicated(Collapse_Order_Transmit[, c("Buy_Time", "Buy_Price")])), 
-                          which(duplicated(Collapse_Order_Transmit[, c("Sell_Time", "Sell_Price")]))))
+  Collapse_Orders_Transmitted=cbind(Orders_Transmitted[Action=="Buy", 
+                                                       c("Filled_Time", "LmtPrice")],
+                                    Orders_Transmitted[Action=="Sell", 
+                                                       c("Filled_Time", "LmtPrice")])
+  colnames(Collapse_Orders_Transmitted)=c("Buy_Time", "Buy_Price", "Sell_Time", "Sell_Price")
+  Duplicated_Row=unique(c(which(duplicated(Collapse_Orders_Transmitted[, c("Buy_Time", "Buy_Price")])), 
+                          which(duplicated(Collapse_Orders_Transmitted[, c("Sell_Time", "Sell_Price")]))))
   if(length(Duplicated_Row)>0){
-    Collapse_Order_Transmit=Collapse_Order_Transmit[-Duplicated_Row, ]
+    Collapse_Orders_Transmitted=Collapse_Orders_Transmitted[-Duplicated_Row, ]
   }
   
-  Ind_Profit=2*Collapse_Order_Transmit[, Sell_Price-Buy_Price]-2*0.52
+  Ind_Profit=2*Collapse_Orders_Transmitted[, Sell_Price-Buy_Price]-2*0.52
   Net_Profit=sum(Ind_Profit)
   
   
   return(list(BarData=BarData,
-              Order_Transmit=Order_Transmit,
+              Orders_Transmitted=Orders_Transmitted,
               Ind_Profit=Ind_Profit,
               Net_Profit=Net_Profit))
   
@@ -1357,10 +1357,10 @@ Backtesting=function(BarData,
 #************************************************
 Live_Trading_Imitator=function(BarData,
                                Strategy){
+  Max_Rows=Strategy$Max_Rows
   Order_Rules=Strategy$Order_Rules
   Indicators=Strategy$Indicators
-  Models=Strategy$Models 
-  
+  Models=Strategy$Models
   
   #****************
   # import packages
@@ -1375,37 +1375,23 @@ Live_Trading_Imitator=function(BarData,
   #************************
   # assign local parameters
   #************************
-  # general parameters
-  Max_Rows=Strategy$Max_Rows
-  
-  # order parameters
-  Max_Orders=Order_Rules$General$Max_Orders
-  OrderType=Order_Rules$General$OrderType
-  Position_Direction=Order_Rules$General$Position_Direction
-  
-  # indicators
-  Passed_Indicators=names(Indicators)
-  
-  # models
-  Passed_Models=names(Models)
-  Long_Consec_Times=Models$Simple_BBands$Long_Consec_Times
-  Short_Consec_Times=Models$Simple_BBands$Short_Consec_Times
-  Long_PctB=Models$Simple_BBands$Long_PctB
-  Short_PctB=Models$Simple_BBands$Short_PctB
+  Order_Rules_Params=unlist(Order_Rules)
+  Indicators_Params=unlist(Indicators)
+  Models_Params=unlist(Models)
   
   
   #******************
   # preliminary steps
   #******************
-  if(Position_Direction=="both"){
-    Max_Long_Orders=Max_Short_Orders=Max_Orders-1
-  }else if(Position_Direction=="long"){
-    Max_Long_Orders=Max_Orders-1
-    Max_Short_Orders=-1
-  }else if(Position_Direction=="short"){
-    Max_Long_Orders=-1
-    Max_Short_Orders=Max_Orders-1
-  }
+  # if(Position_Direction=="both"){
+  #   Max_Long_Orders=Max_Short_Orders=Max_Orders-1
+  # }else if(Position_Direction=="long"){
+  #   Max_Long_Orders=Max_Orders-1
+  #   Max_Short_Orders=-1
+  # }else if(Position_Direction=="short"){
+  #   Max_Long_Orders=-1
+  #   Max_Short_Orders=Max_Orders-1
+  # }
   
   
   #*********************
@@ -1420,37 +1406,39 @@ Live_Trading_Imitator=function(BarData,
       Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
     }
     
-    if(!exists("Order_Transmit")){
-      # define Order_Transmit
-      Order_Transmit=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                Submit_Time=tail(Live_Data, 1)[, Time],
-                                Filled_Time=tail(Live_Data, 1)[, Time],
-                                Action="", 
-                                TotalQuantity=0,
-                                OrderType=OrderType,
-                                LmtPrice=0,
-                                Filled=0)
-      Order_Transmit=Order_Transmit[-1,]
+    if(!exists("Orders_Transmitted")){
+      # define Orders_Transmitted
+      Orders_Transmitted=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                    Submit_Time=tail(Live_Data, 1)[, Time],
+                                    Filled_Time=tail(Live_Data, 1)[, Time],
+                                    Action="",
+                                    Detail="",
+                                    TotalQuantity=0,
+                                    OrderType="MKT",
+                                    LmtPrice=0,
+                                    Filled=0,
+                                    Sigs_N=0)
+      Orders_Transmitted=Orders_Transmitted[-1,]
     }
     
     #*********************
     # calculate indicators
     #*********************
-    Calculated_Indicators=sapply(Passed_Indicators,
+    Calculated_Indicators=sapply(names(Indicators),
                                  function(x)
                                    if(nrow(Live_Data)>Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
-                                     do.call(x, 
-                                             c(list(Live_Data[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
-                                               Indicators[[x]]))
+                                     list(do.call(x, 
+                                                  c(list(Live_Data[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
+                                                    Indicators[[x]])))
                                    })
     
     
     #***********
     # fit models
     #***********
-    Signals=sapply(Passed_Models,
+    Signals=sapply(names(Models),
                    function(x){
-                     Model_Info=get(x, envir=Models_Env) # variables and functions defined for the model object
+                     Model_Info=Models_Env[[x]] # variables and functions defined for the model object
                      Calculated_Indicators_Combined=do.call(cbind, Calculated_Indicators) # combined Calculated_Indicators
                      Calculated_Indicators_Names=names(Calculated_Indicators)[unlist(lapply(Calculated_Indicators, function(x) !is.null(x)))] #
                      if(sum(!Model_Info[["Essential_Indicators"]]%in%Calculated_Indicators_Names)==0){ # if none of essential indicators hasn't been calculated in Calculated_Indicators, proceed to run the model
@@ -1460,119 +1448,66 @@ Live_Trading_Imitator=function(BarData,
                    }) %>% as.data.table()
     
     
-    
-    
-    
     #***************
     # transmit order
     #***************
-    # Strategy$Order_Rules$General
-    # 
-    # Strategy$Order_Rules$BuyToOpen
-    # Strategy$Order_Rules$BuyToClose
-    # Strategy$Order_Rules$SellToOpen
-    # Strategy$Order_Rules$SellToClose
-    # 
-    # 
-    # 
-    # 
-    # 
-    # if(nrow(Signals)>0){
-    #   if(abs(nrow(Order_Transmit[Action=="Buy", ])-
-    #          nrow(Order_Transmit[Action=="Sell", ]))>=
-    #      Strategy$Order_Rules$General$Max_Orders){
-    #     next
-    #   }
-    #   
-    #   
-    #   Order_Rules_Names=names(Strategy$Order_Rules)
-    #   Order_Rules_Names=Order_Rules_Names[Order_Rules_Names!="General"]
-    #   
-    #   sapply(Order_Rules_Names,
-    #          function(x){
-    #            if(Order_Transmit){Order_Rules[[x]];apply(Signals, 1, sum)}
-    #          })
-    #   
-    #   if(){
-    # 
-    #   }
-    # }
-
-    
-    # 
-    # sum(Signals[2, ])
-    # 
-    # Max_Orders
-
     if(nrow(Signals)>0){
-      # buy
-      Long_Sig_by_Simple_BBands=Signals[1, "Simple_BBands"]
-      if(Long_Sig_by_Simple_BBands==TRUE){
-        # determine the position
-        if(sum(Order_Transmit[Action=="Buy", TotalQuantity])-
-           sum(Order_Transmit[Action=="Sell", TotalQuantity])<=
-           (Max_Long_Orders)){ # the number of currently remaining filled or transmitted long positions is limited to Max_Orders(= Max_Long_Orders + 1)
-          print(paste0("buy : ", i))
-          Order_Transmit=rbind(Order_Transmit,
-                               data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                          Submit_Time=tail(Live_Data, 1)[, Time],
-                                          Filled_Time=tail(Live_Data, 1)[, Time],
-                                          Action="Buy",
-                                          TotalQuantity=1,
-                                          OrderType=OrderType,
-                                          LmtPrice=tail(Live_Data, 1)[, Close],
-                                          Filled=0))
-        }
-      }
+      Sigs_N=sum(apply(Signals, 1, sum)*c(1, -1))
+      Max_Orders=Order_Rules[["General"]][["Max_Orders"]]
       
-      # sell
-      Short_Sig_by_Simple_BBands=Signals[2, "Simple_BBands"]
-      if(Short_Sig_by_Simple_BBands==TRUE){
-        if(sum(Order_Transmit[Action=="Sell", TotalQuantity])-
-           sum(Order_Transmit[Action=="Buy", TotalQuantity])<=
-           (Max_Short_Orders)){ # the number of currently remaining filled or transmitted short positions is limited to Max_Orders(= Max_Short_Orders + 1)
-          print(paste0("sell : ", i))
-          Order_Transmit=rbind(Order_Transmit,
-                               data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                          Submit_Time=tail(Live_Data, 1)[, Time],
-                                          Filled_Time=tail(Live_Data, 1)[, Time],
-                                          Action="Sell",
-                                          TotalQuantity=1,
-                                          OrderType=OrderType,
-                                          LmtPrice=tail(Live_Data, 1)[, Close],
-                                          Filled=0))
-        }
-      }
+      # number of orders held (+:more long, -:more short)
+      N_Orders_held=sum(Orders_Transmitted[Action=="Buy", TotalQuantity])-
+        sum(Orders_Transmitted[Action=="Sell", TotalQuantity])
       
+      Order_to_Transmit=sapply(names(Order_Rules),
+                               function(x){
+                                 do.call(OrderRules_Env[[paste0(x, "_Function")]],
+                                         c(list(Max_Orders=Max_Orders,
+                                                Sigs_N=Sigs_N,
+                                                N_Orders_held=N_Orders_held),
+                                           Params=list(Order_Rules[[x]])))
+                               }
+      )
+      
+      # add Order_to_Transmit to Orders_Transmitted
+      Orders_Transmitted=rbind(Orders_Transmitted,
+                               do.call(rbind, Order_to_Transmit))
+      
+      if(!is.null(do.call(rbind, Order_to_Transmit))){
+        print(paste0("i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+      }
+      # remove Signals
       rm(Signals)
+      rm(Order_to_Transmit)
+    }else{
+      next
     }
-    
     
     
     #***********
     # fill order
     #***********
     # buy
-    if(nrow(Order_Transmit[Action=="Buy"&Filled==0, ])>0){ # if there is any transmitted buy order that has not been filled yet
+    if(nrow(Orders_Transmitted[Action=="Buy"&Filled==0, ])>0){ # if there is any transmitted buy order that has not been filled yet
       
-      Unfilled_Buy_Position_Times=Order_Transmit[Action=="Buy"&Filled==0, Submit_Time]
-      Unfilled_Buy_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
+      Unfilled_Buy_Position_Times=Orders_Transmitted[Action=="Buy"&Filled==0, Submit_Time]
+      Unfilled_Buy_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
       Which_Buy_Position_to_Fill=which(BarData[i+1, Low]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
-      Order_Transmit[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
-                     `:=`(Filled_Time=BarData[i+1, Time],
-                          Filled=1)]
+      Orders_Transmitted[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
+                         `:=`(Filled_Time=BarData[i+1, Time],
+                              Filled=1)]
     }
     # sell
-    if(nrow(Order_Transmit[Action=="Sell"&Filled==0, ])>0){ # if there is any transmitted sell order that has not been filled yet
+    if(nrow(Orders_Transmitted[Action=="Sell"&Filled==0, ])>0){ # if there is any transmitted sell order that has not been filled yet
       
-      Unfilled_Sell_Position_Times=Order_Transmit[Action=="Sell"&Filled==0, Submit_Time]
-      Unfilled_Sell_Position_Prices=Order_Transmit[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
+      Unfilled_Sell_Position_Times=Orders_Transmitted[Action=="Sell"&Filled==0, Submit_Time]
+      Unfilled_Sell_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
       Which_Sell_Position_to_Fill=which(BarData[i+1, High]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
-      Order_Transmit[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
-                     `:=`(Filled_Time=BarData[i+1, Time],
-                          Filled=1)]
+      Orders_Transmitted[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
+                         `:=`(Filled_Time=BarData[i+1, Time],
+                              Filled=1)]
     }
     
   }
@@ -1581,23 +1516,23 @@ Live_Trading_Imitator=function(BarData,
   #**********************
   # calculate the balance
   #**********************
-  Collapse_Order_Transmit=cbind(Order_Transmit[Action=="Buy", 
-                                               c("Filled_Time", "LmtPrice")],
-                                Order_Transmit[Action=="Sell", 
-                                               c("Filled_Time", "LmtPrice")])
-  colnames(Collapse_Order_Transmit)=c("Buy_Time", "Buy_Price", "Sell_Time", "Sell_Price")
-  Duplicated_Row=unique(c(which(duplicated(Collapse_Order_Transmit[, c("Buy_Time", "Buy_Price")])), 
-                          which(duplicated(Collapse_Order_Transmit[, c("Sell_Time", "Sell_Price")]))))
+  Collapse_Orders_Transmitted=cbind(Orders_Transmitted[Action=="Buy", 
+                                                       c("Filled_Time", "LmtPrice")],
+                                    Orders_Transmitted[Action=="Sell", 
+                                                       c("Filled_Time", "LmtPrice")])
+  colnames(Collapse_Orders_Transmitted)=c("Buy_Time", "Buy_Price", "Sell_Time", "Sell_Price")
+  Duplicated_Row=unique(c(which(duplicated(Collapse_Orders_Transmitted[, c("Buy_Time", "Buy_Price")])), 
+                          which(duplicated(Collapse_Orders_Transmitted[, c("Sell_Time", "Sell_Price")]))))
   if(length(Duplicated_Row)>0){
-    Collapse_Order_Transmit=Collapse_Order_Transmit[-Duplicated_Row, ]
+    Collapse_Orders_Transmitted=Collapse_Orders_Transmitted[-Duplicated_Row, ]
   }
   
-  Ind_Profit=2*Collapse_Order_Transmit[, Sell_Price-Buy_Price]-2*0.52
+  Ind_Profit=2*Collapse_Orders_Transmitted[, Sell_Price-Buy_Price]-2*0.52
   Net_Profit=sum(Ind_Profit)
   
   
   return(list(BarData=BarData,
-              Order_Transmit=Order_Transmit,
+              Orders_Transmitted=Orders_Transmitted,
               Ind_Profit=Ind_Profit,
               Net_Profit=Net_Profit))
   
@@ -1799,6 +1734,7 @@ Add_Model=function(Strategy,
   # pull the info for Model
   Model_Info=Models_Env[[Model]]
   
+  
   # check required indicators
   Strategy_temp=get(Strategy, envir=.GlobalEnv)
   Essential_Indicators=Model_Info$Essential_Indicators
@@ -1861,6 +1797,9 @@ Add_Model=function(Strategy,
 Add_OrderRule=function(Strategy,
                        OrderRule=NULL,
                        OrderRuleParams=NULL){
+  #
+  lapply(c("plyr"), checkpackages)
+  
   if(!exists(paste0(Strategy), envir=.GlobalEnv)){
     #Init.Strategy(Name=Strategy)
     stop(paste0("No strategy found named ", Strategy))
@@ -1877,137 +1816,78 @@ Add_OrderRule=function(Strategy,
   # pull the info for OrderRule
   OrderRules_Info=OrderRules_Env[[OrderRule]]
   
-  #*****************
-  # check parameters
-  #**************************
-  # names of passed arguments
-  Passed_Arguments_Names=names(OrderRuleParams)
-  
-  # arguments/parameters in the function of Model in Models_Env
-  OrderRules_Params=OrderRules_Info
-  
-  # names
-  OrderRules_Params_Names=names(OrderRules_Params)
-  
-  # error if any of passed arguments is not defined in the function
-  if(sum(!Passed_Arguments_Names%in%OrderRules_Params_Names>0)){
-    stop("Valid parameters : ", paste(OrderRules_Params_Names, collapse=", "))
+  #********************
+  # check element names
+  #********************
+  OrderRules_Info=as.relistable(OrderRules_Info)
+  All.default.elements=unlist(OrderRules_Info)
+  #
+  if(is.null(OrderRuleParams)){
+    OrderRuleParams=OrderRules_Info
   }
   
-  #***********************************************
-  # assign default values to unspecified arguments
-  #***********************************************
-  # arguments/parameters with defined default values
-  OrderRules_Params_with_Default=OrderRules_Params[OrderRules_Params!=""]
-  OrderRules_Params_with_Default_Names=names(OrderRules_Params_with_Default)
-  
-  New_OrderRuleParams=c(OrderRuleParams,
-                        OrderRules_Params_with_Default[!OrderRules_Params_with_Default_Names%in%Passed_Arguments_Names])
-  
-  # New_Passed_Arguments_Names
-  New_Passed_Arguments_Names=names(New_OrderRuleParams)
-  
-  # sort the arguments (not important)
-  Ordered_Arguments=New_Passed_Arguments_Names[order(match(New_Passed_Arguments_Names, OrderRules_Params_Names))]
-  New_OrderRuleParams=New_OrderRuleParams[Ordered_Arguments]
-  
-  # passed direction
-  if("Position_Direction"%in%OrderRules_Params_Names){
-    Position_Directions=c("both", "long", "short") # available directions of position
-    if(!New_OrderRuleParams$Position_Direction%in%Position_Directions){
-      stop("Valid Position_Direction : ", paste(Position_Directions, collapse=", "))
-    }
-  }else if("OrderType"%in%OrderRules_Params_Names){
-    OrderTypes=c("MKT") # available types of order
-    if(!New_OrderRuleParams$OrderType%in%OrderTypes){
-      stop("Valid OrderTypes : ", paste(OrderTypes, collapse=", "))
-    }
+  OrderRuleParams=as.relistable(OrderRuleParams)
+  All.passed.elements=unlist(OrderRuleParams)
+  #
+  All.default.elements.concat.names=names(All.default.elements)
+  All.passed.elements.concat.names=names(All.passed.elements)
+  #
+  All.default.elements.names=unique(unlist(strsplit(All.default.elements.concat.names, "[.]")))
+  All.passed.elements.names=unique(unlist(strsplit(All.passed.elements.concat.names, "[.]")))
+  if(sum(!All.passed.elements.names%in%All.default.elements.names)>0){
+    stop("Invalid parameters entered : ",
+         paste(All.passed.elements.names[!All.passed.elements.names%in%All.default.elements.names], collapse=", "),
+         
+         "\n
+         Valid parameters : ",
+         paste(All.default.elements.names, collapse=", "))
   }
   
-  # match the class
-  class(New_OrderRuleParams)=class(OrderRules_Info)
+  Passed.string.split=strsplit(All.passed.elements.concat.names, "[.]")
   
-  # add a OrderRule to the corresponding strategy
-  Strategy_temp=get(Strategy, envir=.GlobalEnv)
-  Strategy_temp$Order_Rules[[OrderRule]]=New_OrderRuleParams
-  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
+  Default.string.split=strsplit(All.default.elements.concat.names, "[.]")
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  # available Orders
-  Available_OrderRules=ls(OrderRules_Env)
-  
-  # check the availability of OrderRule in OrderRules_Env
-  if(!OrderRule%in%Available_OrderRules){
-    stop("Available Orders : ", paste(Available_OrderRules, collapse=", "))
-  }
-  
-  # pull the info for OrderRule
-  OrderRules_Info=OrderRules_Env[[OrderRule]]
-  
-  
-  # #********************
-  # # check element names
-  # #********************
-  # #
-  # OrderRules_Info=as.relistable(OrderRules_Info)
-  # All.default.elements=unlist(OrderRules_Info)
-  # #
-  # OrderRuleParams=as.relistable(OrderRuleParams)
-  # All.passed.elements=unlist(OrderRuleParams)
-  # #
-  # All.default.elements.concat.names=names(All.default.elements)
-  # All.passed.elements.concat.names=names(All.passed.elements)
-  # #
-  # All.default.elements.names=unique(unlist(strsplit(All.default.elements.concat.names, "[.]")))
-  # All.passed.elements.names=unique(unlist(strsplit(All.passed.elements.concat.names, "[.]")))
-  # if(sum(!All.passed.elements.names%in%All.default.elements.names)>0){
-  #   stop("Invalid parameters entered : ",
-  #        paste(All.passed.elements.names[!All.passed.elements.names%in%All.default.elements.names], collapse=", "),
-  #        
-  #        "\n 
-  #        Valid parameters : ",
-  #        paste(All.default.elements.names, collapse=", "))
-  # }
-  # 
-  # Passed.string.split=strsplit(All.passed.elements.concat.names, "[.]")
-  # Default.string.split=strsplit(All.default.elements.concat.names, "[.]")
-  # 
-  # # depth
+  # depth
   # rbind.fill(lapply(Passed.string.split,
   #                   function(y){as.data.frame(t(y))}))
   # rbind.fill(lapply(Default.string.split,
   #                   function(y){as.data.frame(t(y))}))
+  
+  #****************************
+  # compare values at each node
+  #****************************
+  comparing.table=data.table(Default=names(All.default.elements),
+                             Value=All.default.elements) %>%
+    left_join(data.table(Default=names(All.passed.elements),
+                         Value=All.passed.elements),
+              by="Default")
+  
+  # locations of elements with different values
+  diff.loc=which(comparing.table$Value.x!=comparing.table$Value.y)
+  
+  # update the values in the default list
+  for(ui in diff.loc){
+    All.default.elements[ui]=comparing.table[ui, Value.y]
+  }
+  
   # 
-  # 
-  # 
-  # # compare values at each node
-  # comparing.table=data.table(Default=names(All.default.elements),
-  #                            Value=All.default.elements) %>% 
-  #   left_join(data.table(Default=names(All.passed.elements),
-  #                        Value=All.passed.elements),
-  #             by="Default")
-  # 
-  # # locations of elements with different values
-  # diff.loc=which(comparing.table$Value.x!=comparing.table$Value.y)
-  # 
-  # # update the values in the default list
-  # for(ui in diff.loc){
-  #   All.default.elements[ui]=comparing.table[ui, Value.y]
-  # }
-  # 
-  # #
-  # relist(All.default.elements)
+  New_ModelParams=relist(All.default.elements)
+  #New_ModelParams=as.data.table(New_ModelParams) %>% as.list()
+  
+  # add a model to the corresponding strategy
+  Strategy_temp=get(Strategy, envir=.GlobalEnv)
+  
+  # Min_Sig_N must be smaller or equal to the number of models
+  if(OrderRule=="Long"|
+     OrderRule=="Short"){
+    if((length(names(Strategy_temp$Models))<New_ModelParams[["BuyToOpen"]][["Min_Sig_N"]])|
+       (length(names(Strategy_temp$Models))<New_ModelParams[["SellToClose"]][["Min_Sig_N"]])){
+      stop("Min_Sig_N must be smaller or equal to the number of models")
+    }
+  }
+  
+  Strategy_temp$Order_Rules[[OrderRule]]=New_ModelParams
+  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
 }
-
-
 
 

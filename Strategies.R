@@ -48,10 +48,10 @@ Add_Model(Strategy="Strategy_Simple_BBands",
 #                            Long_PctB=0.2,
 #                            Short_PctB=0.8))
 
-Add_Model(Strategy="Strategy_Simple_BBands",
-          Model="Simple_Test",
-          ModelParams=list(x=0.2,
-                           y=0.8))
+# Add_Model(Strategy="Strategy_Simple_BBands",
+#           Model="Simple_Test",
+#           ModelParams=list(x=0.2,
+#                            y=0.8))
 
 # Strategy_Simple_BBands$Indicators$BBands
 # Strategy_Simple_BBands$Models$Simple_BBands
@@ -63,16 +63,16 @@ Add_Model(Strategy="Strategy_Simple_BBands",
 #***************
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="General",
-              OrderRuleParams=list(Max_Orders=3)) # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
+              OrderRuleParams=list(Max_Orders=1)) # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="Long",
-              OrderRuleParams=list(BuyToOpen=list(OrderType="MKsT",
-                                                  Quantity=2,
-                                                  Min_Sig_N=3),
+              OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
+                                                  Quantity=1,
+                                                  Min_Sig_N=1),
                                    SellToClose=list(OrderType="MKT",
-                                                    Quantity=1)))
-Add_OrderRule(Strategy="Strategy_Simple_BBands",
-              OrderRule="Short")
-
+                                                    Quantity=1,
+                                                    Min_Sig_N=1)))
+# Add_OrderRule(Strategy="Strategy_Simple_BBands",
+#               OrderRule="Short")
 
 

@@ -13,9 +13,10 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
-data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+#working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+#data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
 
 
 #****************
@@ -45,7 +46,7 @@ for(pack in c("IBrokers",
 # import data
 Get_Data(Symbols=list("MNQ", "SPY"),
          Data_Dir=data.dir,
-         BarSize=60*1)
+         BarSize=60*5)
 
 # bar data
 # SPY

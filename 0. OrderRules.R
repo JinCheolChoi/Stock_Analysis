@@ -22,7 +22,9 @@ OrderRules_Env$General=list(
 )
 
 
-
+OrderRules_Env$General_Function=function(...){
+  
+}
 
 
 #**********
@@ -37,10 +39,56 @@ OrderRules_Env$Long=list(
   SellToClose=list(
     OrderType="MKT",
     Quantity=1,
-    Min_Sig_N=1) # minimum number of positive signals from models to transmit
+    Min_Sig_N=1)# minimum number of positive signals from models to transmit
+  
+  
 )
 
-
+OrderRules_Env$Long_Function=function(Max_Orders, Sigs_N, N_Orders_held, Params){
+  if(0<=N_Orders_held & 
+     N_Orders_held<Max_Orders &
+     Sigs_N>0 & 
+     Sigs_N<=Params[["BuyToOpen"]][["Min_Sig_N"]]){
+    
+    Action="Buy"
+    Detail="BTO"
+    TotalQuantity=Params[["BuyToOpen"]][["Quantity"]]
+    OrderType=Params[["BuyToOpen"]][["OrderType"]]
+  }
+  if(0<N_Orders_held & # if there's a long position
+     N_Orders_held<=Max_Orders &
+     Sigs_N<0 &
+     (-Sigs_N)<=Params[["SellToClose"]][["Min_Sig_N"]]){
+    
+    Action="Sell"
+    Detail="STC"
+    TotalQuantity=Params[["SellToClose"]][["Quantity"]]
+    OrderType=Params[["SellToClose"]][["OrderType"]]
+  }
+  if(N_Orders_held>=Max_Orders & 
+     Sigs_N<0 &
+     (-Sigs_N)<=Params[["SellToClose"]][["Min_Sig_N"]]){ # only sell to close
+    
+    Action="Sell"
+    Detail="STC"
+    TotalQuantity=Params[["SellToClose"]][["Quantity"]]
+    OrderType=Params[["SellToClose"]][["OrderType"]]
+  }
+  
+  #
+  if(exists("Action")){
+    return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                      Submit_Time=tail(Live_Data, 1)[, Time],
+                      Filled_Time=tail(Live_Data, 1)[, Time],
+                      Action=Action,
+                      Detail=Detail,
+                      TotalQuantity=as.numeric(TotalQuantity),
+                      OrderType=OrderType,
+                      LmtPrice=tail(Live_Data, 1)[, Close],
+                      Filled=0,
+                      Sigs_N=Sigs_N))
+  }
+}
 
 
 
@@ -54,13 +102,57 @@ OrderRules_Env$Short=list(
     OrderType="MKT",
     Quantity=1,
     Min_Sig_N=1), # minimum number of positive signals from models to transmit
-  BuyToClose=list(rderType="MKT",
+  BuyToClose=list(OrderType="MKT",
                   Quantity=1,
                   Min_Sig_N=1) # minimum number of positive signals from models to transmit
   
 )
 
 
-
-
+OrderRules_Env$Short_Function=function(Max_Orders, Sigs_N, N_Orders_held, Params){
+  if(0>=N_Orders_held &
+     N_Orders_held>(-Max_Orders) &
+     Sigs_N<0 &
+     (-Sigs_N)<=Params[["SellToOpen"]][["Min_Sig_N"]]){
+    
+    Action="Sell"
+    Detail="STO"
+    TotalQuantity=Params[["SellToOpen"]][["Quantity"]]
+    OrderType=Params[["SellToOpen"]][["OrderType"]]
+  }
+  if(0>N_Orders_held & # if there's a short position
+     N_Orders_held>=(-Max_Orders) & 
+     Sigs_N>0 &
+     Sigs_N<=Params[["BuyToClose"]][["Min_Sig_N"]]){
+    
+    Action="Buy"
+    Detail="BTC"
+    TotalQuantity=Params[["BuyToClose"]][["Quantity"]]
+    OrderType=Params[["BuyToClose"]][["OrderType"]]
+  }
+  if(N_Orders_held<=(-Max_Orders) & 
+     Sigs_N>0 &
+     Sigs_N<=Params[["BuyToClose"]][["Min_Sig_N"]]){ # only buy to close
+    
+    Action="Buy"
+    Detail="BTC"
+    TotalQuantity=Params[["BuyToClose"]][["Quantity"]]
+    OrderType=Params[["BuyToClose"]][["OrderType"]]
+  }
+  
+  #
+  if(exists("Action")){
+    return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                      Submit_Time=tail(Live_Data, 1)[, Time],
+                      Filled_Time=tail(Live_Data, 1)[, Time],
+                      Action=Action,
+                      Detail=Detail,
+                      TotalQuantity=as.numeric(TotalQuantity),
+                      OrderType=OrderType,
+                      LmtPrice=tail(Live_Data, 1)[, Close],
+                      Filled=0,
+                      Sigs_N=Sigs_N))
+  }
+  
+}
 
