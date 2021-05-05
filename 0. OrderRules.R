@@ -17,8 +17,8 @@ OrderRules_Env=new.env()
 OrderRules_Env$General=list(
   Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
   #Position_Direction="both",
-  Cut_Loss=10,
-  Profit_Threshold=10
+  Stop_Order=10,
+  Profit_Order=10
 )
 
 

@@ -1375,11 +1375,9 @@ Live_Trading_Imitator=function(BarData,
   #************************
   # assign local parameters
   #************************
-  Order_Rules_Params=unlist(Order_Rules)
-  Indicators_Params=unlist(Indicators)
-  Models_Params=unlist(Models)
-  
   Max_Orders=Order_Rules[["General"]][["Max_Orders"]]
+  Stop_Order=Order_Rules[["General"]][["Stop_Order"]]
+  Profit_Order=Order_Rules[["General"]][["Profit_Order"]]
   Strategy_Indicators=names(Indicators)
   Strategy_Models=names(Models)
   General_Strategy="General"
@@ -1402,29 +1400,26 @@ Live_Trading_Imitator=function(BarData,
   #*********************
   # simulation algorithm
   #*********************
+  # define Live_Data
+  Live_Data=BarData[1, ]
+  # define Orders_Transmitted
+  Orders_Transmitted=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                Submit_Time=tail(Live_Data, 1)[, Time],
+                                Filled_Time=tail(Live_Data, 1)[, Time],
+                                Action="",
+                                Detail="",
+                                TotalQuantity=0,
+                                OrderType="MKT",
+                                LmtPrice=0,
+                                Filled=0,
+                                Sigs_N=0)
+  Orders_Transmitted=Orders_Transmitted[-1,]
+  Live_Data[, `:=`(Symbol=NULL, Time=NULL, Open=NULL,
+                   High=NULL, Low=NULL, Close=NULL,
+                   Volume=NULL, Count=NULL)]
   for(i in 1:(nrow(BarData)-1)){
-    # i=31
-    if(!exists("Live_Data")){
-      # define Live_Data
-      Live_Data=BarData[i, ]
-    }else{
-      Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
-    }
-    
-    if(!exists("Orders_Transmitted")){
-      # define Orders_Transmitted
-      Orders_Transmitted=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                    Submit_Time=tail(Live_Data, 1)[, Time],
-                                    Filled_Time=tail(Live_Data, 1)[, Time],
-                                    Action="",
-                                    Detail="",
-                                    TotalQuantity=0,
-                                    OrderType="MKT",
-                                    LmtPrice=0,
-                                    Filled=0,
-                                    Sigs_N=0)
-      Orders_Transmitted=Orders_Transmitted[-1,]
-    }
+    # i=3807
+    Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
     
     #***********************
     #
@@ -1433,76 +1428,76 @@ Live_Trading_Imitator=function(BarData,
     # Order_Rules[[General_Strategy]]
     # OrderRules_Env[[]]
     # tail(Live_Data, 1)
-    
-    #*********************
-    # calculate indicators
-    #*********************
-    Calculated_Indicators=sapply(Strategy_Indicators,
-                                 function(x)
-                                   if(nrow(Live_Data)>Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
-                                     list(do.call(x, 
-                                                  c(list(Live_Data[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
-                                                    Indicators[[x]])))
-                                   })
-    
-    
-    #***********
-    # fit models
-    #***********
-    Signals=as.data.table(sapply(Strategy_Models,
+    # skip if there is transmitted order to fill
+    if(sum(Orders_Transmitted$Filled==0)<Max_Orders){
+      #*********************
+      # calculate indicators
+      #*********************
+      Calculated_Indicators=sapply(Strategy_Indicators,
+                                   function(x)
+                                     if(nrow(Live_Data)>Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
+                                       list(do.call(x, 
+                                                    c(list(Live_Data[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
+                                                      Indicators[[x]])))
+                                     })
+      
+      
+      #***********
+      # fit models
+      #***********
+      Signals=as.data.table(sapply(Strategy_Models,
+                                   function(x){
+                                     Model_Info=Models_Env[[x]] # variables and functions defined for the model object
+                                     Calculated_Indicators_Combined=do.call(cbind, Calculated_Indicators) # combined Calculated_Indicators
+                                     Calculated_Indicators_Names=names(Calculated_Indicators)[unlist(lapply(Calculated_Indicators, function(x) !is.null(x)))] #
+                                     if(sum(!Model_Info[["Essential_Indicators"]]%in%Calculated_Indicators_Names)==0){ # if none of essential indicators hasn't been calculated in Calculated_Indicators, proceed to run the model
+                                       do.call(Model_Info[["Function"]],
+                                               c(list(Calculated_Indicators_Combined),
+                                                 Models[[x]]))}
+                                   }))
+      
+      
+      #***************
+      # transmit order
+      #***************
+      if(nrow(Signals)>0){
+        # - N of models <= Sigs_N <= N of models
+        Sigs_N=sum(apply(Signals, 1, sum)*c(1, -1))
+        
+        # number of orders held (+:more long, -:more short)
+        N_Orders_held=sum(Orders_Transmitted$Action=="Buy")-
+          sum(Orders_Transmitted$Action=="Sell")
+        
+        # Order_to_Transmit
+        Order_to_Transmit=lapply(Strategy_Rules,
                                  function(x){
-                                   Model_Info=Models_Env[[x]] # variables and functions defined for the model object
-                                   Calculated_Indicators_Combined=do.call(cbind, Calculated_Indicators) # combined Calculated_Indicators
-                                   Calculated_Indicators_Names=names(Calculated_Indicators)[unlist(lapply(Calculated_Indicators, function(x) !is.null(x)))] #
-                                   if(sum(!Model_Info[["Essential_Indicators"]]%in%Calculated_Indicators_Names)==0){ # if none of essential indicators hasn't been calculated in Calculated_Indicators, proceed to run the model
-                                     do.call(Model_Info[["Function"]],
-                                             c(list(Calculated_Indicators_Combined),
-                                               Models[[x]]))}
-                                 }))
-    
-    
-    #***************
-    # transmit order
-    #***************
-    if(nrow(Signals)>0){
-      # - N of models <= Sigs_N <= N of models
-      Sigs_N=sum(apply(Signals, 1, sum)*c(1, -1))
-      
-      # number of orders held (+:more long, -:more short)
-      N_Orders_held=sum(Orders_Transmitted$Action=="Buy")-
-        sum(Orders_Transmitted$Action=="Sell")
-      
-      # Order_to_Transmit
-      Order_to_Transmit=lapply(Strategy_Rules,
-                               function(x){
-                                 do.call(OrderRules_Env[[paste0(x, "_Function")]],
-                                         c(list(Live_Data=Live_Data,
-                                                Max_Orders=Max_Orders,
-                                                Sigs_N=Sigs_N,
-                                                N_Orders_held=N_Orders_held),
-                                           Params=list(Order_Rules[[x]])))
-                               })
-      
-      # add Order_to_Transmit to Orders_Transmitted
-      Orders_Transmitted=rbind(Orders_Transmitted,
-                               do.call(rbind, Order_to_Transmit),
-                               fill=T)
-      
-      if(!is.null(do.call(rbind, Order_to_Transmit))){
-        print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+                                   do.call(OrderRules_Env[[paste0(x, "_Function")]],
+                                           c(list(Live_Data=Live_Data,
+                                                  Max_Orders=Max_Orders,
+                                                  Sigs_N=Sigs_N,
+                                                  N_Orders_held=N_Orders_held),
+                                             Params=list(Order_Rules[[x]])))
+                                 })
+        
+        # add Order_to_Transmit to Orders_Transmitted
+        Orders_Transmitted=rbind(Orders_Transmitted,
+                                 do.call(rbind, Order_to_Transmit),
+                                 fill=T)
+        
+        if(!is.null(do.call(rbind, Order_to_Transmit))){
+          print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+        }
+        
+        # remove Signals
+        rm(Signals)
+        rm(Order_to_Transmit)
       }
-      
-      # remove Signals
-      rm(Signals)
-      rm(Order_to_Transmit)
     }
-    
     
     # skip if there is no order transmitted
     if(sum(Orders_Transmitted$Filled==0)==0){
       next
     }
-    
     
     #***********
     # fill order
@@ -1513,8 +1508,7 @@ Live_Trading_Imitator=function(BarData,
       
       Unfilled_Buy_Position_Times=Orders_Transmitted[Action=="Buy"&Filled==0, Submit_Time]
       Unfilled_Buy_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
-      Which_Buy_Position_to_Fill=which(BarData[i+1, Low]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
-      
+      Which_Buy_Position_to_Fill=which(BarData[["Low"]][i+1]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
       # loc=Orders_Transmitted$Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill]
       # Orders_Transmitted$Filled[loc]=1
@@ -1524,7 +1518,6 @@ Live_Trading_Imitator=function(BarData,
                          `:=`(Filled_Time=BarData[i+1, Time],
                               Filled=1)]
       
-      next
     }
     
     # sell
@@ -1533,7 +1526,8 @@ Live_Trading_Imitator=function(BarData,
       
       Unfilled_Sell_Position_Times=Orders_Transmitted[Action=="Sell"&Filled==0, Submit_Time]
       Unfilled_Sell_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
-      Which_Sell_Position_to_Fill=which(BarData[i+1, High]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
+      
+      Which_Sell_Position_to_Fill=which(BarData[["High"]][i+1]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
       # loc=Orders_Transmitted$Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill]
       # Orders_Transmitted$Filled[loc]=1
@@ -1543,7 +1537,51 @@ Live_Trading_Imitator=function(BarData,
                          `:=`(Filled_Time=BarData[i+1, Time],
                               Filled=1)]
       
+    }
+    
+    # skip if there is no remaining untransmitted order
+    if(sum(Orders_Transmitted$Filled==0)==0){
       next
+    }
+    
+    #*********************
+    # stop or early profit
+    #*********************
+    N_Remaining_Orders=sum(Orders_Transmitted$Action=="Buy"&Orders_Transmitted$Filled==1)-
+      sum(Orders_Transmitted$Action=="Sell"&Orders_Transmitted$Filled==1)
+    if(N_Remaining_Orders==0){ # orders are all balanced
+      next
+    }else if(N_Remaining_Orders>0){ # still on long
+      
+      Profit_Price=tail(Orders_Transmitted[Action=="Buy"&Filled==1], N_Remaining_Orders)[["LmtPrice"]][1]+Profit_Order
+      
+      if(Profit_Price<BarData[["Low"]][i+1]){
+        Profit_Ind=which(Orders_Transmitted[["Submit_Time"]]==Unfilled_Buy_Position_Times)
+        Orders_Transmitted[["Filled_Time"]][Profit_Ind]=BarData[["Time"]][i+1]
+        Orders_Transmitted[["Detail"]][Profit_Ind]="Early_Profit"
+        Orders_Transmitted[["LmtPrice"]][Profit_Ind]=Profit_Price
+        Orders_Transmitted[["Filled"]][Profit_Ind]=1
+      }
+      
+    }else if(N_Remaining_Orders<0){ # still on short
+      
+      Stop_Price=tail(Orders_Transmitted[Action=="Sell"&Filled==1], -N_Remaining_Orders)[["LmtPrice"]][1]+Stop_Order
+      
+      if(Stop_Price<BarData[["High"]][i+1]){
+        Stop_Ind=which(Orders_Transmitted[["Submit_Time"]]==Unfilled_Buy_Position_Times)
+        Orders_Transmitted[["Filled_Time"]][Stop_Ind]=BarData[["Time"]][i+1]
+        Orders_Transmitted[["Detail"]][Stop_Ind]="Stop"
+        Orders_Transmitted[["LmtPrice"]][Stop_Ind]=Stop_Price
+        Orders_Transmitted[["Filled"]][Stop_Ind]=1
+        
+        # Orders_Transmitted[Submit_Time==Unfilled_Buy_Position_Times,
+        #                    `:=`(Filled_Time=BarData[["Time"]][i+1],
+        #                         Detail="Stop",
+        #                         LmtPrice=Stop_Price,
+        #                         Filled=1)]
+        
+      }
+      
     }
     
   }
