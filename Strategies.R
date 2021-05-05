@@ -36,14 +36,14 @@ Add_Indicator(Strategy="Strategy_Simple_BBands",
 #********************************************************************************************
 Add_Model(Strategy="Strategy_Simple_BBands",
           Model="Simple_BBands_1",
-          ModelParams=list(Long_Consec_Times=3,
+          ModelParams=list(Long_Consec_Times=2,
                            Short_Consec_Times=1,
                            Long_PctB=0.1,
                            Short_PctB=0.9))
 Add_Model(Strategy="Strategy_Simple_BBands",
           Model="Simple_BBands_2",
           ModelParams=list(Long_Consec_Times=1,
-                           Short_Consec_Times=3,
+                           Short_Consec_Times=2,
                            Long_PctB=0.1,
                            Short_PctB=0.9))
 
@@ -82,14 +82,12 @@ Add_OrderRule(Strategy="Strategy_Simple_BBands",
                                                     Min_Sig_N=1)))
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="Short",
-              OrderRuleParams=list(
-                SellToOpen=list(
-                  OrderType="MKT",
-                  Quantity=1,
-                  Min_Sig_N=2), # minimum number of positive signals from models to transmit
-                BuyToClose=list(OrderType="MKT",
-                                Quantity=1,
-                                Min_Sig_N=1))) # minimum number of positive signals from models to transmit
+              OrderRuleParams=list(SellToOpen=list(OrderType="MKT",
+                                                   Quantity=1,
+                                                   Min_Sig_N=2), # minimum number of positive signals from models to transmit
+                                   BuyToClose=list(OrderType="MKT",
+                                                   Quantity=1,
+                                                   Min_Sig_N=1))) # minimum number of positive signals from models to transmit
 
 
 

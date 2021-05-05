@@ -53,18 +53,9 @@ OrderRules_Env$Long_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_he
     Detail="BTO"
     TotalQuantity=Params[["BuyToOpen"]][["Quantity"]]
     OrderType=Params[["BuyToOpen"]][["OrderType"]]
-  }
-  if(0<N_Orders_held & # if there's a long position
-     N_Orders_held<=Max_Orders &
-     (-Sigs_N)>=Params[["SellToClose"]][["Min_Sig_N"]]){
-    
-    Action="Sell"
-    Detail="STC"
-    TotalQuantity=Params[["SellToClose"]][["Quantity"]]
-    OrderType=Params[["SellToClose"]][["OrderType"]]
-  }
-  if(N_Orders_held>=Max_Orders & 
-     (-Sigs_N)>=Params[["SellToClose"]][["Min_Sig_N"]]){ # only sell to close
+  }else if(0<N_Orders_held & # if there's a long position
+           N_Orders_held<=Max_Orders &
+           (-Sigs_N)>=Params[["SellToClose"]][["Min_Sig_N"]]){
     
     Action="Sell"
     Detail="STC"
@@ -115,18 +106,9 @@ OrderRules_Env$Short_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_h
     Detail="STO"
     TotalQuantity=Params[["SellToOpen"]][["Quantity"]]
     OrderType=Params[["SellToOpen"]][["OrderType"]]
-  }
-  if(0>N_Orders_held & # if there's a short position
-     N_Orders_held>=(-Max_Orders) & 
-     Sigs_N>=Params[["BuyToClose"]][["Min_Sig_N"]]){
-    
-    Action="Buy"
-    Detail="BTC"
-    TotalQuantity=Params[["BuyToClose"]][["Quantity"]]
-    OrderType=Params[["BuyToClose"]][["OrderType"]]
-  }
-  if(N_Orders_held<=(-Max_Orders) & 
-     Sigs_N>=Params[["BuyToClose"]][["Min_Sig_N"]]){ # only buy to close
+  }else if(0>N_Orders_held & # if there's a short position
+           N_Orders_held>=(-Max_Orders) & 
+           Sigs_N>=Params[["BuyToClose"]][["Min_Sig_N"]]){
     
     Action="Buy"
     Detail="BTC"
