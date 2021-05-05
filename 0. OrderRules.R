@@ -47,8 +47,7 @@ OrderRules_Env$Long=list(
 OrderRules_Env$Long_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_held, Params){
   if(0<=N_Orders_held & 
      N_Orders_held<Max_Orders &
-     Sigs_N>0 & 
-     Sigs_N<=Params[["BuyToOpen"]][["Min_Sig_N"]]){
+     Sigs_N>=Params[["BuyToOpen"]][["Min_Sig_N"]]){
     
     Action="Buy"
     Detail="BTO"
@@ -57,8 +56,7 @@ OrderRules_Env$Long_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_he
   }
   if(0<N_Orders_held & # if there's a long position
      N_Orders_held<=Max_Orders &
-     Sigs_N<0 &
-     (-Sigs_N)<=Params[["SellToClose"]][["Min_Sig_N"]]){
+     (-Sigs_N)>=Params[["SellToClose"]][["Min_Sig_N"]]){
     
     Action="Sell"
     Detail="STC"
@@ -66,8 +64,7 @@ OrderRules_Env$Long_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_he
     OrderType=Params[["SellToClose"]][["OrderType"]]
   }
   if(N_Orders_held>=Max_Orders & 
-     Sigs_N<0 &
-     (-Sigs_N)<=Params[["SellToClose"]][["Min_Sig_N"]]){ # only sell to close
+     (-Sigs_N)>=Params[["SellToClose"]][["Min_Sig_N"]]){ # only sell to close
     
     Action="Sell"
     Detail="STC"
@@ -79,7 +76,7 @@ OrderRules_Env$Long_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_he
   if(exists("Action")){
     return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
                       Submit_Time=tail(Live_Data, 1)[, Time],
-                      Filled_Time=tail(Live_Data, 1)[, Time],
+                      #Filled_Time=tail(Live_Data, 1)[, Time],
                       Action=Action,
                       Detail=Detail,
                       TotalQuantity=as.numeric(TotalQuantity),
@@ -112,8 +109,7 @@ OrderRules_Env$Short=list(
 OrderRules_Env$Short_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_held, Params){
   if(0>=N_Orders_held &
      N_Orders_held>(-Max_Orders) &
-     Sigs_N<0 &
-     (-Sigs_N)<=Params[["SellToOpen"]][["Min_Sig_N"]]){
+     (-Sigs_N)>=Params[["SellToOpen"]][["Min_Sig_N"]]){
     
     Action="Sell"
     Detail="STO"
@@ -122,8 +118,7 @@ OrderRules_Env$Short_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_h
   }
   if(0>N_Orders_held & # if there's a short position
      N_Orders_held>=(-Max_Orders) & 
-     Sigs_N>0 &
-     Sigs_N<=Params[["BuyToClose"]][["Min_Sig_N"]]){
+     Sigs_N>=Params[["BuyToClose"]][["Min_Sig_N"]]){
     
     Action="Buy"
     Detail="BTC"
@@ -131,8 +126,7 @@ OrderRules_Env$Short_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_h
     OrderType=Params[["BuyToClose"]][["OrderType"]]
   }
   if(N_Orders_held<=(-Max_Orders) & 
-     Sigs_N>0 &
-     Sigs_N<=Params[["BuyToClose"]][["Min_Sig_N"]]){ # only buy to close
+     Sigs_N>=Params[["BuyToClose"]][["Min_Sig_N"]]){ # only buy to close
     
     Action="Buy"
     Detail="BTC"
@@ -144,7 +138,7 @@ OrderRules_Env$Short_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_h
   if(exists("Action")){
     return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
                       Submit_Time=tail(Live_Data, 1)[, Time],
-                      Filled_Time=tail(Live_Data, 1)[, Time],
+                      #Filled_Time=tail(Live_Data, 1)[, Time],
                       Action=Action,
                       Detail=Detail,
                       TotalQuantity=as.numeric(TotalQuantity),

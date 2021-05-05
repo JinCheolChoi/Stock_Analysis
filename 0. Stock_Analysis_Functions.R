@@ -1379,6 +1379,12 @@ Live_Trading_Imitator=function(BarData,
   Indicators_Params=unlist(Indicators)
   Models_Params=unlist(Models)
   
+  Max_Orders=Order_Rules[["General"]][["Max_Orders"]]
+  Strategy_Indicators=names(Indicators)
+  Strategy_Models=names(Models)
+  General_Strategy="General"
+  Strategy_Rules=names(Order_Rules)[names(Order_Rules)!="General"]
+  
   
   #******************
   # preliminary steps
@@ -1398,7 +1404,7 @@ Live_Trading_Imitator=function(BarData,
   # simulation algorithm
   #*********************
   for(i in 1:(nrow(BarData)-1)){
-    # i=1
+    # i=31
     if(!exists("Live_Data")){
       # define Live_Data
       Live_Data=BarData[i, ]
@@ -1421,10 +1427,18 @@ Live_Trading_Imitator=function(BarData,
       Orders_Transmitted=Orders_Transmitted[-1,]
     }
     
+    #***********************
+    #
+    #***********************
+    # Orders_Transmitted
+    # Order_Rules[[General_Strategy]]
+    # OrderRules_Env[[]]
+    # tail(Live_Data, 1)
+    
     #*********************
     # calculate indicators
     #*********************
-    Calculated_Indicators=sapply(names(Indicators),
+    Calculated_Indicators=sapply(Strategy_Indicators,
                                  function(x)
                                    if(nrow(Live_Data)>Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
                                      list(do.call(x, 
@@ -1436,7 +1450,7 @@ Live_Trading_Imitator=function(BarData,
     #***********
     # fit models
     #***********
-    Signals=sapply(names(Models),
+    Signals=sapply(Strategy_Models,
                    function(x){
                      Model_Info=Models_Env[[x]] # variables and functions defined for the model object
                      Calculated_Indicators_Combined=do.call(cbind, Calculated_Indicators) # combined Calculated_Indicators
@@ -1452,14 +1466,14 @@ Live_Trading_Imitator=function(BarData,
     # transmit order
     #***************
     if(nrow(Signals)>0){
+      # - N of models <= Sigs_N <= N of models
       Sigs_N=sum(apply(Signals, 1, sum)*c(1, -1))
-      Max_Orders=Order_Rules[["General"]][["Max_Orders"]]
       
       # number of orders held (+:more long, -:more short)
       N_Orders_held=sum(Orders_Transmitted[Action=="Buy", TotalQuantity])-
         sum(Orders_Transmitted[Action=="Sell", TotalQuantity])
       
-      Order_to_Transmit=sapply(names(Order_Rules),
+      Order_to_Transmit=lapply(Strategy_Rules,
                                function(x){
                                  do.call(OrderRules_Env[[paste0(x, "_Function")]],
                                          c(list(Live_Data=Live_Data,
@@ -1467,22 +1481,21 @@ Live_Trading_Imitator=function(BarData,
                                                 Sigs_N=Sigs_N,
                                                 N_Orders_held=N_Orders_held),
                                            Params=list(Order_Rules[[x]])))
-                               }
-      )
+                               })
       
       # add Order_to_Transmit to Orders_Transmitted
       Orders_Transmitted=rbind(Orders_Transmitted,
-                               do.call(rbind, Order_to_Transmit))
+                               do.call(rbind, Order_to_Transmit),
+                               fill=T)
       
       if(!is.null(do.call(rbind, Order_to_Transmit))){
-        print(paste0("i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+        print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
       }
       # remove Signals
       rm(Signals)
       rm(Order_to_Transmit)
-    }else{
-      next
     }
+    
     
     
     #***********
@@ -1510,6 +1523,9 @@ Live_Trading_Imitator=function(BarData,
                          `:=`(Filled_Time=BarData[i+1, Time],
                               Filled=1)]
     }
+    
+    
+    
     
   }
   

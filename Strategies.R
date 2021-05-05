@@ -35,11 +35,17 @@ Add_Indicator(Strategy="Strategy_Simple_BBands",
 # add model (to run in combination with other included models to decide to transmit an order)
 #********************************************************************************************
 Add_Model(Strategy="Strategy_Simple_BBands",
-          Model="Simple_BBands",
-          ModelParams=list(Long_Consec_Times=1,
+          Model="Simple_BBands_1",
+          ModelParams=list(Long_Consec_Times=3,
                            Short_Consec_Times=1,
-                           Long_PctB=0,
-                           Short_PctB=1))
+                           Long_PctB=0.1,
+                           Short_PctB=0.9))
+Add_Model(Strategy="Strategy_Simple_BBands",
+          Model="Simple_BBands_2",
+          ModelParams=list(Long_Consec_Times=1,
+                           Short_Consec_Times=3,
+                           Long_PctB=0.1,
+                           Short_PctB=0.9))
 
 # Add_Model(Strategy="Strategy_Simple_BBands",
 #           Model="Simple_RSI",
@@ -63,16 +69,27 @@ Add_Model(Strategy="Strategy_Simple_BBands",
 #***************
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="General",
-              OrderRuleParams=list(Max_Orders=1)) # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
+              OrderRuleParams=list(Max_Orders=1,
+                                   Cut_Loss=10,
+                                   Profit_Threshold=10)) # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
                                                   Quantity=1,
-                                                  Min_Sig_N=1),
+                                                  Min_Sig_N=2),
                                    SellToClose=list(OrderType="MKT",
                                                     Quantity=1,
                                                     Min_Sig_N=1)))
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
-              OrderRule="Short")
+              OrderRule="Short",
+              OrderRuleParams=list(
+                SellToOpen=list(
+                  OrderType="MKT",
+                  Quantity=1,
+                  Min_Sig_N=2), # minimum number of positive signals from models to transmit
+                BuyToClose=list(OrderType="MKT",
+                                Quantity=1,
+                                Min_Sig_N=1))) # minimum number of positive signals from models to transmit
+
 
 
