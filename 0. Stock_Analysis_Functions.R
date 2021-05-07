@@ -881,8 +881,8 @@ Get_5SecsBarHistData=function(Symbol,
 # Collapse_5SecsBarData ----
 #
 #***************************
-# collapse 5 seconds bar data to a larger-sized bar data
-#*******************************************************
+# collapse 5 seconds bar data to a larger-sized bar data (maximum size is one day)
+#*********************************************************************************
 # # verify the collapsed bar data is generated properly by making a comparison with the historical data requested from Interactive Brokers TWS
 # HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 mins", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
 # colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")

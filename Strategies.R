@@ -38,14 +38,14 @@ Add_Model(Strategy="Strategy_Simple_BBands",
           Model="Simple_BBands_1",
           ModelParams=list(Long_Consec_Times=2,
                            Short_Consec_Times=1,
-                           Long_PctB=0.2,
-                           Short_PctB=0.8))
+                           Long_PctB=0.1,
+                           Short_PctB=0.9))
 Add_Model(Strategy="Strategy_Simple_BBands",
           Model="Simple_BBands_2",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=2,
-                           Long_PctB=0.2,
-                           Short_PctB=0.8))
+                           Long_PctB=0.1,
+                           Short_PctB=0.9))
 
 # Add_Model(Strategy="Strategy_Simple_BBands",
 #           Model="Simple_RSI",
