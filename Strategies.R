@@ -3,7 +3,6 @@
 # Required functions ---- 
 #
 #***********************************************************
-source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
 source(paste0(working.dir, "0. Models.R"))
 source(paste0(working.dir, "0. OrderRules.R"))
 

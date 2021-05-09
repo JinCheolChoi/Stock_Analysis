@@ -1,10 +1,9 @@
-#*******************
+#**************************************
 #
-# checkpackages ----
+# [ --- Operational functions --- ] ----
 #
 #*******************
-# package check
-#**************
+# checkpackages
 # Example
 #********
 # lapply(c("geepack"), checkpackages)
@@ -22,11 +21,1554 @@ checkpackages=function(package){
 
 
 
-#**************
+#*************
+# System_Break
+#***********************************************
+# a break during the temporary market close time
+#******************************************************************************
+# Output : return Rerun_Live_Trading=1 (1) after break during market closure or 
+#                                      (2) after a temporary break (for test) during the market open time
+System_Break=function(Rerun_Trading=0,
+                      Log=F){
+  
+  #**************************
+  # No break (market is open)
+  # re-run indicator
+  Rerun=1
+  Duration=60
+  
+  # the market closes temporarily on weekdays
+  ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
+  CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
+  
+  #**********************
+  # Daily temporary break
+  # if time is between 13:10:00 and 13:15:00 PDT
+  if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")&
+     (CurrentTime>=(as.ITime("13:10:00"))&
+      CurrentTime<=(as.ITime("13:15:00")))){
+    
+    # (1) for 25 mins from 13:10:00 to 13:35:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
+    Duration=60*25
+    
+    # put the system to sleep
+    message("market closed : 13:15:00 to 13:30:00 PDT")
+    
+  }
+  
+  # if time is between 13:50:00 and 14:00:00 PDT
+  if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday")&
+     (CurrentTime>=(as.ITime("13:50:00"))&
+      CurrentTime<=(as.ITime("14:00:00")))){
+    
+    # (2) for 75 mins from 13:50:00 to 15:05:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
+    Duration=60*75
+    
+    # put the system to sleep
+    message("market closed : 14:00:00 to 15:00:00 PDT")
+    
+  }
+  
+  # # if time is between 23:40:00 and 23:45:00 PDT
+  # if(ToDay%in%c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday")&
+  #          (CurrentTime>=(as.ITime("23:40:00"))& 
+  #           CurrentTime<=(as.ITime("23:45:00")))){
+  # 
+  #   # (3) for 20 mins from 23:40:00 to 24:00:00 PDT (TWS automatic log-off)
+  #   Duration=60*20
+  # 
+  #   # put the system to sleep
+  #   message("TWS automatic log-off and restart")
+  # 
+  # }
+  
+  #***********
+  # Long break
+  if((ToDay=="Friday" & CurrentTime>=(as.ITime("13:50:00"))) | # the market closes at 14:00:00 PDT on Friday
+     (ToDay=="Saturday") | # the market closes on Saturday
+     (ToDay=="Sunday" & CurrentTime<(as.ITime("15:05:00")))){ # the market opens at 15:00:00 PDT on Sunday
+    
+    # no need to re-run the live trading algorithm during weekends
+    Rerun=0
+    Duration=600
+    
+    # put the system to sleep
+    message("weekend closure")
+  }
+  
+  # write log everytime System_Break is run
+  if(Log==T){
+    if(file.exists(paste0(working.dir, "Log/Stop_Live_Trading_Log.csv"))){
+      Log=data.table(Time=Sys.time())
+      Log=rbind(Log,
+                fread(paste0(working.dir, "Log/Stop_Live_Trading_Log.csv")))
+      fwrite(Log, paste0(working.dir, "Log/Stop_Live_Trading_Log.csv"))
+    }else{
+      Log=data.table(Time=Sys.time())
+      fwrite(Log, paste0(working.dir, "Log/Stop_Live_Trading_Log.csv"))
+    }
+  }
+  
+  # echo re-run message
+  if(Rerun==1){
+    for(Secs_Left in 1:Duration){
+      message(paste0("Re-run live trading in ", Duration-Secs_Left+1, " seconds"))
+      Sys.sleep(1)
+    }
+    message(paste0("Re-run live trading in : 0 seconds"))
+  }
+  
+  return(Rerun)
+}
+
+
+
+
+
+#*********************
+# Daily_Hist_Data_Save
+#*************************************************************
+# execute a daily save of 5 second bar data at 15:00:00 pm PDT
+Daily_Hist_Data_Save=function(Contract,
+                              Data_Dir,
+                              Working_Dir,
+                              Force=T,
+                              Log=F){
+  
+  # the market closes at 14:00:00 PDT on Friday; and
+  # at 15:00:00 PDT on the other weekdays
+  ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
+  CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
+  File_Exist=file.exists(paste0(Data_Dir, Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
+  
+  # if time is after 15:00:00 PDT on weekdays, proceed ot extract historical data
+  if(!ToDay%in%c("Saturday", "Sunday") &
+     CurrentTime>=(as.ITime("14:00:00"))){
+    
+    if(!File_Exist| # if 5 second bar has not been saved yet, or
+       Force==T){ # Force==1 (execute the saving process by force (overwrite the data))
+      
+      # request historical data of 5 seconds bar
+      HistData=as.data.table(reqHistoricalData(tws, Contract, barSize="5 secs", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+      colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
+      
+      HistData[, hasGaps:=NULL] # hasGaps is redundant
+      
+      HistData=data.table(Symbol=Contract$symbol,
+                          HistData)
+      
+      # HistData=as.data.table(reqHistoricalData(tws, Contract, barSize="5 secs", duration="1 M", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+      # colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
+      #
+      # HistData[, hasGaps:=NULL] # hasGaps is redundant
+      #
+      # HistData=data.table(Symbol=Contract$symbol,
+      #                     HistData)
+      #
+      # # "for statement" to get and save bar data day-by-day
+      # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="America/Los_Angeles")), by="day")){
+      #   if(weekdays.Date(as.Date(Date))=="Saturday"|
+      #      weekdays.Date(as.Date(Date))=="Sunday"){
+      #     next
+      #   }
+      #
+      #   Time_Cutoff=as.POSIXct(paste0(as.Date(Date), " 15:00:00"), tz="America/Los_Angeles")
+      #
+      #
+      #   HistData[Time>=(Time_Cutoff-60*60*24)&
+      #              Time<Time_Cutoff, ]
+      #
+      #   fwrite(HistData[Time>=(Time_Cutoff-60*60*24)&
+      #                     Time<Time_Cutoff, ],
+      #          paste0(Data_Dir, Contract$symbol, "_", as.Date(Date), ".csv"))
+      # }
+      
+      # remove redundant data
+      # different time zone examples : "GMT", "America/Los_Angeles", "Europe/London"
+      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 15:00:00"), tz="America/Los_Angeles")
+      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles")), " 15:00:00"), tz="America/Los_Angeles")
+      HistData=HistData[Time>=Time_From &
+                          Time<Time_To, ]
+      
+      HistData[, Time:=as.POSIXct(format(as.POSIXct(Time), 
+                                         tz="America/Los_Angeles"), 
+                                  tz="America/Los_Angeles")]
+      
+      # save historical data up to today's market closed at 15:00:00 pm PDT
+      fwrite(HistData,
+             paste0(Data_Dir, Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
+    }
+    
+    # create a folder if not exist
+    if(!dir.exists(paste0(Data_Dir, Contract$symbol))){
+      dir.create(paste0(Data_Dir, Contract$symbol))
+    }
+    
+    # write log everytime historical data is extracted and saved
+    if(Log==T){
+      if(!dir.exists(paste0(Working_Dir, "Log"))){
+        dir.create(paste0(Working_Dir, "Log"))
+      }
+      
+      if(file.exists(paste0(Working_Dir, "Log/Daily_Hist_Data_Save.csv"))){
+        Log=data.table(Symbol=Contract$symbol,
+                       Time=Sys.time())
+        Log=rbind(Log,
+                  fread(paste0(Working_Dir, "Log/Daily_Hist_Data_Save.csv")))
+        fwrite(Log, paste0(Working_Dir, "Log/Daily_Hist_Data_Save.csv"))
+      }else{
+        Log=data.table(Symbol=Contract$symbol,
+                       Time=Sys.time())
+        fwrite(Log, paste0(Working_Dir, "Log/Daily_Hist_Data_Save.csv"))
+      }
+    }
+  }else{
+    message("No new data to save yet.") # echo Message in terminal
+  }
+  
+}
+
+
+
+
+
+#*****************************
 #
-# snapShot ----
+# [ --- Simultation --- ] ----
 #
+#*****************************
+# Get_Data
+#**********************************************************************************
+# get import historical data sets of specified symbols saved in a repository folder
+#**********************************************************************************
+Get_Data=function(Symbols,
+                  Data_Dir,
+                  BarSize=60*30,
+                  First_Date="2021-01-20",
+                  Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles")),
+                  Convert_Tz=F){
+  #************
+  # import data
+  #************
+  # output : `5SecsBarHistData`
+  for(Symbol in Symbols){
+    Get_5SecsBarHistData(Symbol=Symbol,
+                         Data_Dir=Data_Dir,
+                         First_Date=First_Date,
+                         Last_Date=Last_Date,
+                         Convert_Tz=F)
+    
+    # collapse data to the chosen-sized bar data
+    assign(Symbol, 
+           Collapse_5SecsBarData(`5SecsBarHistData`,
+                                 BarSize=BarSize,
+                                 Convert_Tz=Convert_Tz),
+           envir=.GlobalEnv)
+    
+    # remove `5SecsBarHistData`
+    rm(`5SecsBarHistData`, envir=.GlobalEnv)
+  }
+}
+
+
+
+
+
+#*********************
+# Get_5SecsBarHistData
+#****************************************************
+# import historical data saved in a repository folder
+#******************************************************
+# output : `5SecsBarHistData` in the global environment
+Get_5SecsBarHistData=function(Symbol,
+                              Data_Dir,
+                              First_Date,
+                              Last_Date,
+                              Convert_Tz=F){
+  # data table
+  lapply("data.table", checkpackages)
+  
+  # remove `5SecsBarHistData` in the global environment
+  if(exists("5SecsBarHistData")){rm(`5SecsBarHistData`, envir=.GlobalEnv)}
+  
+  # import
+  for(Date in as.character(seq(as.Date(First_Date), Last_Date, by="day"))){
+    File_name=paste0(Symbol, "_", Date, ".csv")
+    if(!file.exists(paste0(Data_Dir, Symbol, "/", File_name))){
+      next
+    }
+    
+    if(!exists("5SecsBarHistData", envir=.GlobalEnv)){
+      `5SecsBarHistData`<<-fread(paste0(Data_Dir, Symbol, "/", File_name))
+    }else{
+      `5SecsBarHistData`<<-rbind(`5SecsBarHistData`,
+                                 fread(paste0(Data_Dir, Symbol, "/", File_name)))
+    }
+  }
+  
+  # convert time zone
+  # this process of converting time to the PDT time zone can be skipped as needed for less processing time
+  if(Convert_Tz==T){
+    `5SecsBarHistData`[, Time:=as.POSIXct(format(as.POSIXct(Time),
+                                                 tz="America/Los_Angeles"),
+                                          tz="America/Los_Angeles")]
+  }
+}
+
+
+
+
+
+#**********************
+#
+# Collapse_5SecsBarData
+#
+#***************************
+# collapse 5 seconds bar data to a larger-sized bar data (maximum size is one day)
+#*********************************************************************************
+# # verify the collapsed bar data is generated properly by making a comparison with the historical data requested from Interactive Brokers TWS
+# HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 mins", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+# colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
+# HistData[, hasGaps:=NULL] # hasGaps is redundant
+# HistData=data.table(Symbol=contract$symbol,
+#                     HistData)
+# Merged_Data=HistData %>% 
+#   left_join(Collapsed_BarData,
+#             by=c("Symbol", "Time"))
+# Merged_Data=Merged_Data[Time%in%(Collapsed_BarData$Time),]
+# 
+# #
+# Merged_Data[Open.x!=Open.y, ]
+# Merged_Data[High.x!=High.y, ]
+# Merged_Data[Low.x!=Low.y, ]
+# Merged_Data[Close.x!=Close.y, ]
+# Merged_Data[Volume.x!=Volume.y, ]
+# Merged_Data[Count.x!=Count.y, ]
+# 
+# Merged_Data[is.na(Open.y), ]
+# Merged_Data[is.na(High.y), ]
+# Merged_Data[is.na(Low.y), ]
+# Merged_Data[is.na(Close.y), ]
+# Merged_Data[is.na(Volume.y), ]
+# Merged_Data[is.na(Count.y), ]
+Collapse_5SecsBarData=function(`5SecsBarData`,
+                               BarSize,
+                               Convert_Tz=F){
+  # `5SecsBarData`=`5SecsBarHistData`
+  if(BarSize%%5!=0){
+    return(message("BarSize must be a multiple of 5"))
+  }
+  
+  # if BarSize=5, no additional process is required
+  if(BarSize==5){
+    Collapsed_BarData=`5SecsBarData` %>% as.data.frame() %>% as.data.table()
+    Collapsed_BarData[, Wap:=NULL]
+  }
+  
+  # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
+  if(BarSize>5){
+    
+    # dates
+    Dates=seq(as.Date(min(`5SecsBarData`$Time)), # minimum Date
+              as.Date(max(`5SecsBarData`$Time)), # maximum Date
+              by="day")
+    
+    # time intervals
+    Times=as.ITime(seq(as.POSIXct(paste0(as.Date(format(Sys.time()))-1, " 00:00:00")),
+                       as.POSIXct(paste0(as.Date(format(Sys.time())), " 00:00:00"))-BarSize,
+                       by=BarSize))
+    
+    # Date_Time_From
+    Time_Intervals=data.table(
+      Date_Time_From=as.POSIXct(strptime(paste(rep(Dates, each = length(Times)), Times, sep = " "), 
+                                         "%Y-%m-%d %H:%M:%S"), 
+                                tz=attr(`5SecsBarData`$Time, "tzone"))
+    )
+    
+    # Date_Time_To
+    Time_Intervals[, Date_Time_To:=shift(Time_Intervals$Date_Time_From, -1)]
+    
+    # non-equal left_join Time_Intervals to `5SecsBarData`
+    Time_Intervals=`5SecsBarData`[Time_Intervals, on=c("Time>=Date_Time_From", "Time<Date_Time_To"),
+                                  nomatch=0,
+                                  .(Symbol, Date_Time_From=Time, Open, High, Low, Close, Volume, Wap, Count, Date_Time_To)]
+    
+    # Collapsed_BarData
+    Collapsed_BarData=Time_Intervals[, .(Symbol=unique(Symbol),
+                                         Open=Open[1], # first row by group (Date_Time_From)
+                                         High=max(High),
+                                         Low=min(Low), # row with minimum Low price by group
+                                         Close=Close[.N], # last row by group
+                                         Volume=sum(Volume),
+                                         Count=sum(Count)),
+                                     by="Date_Time_From"]
+    
+    # rename Date_Time_From to Time
+    setnames(Collapsed_BarData, "Date_Time_From", "Time")
+    
+    # switch the order "Symbol" and "Date_Time_From"
+    setcolorder(Collapsed_BarData, c("Symbol", "Time"))
+    
+    # `5SecsBarData`[, Group:=NULL]
+  }
+  
+  # convert time zone
+  # this process of converting time to the PDT time zone can be skipped as needed for less processing time
+  if(Convert_Tz==T){
+    Collapsed_BarData[, Time:=as.POSIXct(format(as.POSIXct(Time),
+                                                tz="America/Los_Angeles"),
+                                         tz="America/Los_Angeles")]
+  }
+  
+  return(as.data.table(Collapsed_BarData))
+}
+
+
+
+
+
+#*************
+# Candle_Chart
+#******************
+Candle_Chart=function(BarData){
+  if(!is.null(BarData)){
+    Temp_BarData=as.matrix(BarData[, 3:6])
+    rownames(Temp_BarData)=as.character(as.Date(BarData$Time)+(0:(nrow(Temp_BarData)-1)))
+    
+    # PlotCandlestick from "DescTools"
+    PlotCandlestick(x=as.Date(rownames(Temp_BarData)),
+                    y=Temp_BarData,
+                    border=NA,
+                    las=1,
+                    ylab="",
+                    xaxt="n")
+    
+    # x-axis labels
+    # year
+    j=Year(as.Date(BarData$Time))
+    j[!c(1, diff(j))]=NA
+    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=j, cex=1, line=0)
+    
+    # month
+    j=Month(as.Date(BarData$Time))
+    j[!c(1, diff(j))]=NA
+    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=month.name[j], cex=0.9, line=0.9)
+    
+    # day
+    j=Day(as.Date(BarData$Time))
+    j[!c(1, diff(j))]=NA
+    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=j, cex=0.8, line=1.7)
+    
+    # hour-min-sec
+    mtext(side=1,
+          at=as.Date(rownames(Temp_BarData)),
+          text=as.character(as.ITime(BarData$Time)),
+          cex=0.7,
+          line=2.4)
+  }
+}
+
+
+
+
+
+# #***********
+# # BBands_Sim
+# #**************************************************
+# # Fast simulation based on bollinger bands strategy
+# #**************************************************
+# BBands_Sim=function(Consec_Times,
+#                     Long_PctB,
+#                     Short_PctB,
+#                     Commision=0.52){
+#   # Long_Pos_Ind : indice of rows to which a long position is filled
+#   # fill long positions if PctB is below Long_PctB for consecutive times (Consec_Times) in the recent bar data
+#   if(Consec_Times==1){
+#     Long_Pos_Ind=which(shift(Collapsed_BarData$PctB, 0)<Long_PctB)
+#   }else{
+#     Long_Pos_Ind=which(Reduce("+", lapply(shift(Collapsed_BarData$PctB, 0:(Consec_Times-1)),
+#                                           function(x) x<Long_PctB))==Consec_Times)
+#   }
+#   Short_Pos_Ind=which(Collapsed_BarData$PctB>Short_PctB) # a short position must be filled after a long position
+#   
+#   #
+#   Tradings=data.table(
+#     Collapsed_BarData[c(Long_Pos_Ind+1), 
+#                       .SD,
+#                       .SDcols=c("Time", "Open")],
+#     Collapsed_BarData[sapply(Long_Pos_Ind,
+#                              function(x) Short_Pos_Ind[which(x<Short_Pos_Ind)[1]])+1,
+#                       .SD,
+#                       .SDcols=c("Time", "Open")]
+#   )
+#   colnames(Tradings)=c("Long_Time", "Long_Price", "Short_Time", "Short_Price")
+#   
+#   # remove rows with duplicated short positions
+#   Tradings=Tradings[!duplicated(Tradings[,
+#                                          .SD,
+#                                          .SDcols=c("Short_Time", "Short_Price")])&
+#                       !is.na(Short_Price), ]
+#   
+#   # output
+#   Out=c()
+#   
+#   Out$Tradings=Tradings
+#   Out$Profit=sum(Tradings$Short_Price-Tradings$Long_Price, na.rm=T)*4*0.5
+#   Out$Commision=2*Commision*nrow(Tradings)
+#   Out$Net_Profit=Out$Profit-Out$Commision
+#   
+#   return(Out)
+# }
+
+
+
+
+
+#**********************
+# Live_Trading_Imitator
+#*********************************************
+# run an algorithm under the realistic setting
+#************************************************
+Live_Trading_Imitator=function(BarData,
+                               Strategy){
+  Max_Rows=Strategy$Max_Rows
+  Order_Rules=Strategy$Order_Rules
+  Indicators=Strategy$Indicators
+  Models=Strategy$Models
+  
+  #****************
+  # import packages
+  #****************
+  lapply(c("IBrokers",
+           "TTR",
+           "data.table",
+           "dplyr"),
+         checkpackages)
+  
+  
+  #************************
+  # assign local parameters
+  #************************
+  Max_Orders=Order_Rules[["General"]][["Max_Orders"]]
+  Stop_Order=Order_Rules[["General"]][["Stop_Order"]]
+  Profit_Order=Order_Rules[["General"]][["Profit_Order"]]
+  Strategy_Indicators=names(Indicators)
+  Strategy_Models=names(Models)
+  General_Strategy="General"
+  
+  
+  #******************
+  # preliminary steps
+  #******************
+  # if(Position_Direction=="both"){
+  #   Max_Long_Orders=Max_Short_Orders=Max_Orders-1
+  # }else if(Position_Direction=="long"){
+  #   Max_Long_Orders=Max_Orders-1
+  #   Max_Short_Orders=-1
+  # }else if(Position_Direction=="short"){
+  #   Max_Long_Orders=-1
+  #   Max_Short_Orders=Max_Orders-1
+  # }
+  Strategy_Rules=names(Order_Rules)[names(Order_Rules)!="General"]
+  
+  #*********************
+  # simulation algorithm
+  #*********************
+  # define Live_Data
+  Live_Data=BarData[1, ]
+  # define Orders_Transmitted
+  Orders_Transmitted=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                Submit_Time=tail(Live_Data, 1)[, Time],
+                                Filled_Time=tail(Live_Data, 1)[, Time],
+                                Action="",
+                                Detail="",
+                                TotalQuantity=0,
+                                OrderType="MKT",
+                                LmtPrice=0,
+                                Filled=0,
+                                Sigs_N=0)
+  Orders_Transmitted=Orders_Transmitted[-1,]
+  Live_Data[, `:=`(Symbol=NULL, Time=NULL, Open=NULL,
+                   High=NULL, Low=NULL, Close=NULL,
+                   Volume=NULL, Count=NULL)]
+  for(i in 1:(nrow(BarData)-1)){
+    # i=3807
+    Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
+    
+    #***********************
+    #
+    #***********************
+    # Orders_Transmitted
+    # Order_Rules[[General_Strategy]]
+    # OrderRules_Env[[]]
+    # tail(Live_Data, 1)
+    # skip if there is transmitted order to fill
+    if(sum(Orders_Transmitted$Filled==0)<Max_Orders){
+      #*********************
+      # calculate indicators
+      #*********************
+      Calculated_Indicators=sapply(Strategy_Indicators,
+                                   function(x)
+                                     if(nrow(Live_Data)>Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
+                                       list(do.call(x, 
+                                                    c(list(Live_Data[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
+                                                      Indicators[[x]])))
+                                     })
+      
+      
+      #***********
+      # fit models
+      #***********
+      Signals=as.data.table(sapply(Strategy_Models,
+                                   function(x){
+                                     Model_Info=Models_Env[[x]] # variables and functions defined for the model object
+                                     Calculated_Indicators_Combined=do.call(cbind, Calculated_Indicators) # combined Calculated_Indicators
+                                     Calculated_Indicators_Names=names(Calculated_Indicators)[unlist(lapply(Calculated_Indicators, function(x) !is.null(x)))] #
+                                     if(sum(!Model_Info[["Essential_Indicators"]]%in%Calculated_Indicators_Names)==0){ # if none of essential indicators hasn't been calculated in Calculated_Indicators, proceed to run the model
+                                       do.call(Model_Info[["Function"]],
+                                               c(list(Calculated_Indicators_Combined),
+                                                 Models[[x]]))}
+                                   }))
+      
+      
+      #***************
+      # transmit order
+      #***************
+      if(nrow(Signals)>0){
+        # - N of models <= Sigs_N <= N of models
+        Sigs_N=sum(apply(Signals, 1, sum)*c(1, -1))
+        
+        # number of orders held (+:more long, -:more short)
+        N_Orders_held=sum(Orders_Transmitted$Action=="Buy")-
+          sum(Orders_Transmitted$Action=="Sell")
+        
+        # Order_to_Transmit
+        Order_to_Transmit=lapply(Strategy_Rules,
+                                 function(x){
+                                   do.call(OrderRules_Env[[paste0(x, "_Function")]],
+                                           c(list(Live_Data=Live_Data,
+                                                  Max_Orders=Max_Orders,
+                                                  Sigs_N=Sigs_N,
+                                                  N_Orders_held=N_Orders_held),
+                                             Params=list(Order_Rules[[x]])))
+                                 })
+        
+        # add Order_to_Transmit to Orders_Transmitted
+        Orders_Transmitted=rbind(Orders_Transmitted,
+                                 do.call(rbind, Order_to_Transmit),
+                                 fill=T)
+        
+        if(!is.null(do.call(rbind, Order_to_Transmit))){
+          print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+        }
+        
+        # remove Signals
+        rm(Signals)
+        rm(Order_to_Transmit)
+      }
+    }
+    
+    # skip if there is no order transmitted
+    if(sum(Orders_Transmitted$Filled==0)==0){
+      next
+    }
+    
+    #***********
+    # fill order
+    #***********
+    # buy
+    if(sum(Orders_Transmitted$Action=="Buy"&
+           Orders_Transmitted$Filled==0)>0){ # if there is any transmitted buy order that has not been filled yet
+      
+      Unfilled_Buy_Position_Times=Orders_Transmitted[Action=="Buy"&Filled==0, Submit_Time]
+      Unfilled_Buy_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
+      Which_Buy_Position_to_Fill=which(BarData[["Low"]][i+1]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
+      
+      # loc=Orders_Transmitted$Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill]
+      # Orders_Transmitted$Filled[loc]=1
+      # Orders_Transmitted$Filled_Time[loc]=BarData[i+1, Time]
+      
+      Orders_Transmitted[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
+                         `:=`(Filled_Time=BarData[i+1, Time],
+                              Filled=1)]
+      
+    }
+    
+    # sell
+    if(sum(Orders_Transmitted$Action=="Sell"&
+           Orders_Transmitted$Filled==0)>0){ # if there is any transmitted sell order that has not been filled yet
+      
+      Unfilled_Sell_Position_Times=Orders_Transmitted[Action=="Sell"&Filled==0, Submit_Time]
+      Unfilled_Sell_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
+      
+      Which_Sell_Position_to_Fill=which(BarData[["High"]][i+1]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
+      
+      # loc=Orders_Transmitted$Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill]
+      # Orders_Transmitted$Filled[loc]=1
+      # Orders_Transmitted$Filled_Time[loc]=BarData[i+1, Time]
+      
+      Orders_Transmitted[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
+                         `:=`(Filled_Time=BarData[i+1, Time],
+                              Filled=1)]
+      
+    }
+    
+    # skip if there is no remaining untransmitted order
+    if(sum(Orders_Transmitted$Filled==0)==0){
+      next
+    }
+    
+    #*********************
+    # stop or early profit
+    #*********************
+    N_Remaining_Orders=sum(Orders_Transmitted$Action=="Buy"&Orders_Transmitted$Filled==1)-
+      sum(Orders_Transmitted$Action=="Sell"&Orders_Transmitted$Filled==1)
+    if(N_Remaining_Orders==0){ # orders are all balanced
+      next
+    }else if(N_Remaining_Orders>0){ # still on long
+      
+      Profit_Price=tail(Orders_Transmitted[Action=="Buy"&Filled==1], N_Remaining_Orders)[["LmtPrice"]][1]+Profit_Order
+      
+      if(Profit_Price<BarData[["Low"]][i+1]){
+        Profit_Ind=which(Orders_Transmitted[["Submit_Time"]]==Unfilled_Buy_Position_Times)
+        Orders_Transmitted[["Filled_Time"]][Profit_Ind]=BarData[["Time"]][i+1]
+        Orders_Transmitted[["Detail"]][Profit_Ind]="Early_Profit"
+        Orders_Transmitted[["LmtPrice"]][Profit_Ind]=Profit_Price
+        Orders_Transmitted[["Filled"]][Profit_Ind]=1
+      }
+      
+    }else if(N_Remaining_Orders<0){ # still on short
+      
+      Stop_Price=tail(Orders_Transmitted[Action=="Sell"&Filled==1], -N_Remaining_Orders)[["LmtPrice"]][1]+Stop_Order
+      
+      if(Stop_Price<BarData[["High"]][i+1]){
+        Stop_Ind=which(Orders_Transmitted[["Submit_Time"]]==Unfilled_Buy_Position_Times)
+        Orders_Transmitted[["Filled_Time"]][Stop_Ind]=BarData[["Time"]][i+1]
+        Orders_Transmitted[["Detail"]][Stop_Ind]="Stop"
+        Orders_Transmitted[["LmtPrice"]][Stop_Ind]=Stop_Price
+        Orders_Transmitted[["Filled"]][Stop_Ind]=1
+        
+        # Orders_Transmitted[Submit_Time==Unfilled_Buy_Position_Times,
+        #                    `:=`(Filled_Time=BarData[["Time"]][i+1],
+        #                         Detail="Stop",
+        #                         LmtPrice=Stop_Price,
+        #                         Filled=1)]
+        
+      }
+      
+    }
+    
+  }
+  
+  
+  #**********************
+  # calculate the balance
+  #**********************
+  Collapse_Orders_Transmitted=cbind(Orders_Transmitted[Action=="Buy", 
+                                                       c("Filled_Time", "LmtPrice")],
+                                    Orders_Transmitted[Action=="Sell", 
+                                                       c("Filled_Time", "LmtPrice")])
+  colnames(Collapse_Orders_Transmitted)=c("Buy_Time", "Buy_Price", "Sell_Time", "Sell_Price")
+  Duplicated_Row=unique(c(which(duplicated(Collapse_Orders_Transmitted[, c("Buy_Time", "Buy_Price")])), 
+                          which(duplicated(Collapse_Orders_Transmitted[, c("Sell_Time", "Sell_Price")]))))
+  if(length(Duplicated_Row)>0){
+    Collapse_Orders_Transmitted=Collapse_Orders_Transmitted[-Duplicated_Row, ]
+  }
+  
+  Ind_Profit=2*Collapse_Orders_Transmitted[, Sell_Price-Buy_Price]-2*0.52
+  Net_Profit=sum(Ind_Profit)
+  
+  
+  return(list(BarData=BarData,
+              Orders_Transmitted=Orders_Transmitted,
+              Ind_Profit=Ind_Profit,
+              Net_Profit=Net_Profit))
+  
+}
+
+
+
+
+
+#************
+# Backtesting
+#***********************************************************
+# run a fast version of backtesting algorithm for simulation
+#***********************************************************
+Backtesting=function(BarData,
+                     Strategy){
+  Order_Rules=Strategy$Order_Rules
+  Indicators=Strategy$Indicators
+  Models=Strategy$Models
+  
+  Simple_BBands_Info=get("Simple_BBands", envir=Models_Env)
+  assign("Simple_BBands", Simple_BBands_Info$Function, envir=.GlobalEnv)
+  
+  #****************
+  # import packages
+  #****************
+  lapply(c("IBrokers",
+           "TTR",
+           "data.table",
+           "dplyr"),
+         checkpackages)
+  
+  #************************
+  # assign local parameters
+  #************************
+  # general parameters
+  Max_Rows=Strategy$Max_Rows
+  
+  # order parameters
+  General=Order_Rules$General
+  OrderType=Order_Rules$General$OrderType
+  Position_Direction=Order_Rules$General$Position_Direction
+  
+  # indicators
+  Passed_Indicators=names(Indicators)
+  Passed_Models=names(Models)
+  
+  # models
+  Long_Consec_Times=Models$Simple_BBands$Long_Consec_Times
+  Short_Consec_Times=Models$Simple_BBands$Short_Consec_Times
+  Long_PctB=Models$Simple_BBands$Long_PctB
+  Short_PctB=Models$Simple_BBands$Short_PctB
+  
+  
+  #******************
+  # preliminary steps
+  #******************
+  if(Position_Direction=="both"){
+    Max_Long_Orders=Max_Short_Orders=Max_Orders-1
+  }else if(Position_Direction=="long"){
+    Max_Long_Orders=Max_Orders-1
+    Max_Short_Orders=-1
+  }else if(Position_Direction=="short"){
+    Max_Long_Orders=-1
+    Max_Short_Orders=Max_Orders-1
+  }
+  
+  
+  #*********************
+  # simulation algorithm
+  #*********************
+  for(i in 1:(nrow(BarData)-1)){
+    # i=1
+    if(!exists("Live_Data")){
+      # define Live_Data
+      Live_Data=BarData[i, ]
+    }else{
+      Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
+    }
+    
+    if(!exists("Orders_Transmitted")){
+      # define Orders_Transmitted
+      Orders_Transmitted=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                    Submit_Time=tail(Live_Data, 1)[, Time],
+                                    Filled_Time=tail(Live_Data, 1)[, Time],
+                                    Action="", 
+                                    TotalQuantity=0,
+                                    OrderType=OrderType,
+                                    LmtPrice=0,
+                                    Filled=0)
+      Orders_Transmitted=Orders_Transmitted[-1,]
+    }
+    
+    
+    #*********************
+    # calculate indicators
+    #*********************
+    # bollinger bands
+    if("BBands"%in%Passed_Indicators){
+      if(nrow(Live_Data)>Indicators$BBands$n-1){
+        BBands_Data=Live_Data[, BBands(Close, n=Indicators$BBands$n, sd=Indicators$BBands$sd)]
+      }
+    }
+    
+    # rsi
+    if("RSI"%in%Passed_Indicators){
+      if(nrow(Live_Data)>Indicators$RSI$n+1){
+        Live_Data[, RSI:=RSI(Close, n=Indicators$RSI$n)]
+      }
+    }
+    
+    # macd
+    if("MACD"%in%Passed_Indicators){
+      if(nrow(Live_Data)>34){
+        MACD_Data=Live_Data[, MACD(Close)]
+      }
+    }
+    
+    
+    #***********
+    # fit models
+    #***********
+    # Simple_BBands
+    if("Simple_BBands"%in%Passed_Models){
+      # signal to enter a long (short) position determined by Simple_BBands
+      Long_Sig_by_Simple_BBands=0
+      Short_Sig_by_Simple_BBands=0
+      
+      if("BBands"%in%Passed_Indicators&
+         exists("BBands_Data")){
+        
+        # number of filled orders
+        N_Filled_Buys=nrow(Orders_Transmitted[Action=="Buy"&Filled==1, ]) # buy
+        N_Filled_Sells=nrow(Orders_Transmitted[Action=="Sell"&Filled==1, ]) # sell
+        
+        if(N_Filled_Buys-N_Filled_Sells==0){ # if there is no currently filled order
+          Sigs_by_Simple_BBands=Simple_BBands(BBands_Data,Long_Consec_Times, Short_Consec_Times, Long_PctB, Short_PctB)
+        }else if(N_Filled_Buys-N_Filled_Sells>0){ # if the currently filled order is buy order, generate signal to sell as soon as pctB>=Short_PctB
+          Sigs_by_Simple_BBands=Simple_BBands(BBands_Data, Long_Consec_Times, 1, Long_PctB, Short_PctB)
+        }else if(N_Filled_Buys-N_Filled_Sells<0){ # if the currently filled order is short order, generate signal to sell as soon as pctB<=Long_PctB
+          Sigs_by_Simple_BBands=Simple_BBands(BBands_Data, 1, Short_Consec_Times, Long_PctB, Short_PctB)
+        }
+        # determined signals
+        Long_Sig_by_Simple_BBands=Sigs_by_Simple_BBands[1]
+        Short_Sig_by_Simple_BBands=Sigs_by_Simple_BBands[2]
+        
+      }else{
+        if(!"BBands"%in%Passed_Indicators){
+          stop("BBands required")
+        }
+      }
+    }
+    
+    # Simple_RSI
+    if("Simple_RSI"%in%Passed_Models){
+      # signal to enter a long (short) position determined by Simple_RSI
+      Long_Sig_by_Simple_RSI=0
+      Short_Sig_by_Simple_RSI=0
+      
+      if("RSI"%in%Passed_Indicators&
+         length(Live_Data$RSI)>0){
+        
+      }else{
+        if(!"RSI"%in%Passed_Indicators){
+          stop("RSI required")
+        }
+      }
+    }
+    
+    
+    #***************
+    # transmit order
+    #***************
+    # buy
+    if(Long_Sig_by_Simple_BBands){
+      # determine the position
+      if(sum(Orders_Transmitted[Action=="Buy", TotalQuantity])-
+         sum(Orders_Transmitted[Action=="Sell", TotalQuantity])<=
+         (Max_Long_Orders)){ # the number of currently remaining filled or transmitted long positions is limited to Max_Orders(= Max_Long_Orders + 1)
+        print(paste0("buy : ", i))
+        Orders_Transmitted=rbind(Orders_Transmitted,
+                                 data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                            Submit_Time=tail(Live_Data, 1)[, Time],
+                                            Filled_Time=tail(Live_Data, 1)[, Time],
+                                            Action="Buy",
+                                            TotalQuantity=1,
+                                            OrderType=OrderType,
+                                            LmtPrice=tail(Live_Data, 1)[, Close],
+                                            Filled=0))
+      }
+    }
+    
+    # sell
+    if(Short_Sig_by_Simple_BBands){
+      if(sum(Orders_Transmitted[Action=="Sell", TotalQuantity])-
+         sum(Orders_Transmitted[Action=="Buy", TotalQuantity])<=
+         (Max_Short_Orders)){ # the number of currently remaining filled or transmitted short positions is limited to Max_Orders(= Max_Short_Orders + 1)
+        print(paste0("sell : ", i))
+        Orders_Transmitted=rbind(Orders_Transmitted,
+                                 data.table(Symbol=tail(Live_Data, 1)[, Symbol],
+                                            Submit_Time=tail(Live_Data, 1)[, Time],
+                                            Filled_Time=tail(Live_Data, 1)[, Time],
+                                            Action="Sell",
+                                            TotalQuantity=1,
+                                            OrderType=OrderType,
+                                            LmtPrice=tail(Live_Data, 1)[, Close],
+                                            Filled=0))
+      }
+    }
+    
+    
+    #***********
+    # fill order
+    #***********
+    # buy
+    if(nrow(Orders_Transmitted[Action=="Buy"&Filled==0, ])>0){ # if there is any transmitted buy order that has not been filled yet
+      
+      Unfilled_Buy_Position_Times=Orders_Transmitted[Action=="Buy"&Filled==0, Submit_Time]
+      Unfilled_Buy_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
+      Which_Buy_Position_to_Fill=which(BarData[i+1, Low]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
+      
+      Orders_Transmitted[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
+                         `:=`(Filled_Time=BarData[i+1, Time],
+                              Filled=1)]
+    }
+    # sell
+    if(nrow(Orders_Transmitted[Action=="Sell"&Filled==0, ])>0){ # if there is any transmitted sell order that has not been filled yet
+      
+      Unfilled_Sell_Position_Times=Orders_Transmitted[Action=="Sell"&Filled==0, Submit_Time]
+      Unfilled_Sell_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
+      Which_Sell_Position_to_Fill=which(BarData[i+1, High]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
+      
+      Orders_Transmitted[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
+                         `:=`(Filled_Time=BarData[i+1, Time],
+                              Filled=1)]
+    }
+    
+  }
+  
+  
+  #**********************
+  # calculate the balance
+  #**********************
+  Collapse_Orders_Transmitted=cbind(Orders_Transmitted[Action=="Buy", 
+                                                       c("Filled_Time", "LmtPrice")],
+                                    Orders_Transmitted[Action=="Sell", 
+                                                       c("Filled_Time", "LmtPrice")])
+  colnames(Collapse_Orders_Transmitted)=c("Buy_Time", "Buy_Price", "Sell_Time", "Sell_Price")
+  Duplicated_Row=unique(c(which(duplicated(Collapse_Orders_Transmitted[, c("Buy_Time", "Buy_Price")])), 
+                          which(duplicated(Collapse_Orders_Transmitted[, c("Sell_Time", "Sell_Price")]))))
+  if(length(Duplicated_Row)>0){
+    Collapse_Orders_Transmitted=Collapse_Orders_Transmitted[-Duplicated_Row, ]
+  }
+  
+  Ind_Profit=2*Collapse_Orders_Transmitted[, Sell_Price-Buy_Price]-2*0.52
+  Net_Profit=sum(Ind_Profit)
+  
+  
+  return(list(BarData=BarData,
+              Orders_Transmitted=Orders_Transmitted,
+              Ind_Profit=Ind_Profit,
+              Net_Profit=Net_Profit))
+  
+}
+
+
+
+
+
+# #*******************
+# # checkBlotterUpdate
+# #****************************************************************
+# # a function in 'quantstrat' to check the update state of Blotter
+# checkBlotterUpdate <- function(port.st = portfolio.st, 
+#                                account.st = account.st, 
+#                                verbose = TRUE) {
+#   
+#   ok <- TRUE
+#   p <- getPortfolio(port.st)
+#   a <- getAccount(account.st)
+#   syms <- names(p$symbols)
+#   port.tot <- sum(
+#     sapply(
+#       syms, 
+#       FUN = function(x) eval(
+#         parse(
+#           text = paste("sum(p$symbols", 
+#                        x, 
+#                        "posPL.USD$Net.Trading.PL)", 
+#                        sep = "$")))))
+#   
+#   port.sum.tot <- sum(p$summary$Net.Trading.PL)
+#   
+#   if(!isTRUE(all.equal(port.tot, port.sum.tot))) {
+#     ok <- FALSE
+#     if(verbose) print("portfolio P&L doesn't match sum of symbols P&L")
+#   }
+#   
+#   initEq <- as.numeric(first(a$summary$End.Eq))
+#   endEq <- as.numeric(last(a$summary$End.Eq))
+#   
+#   if(!isTRUE(all.equal(port.tot, endEq - initEq)) ) {
+#     ok <- FALSE
+#     if(verbose) print("portfolio P&L doesn't match account P&L")
+#   }
+#   
+#   if(sum(duplicated(index(p$summary)))) {
+#     ok <- FALSE
+#     if(verbose)print("duplicate timestamps in portfolio summary")
+#     
+#   }
+#   
+#   if(sum(duplicated(index(a$summary)))) {
+#     ok <- FALSE
+#     if(verbose) print("duplicate timestamps in account summary")
+#   }
+#   return(ok)
+# }
+
+
+
+
+
+#**************************
+#
+# [ --- Strategy --- ] ----
+#
+#**************************
+# Init_Strategy
+#*****************************************************************************
+# initialize an environment with lists of parameters to function as a strategy
+#*****************************************************************************
+# Init_Strategy=function(Name){
+#   Strategy_temp=list(Indicators=list(),
+#                      Order_Rules=list(),
+#                      Models=list()) # model parameters
+#   class(Strategy_temp)="Strategy"
+#   assign(Name,
+#          Strategy_temp,
+#          envir=.GlobalEnv)
+# }
+Init_Strategy=function(Name,
+                       Max_Rows=50){
+  env_temp=environment()
+  class(env_temp)="Strategy"
+  
+  Indicators=list()
+  Order_Rules=list()
+  Models=list()
+  
+  assign(Name, env_temp, envir = .GlobalEnv)
+  
+  rm(list=c("Name", "env_temp"))
+}
+
 #**************
+# Add_Indicator
+#*****************************
+# add an indicator to Strategy
+Add_Indicator=function(Strategy,
+                       Indicator=NULL,
+                       IndicatorParams=NULL){
+  
+  # check TTR installation
+  checkpackages("TTR")
+  
+  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
+    #Init.Strategy(Name=Strategy)
+    stop(paste0("No strategy found named ", Strategy))
+  }
+  
+  # TTR objects
+  TTR_Objects=ls("package:TTR")
+  
+  # check the availability of Indicator in TTR
+  if(!Indicator%in%TTR_Objects){
+    stop("Available indicators in TTR : ", paste(TTR_Objects, collapse=", "))
+  }
+  
+  
+  #*****************
+  # check parameters
+  #******************
+  # names of passed arguments
+  Passed_IndicatorParams_Names=names(IndicatorParams)
+  
+  # arguments/parameters in the function of Model in Models_Env
+  TTR_Params=unlist(as.list(args(Indicator)))
+  
+  # names
+  TTR_Params_Names=names(TTR_Params)
+  
+  # error if any of passed arguments is not defined in the function
+  if(sum(!Passed_IndicatorParams_Names%in%TTR_Params_Names>0)){
+    stop("Valid parameters : ", paste(TTR_Params_Names, collapse=", "))
+  }
+  
+  
+  #***********************************************
+  # assign default values to unspecified arguments
+  #***********************************************
+  # arguments/parameters with defined default values
+  TTR_Params_with_Default=TTR_Params[TTR_Params!=""]
+  TTR_Params_with_Default_Names=names(TTR_Params_with_Default)
+  
+  New_IndicatorParams=c(IndicatorParams,
+                        TTR_Params_with_Default[!TTR_Params_with_Default_Names%in%Passed_IndicatorParams_Names])
+  
+  # New_Passed_IndicatorParams_Names
+  New_Passed_IndicatorParams_Names=names(New_IndicatorParams)
+  
+  # error if any of passed arguments is not defined in the function
+  if(sum(!New_Passed_IndicatorParams_Names%in%TTR_Params_Names>0)){
+    stop("Valid parameters : ", paste(TTR_Params_Names, collapse=", "))
+  }
+  
+  # sort the arguments (not important)
+  Ordered_Arguments=New_Passed_IndicatorParams_Names[order(match(New_Passed_IndicatorParams_Names, TTR_Params_Names))]
+  New_IndicatorParams=New_IndicatorParams[Ordered_Arguments]
+  
+  # add an indicator to the corresponding strategy
+  Strategy_temp=get(Strategy, envir=.GlobalEnv)
+  Strategy_temp$Indicators[[Indicator]]=New_IndicatorParams
+  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
+}
+
+
+
+
+
+#**********
+# Add_Model
+#************************
+# add a model to Strategy
+Add_Model=function(Strategy,
+                   Model=NULL,
+                   ModelParams=NULL){
+  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
+    #Init.Strategy(Name=Strategy)
+    stop(paste0("No strategy found named ", Strategy))
+  }
+  
+  # available models
+  Available_Models=ls(Models_Env)
+  
+  # check the availability of Model in Models_Env
+  if(!Model%in%Available_Models){
+    stop("Available models : ", paste(Available_Models, collapse=", "))
+  }
+  
+  # pull the info for Model
+  Model_Info=Models_Env[[Model]]
+  
+  
+  # check required indicators
+  Strategy_temp=get(Strategy, envir=.GlobalEnv)
+  Essential_Indicators=Model_Info$Essential_Indicators
+  Excluded_Indicators=Essential_Indicators[!Essential_Indicators%in%names(Strategy_temp[["Indicators"]])]
+  if(length(Excluded_Indicators)>0){
+    stop("Add necessary indicators : ", paste(Excluded_Indicators, collapse=", "))
+  }
+  
+  
+  #*****************
+  # check parameters
+  #**************************
+  # names of passed arguments
+  Passed_Arguments_Names=names(ModelParams)
+  
+  # arguments/parameters in the function of Model in Models_Env
+  Model_Params=unlist(as.list(args(Model_Info$Function)))
+  
+  # names
+  Model_Params_Names=names(Model_Params)
+  
+  # error if any of passed arguments is not defined in the function
+  if(sum(!Passed_Arguments_Names%in%Model_Params_Names>0)){
+    stop("Valid parameters : ", paste(Model_Params_Names, collapse=", "))
+  }
+  
+  
+  #***********************************************
+  # assign default values to unspecified arguments
+  #***********************************************
+  # arguments/parameters with defined default values
+  Model_Params_with_Default=Model_Params[Model_Params!=""]
+  Model_Params_with_Default_Names=names(Model_Params_with_Default)
+  
+  New_ModelParams=c(ModelParams,
+                    Model_Params_with_Default[!Model_Params_with_Default_Names%in%Passed_Arguments_Names])
+  
+  # New_Passed_Arguments_Names
+  New_Passed_Arguments_Names=names(New_ModelParams)
+  
+  # sort the arguments (not important)
+  Ordered_Arguments=New_Passed_Arguments_Names[order(match(New_Passed_Arguments_Names, Model_Params_Names))]
+  New_ModelParams=New_ModelParams[Ordered_Arguments]
+  
+  # add a model to the corresponding strategy
+  Strategy_temp=get(Strategy, envir=.GlobalEnv)
+  Strategy_temp$Models[[Model]]=New_ModelParams
+  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
+}
+
+
+
+
+#**************
+# Add_OrderRule
+#******************************
+# add an order rule to Strategy
+Add_OrderRule=function(Strategy,
+                       OrderRule=NULL,
+                       OrderRuleParams=NULL){
+  #
+  lapply(c("plyr"), checkpackages)
+  
+  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
+    #Init.Strategy(Name=Strategy)
+    stop(paste0("No strategy found named ", Strategy))
+  }
+  
+  # available Orders
+  Available_OrderRules=ls(OrderRules_Env)
+  
+  # check the availability of OrderRule in OrderRules_Env
+  if(!OrderRule%in%Available_OrderRules){
+    stop("Available Orders : ", paste(Available_OrderRules, collapse=", "))
+  }
+  
+  # pull the info for OrderRule
+  OrderRules_Info=OrderRules_Env[[OrderRule]]
+  
+  #********************
+  # check element names
+  #********************
+  OrderRules_Info=as.relistable(OrderRules_Info)
+  All.default.elements=unlist(OrderRules_Info)
+  #
+  if(is.null(OrderRuleParams)){
+    OrderRuleParams=OrderRules_Info
+  }
+  
+  OrderRuleParams=as.relistable(OrderRuleParams)
+  All.passed.elements=unlist(OrderRuleParams)
+  #
+  All.default.elements.concat.names=names(All.default.elements)
+  All.passed.elements.concat.names=names(All.passed.elements)
+  #
+  All.default.elements.names=unique(unlist(strsplit(All.default.elements.concat.names, "[.]")))
+  All.passed.elements.names=unique(unlist(strsplit(All.passed.elements.concat.names, "[.]")))
+  if(sum(!All.passed.elements.names%in%All.default.elements.names)>0){
+    stop("Invalid parameters entered : ",
+         paste(All.passed.elements.names[!All.passed.elements.names%in%All.default.elements.names], collapse=", "),
+         
+         "\n
+         Valid parameters : ",
+         paste(All.default.elements.names, collapse=", "))
+  }
+  
+  Passed.string.split=strsplit(All.passed.elements.concat.names, "[.]")
+  
+  Default.string.split=strsplit(All.default.elements.concat.names, "[.]")
+  
+  # depth
+  # rbind.fill(lapply(Passed.string.split,
+  #                   function(y){as.data.frame(t(y))}))
+  # rbind.fill(lapply(Default.string.split,
+  #                   function(y){as.data.frame(t(y))}))
+  
+  #****************************
+  # compare values at each node
+  #****************************
+  comparing.table=data.table(Default=names(All.default.elements),
+                             Value=All.default.elements) %>%
+    left_join(data.table(Default=names(All.passed.elements),
+                         Value=All.passed.elements),
+              by="Default")
+  
+  # locations of elements with different values
+  diff.loc=which(comparing.table$Value.x!=comparing.table$Value.y)
+  
+  # update the values in the default list
+  for(ui in diff.loc){
+    All.default.elements[ui]=comparing.table[ui, Value.y]
+  }
+  
+  # 
+  New_ModelParams=relist(All.default.elements)
+  #New_ModelParams=as.data.table(New_ModelParams) %>% as.list()
+  
+  # add a model to the corresponding strategy
+  Strategy_temp=get(Strategy, envir=.GlobalEnv)
+  
+  # Min_Sig_N must be smaller or equal to the number of models
+  if(OrderRule=="Long"){
+    if((length(names(Strategy_temp$Models))<New_ModelParams[["BuyToOpen"]][["Min_Sig_N"]])|
+       (length(names(Strategy_temp$Models))<New_ModelParams[["SellToClose"]][["Min_Sig_N"]])){
+      stop("Min_Sig_N must be smaller or equal to the number of models")
+    }
+  }
+  if(OrderRule=="Short"){
+    if((length(names(Strategy_temp$Models))<New_ModelParams[["SellToOpen"]][["Min_Sig_N"]])|
+       (length(names(Strategy_temp$Models))<New_ModelParams[["BuyToClose"]][["Min_Sig_N"]])){
+      stop("Min_Sig_N must be smaller or equal to the number of models")
+    }
+  }
+  
+  Strategy_temp$Order_Rules[[OrderRule]]=New_ModelParams
+  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
+}
+
+
+
+
+
+#******************************
+#
+# [ --- Live trading --- ] ----
+#
+#******************************
+# ReqRealTimeBars
+#**************************
+# request realtime bar data
+#*******************************************
+# output : BarData in the global environment
+# return New_Data=1 if the new data is derived; and 0 if not
+ReqRealTimeBars=function(BarSize=5,
+                         Log=F){
+  # New_Data : 1 if the new bar data with the size of interest is added in BarData; and 0 if not
+  New_Data=0
+  
+  # if BarSize is not a multiple of 5
+  if(BarSize%%5!=0){
+    message("BarSize must be a multiple of 5.")
+    # round off BarSize to an integer
+    BarSize<<-round(BarSize, -1)
+    message(paste0("So, it is rounded off ", get("BarSize", envir=.GlobalEnv), "."))
+  }
+  
+  #****************************************************************
+  # RealTimeBarData is stored temporarily in the global environment
+  #*************************************************************************************************
+  # -> once RealTimeBarData is available, reqRealTimeBars is executed every 5 seconds automatically, 
+  # which I think is a built-in functionality in twsCALLBACK_cust
+  # -> nope... sometimes data is extracted faster than every 5 seconds
+  # -> so, the code is modified to echo out the new data only when it is added
+  #***************************************************************************
+  IBrokers::reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
+                            eventWrapper=eWrapper_cust(),
+                            CALLBACK=twsCALLBACK_cust)
+  
+  # if it fails to create RealTimeBarData
+  if(!exists("RealTimeBarData")){
+    Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
+    return(New_Data) # terminate the algorithm by retunning New_Data
+  }
+  
+  # initial Recent_RealTimeBarData
+  if(!exists("Recent_RealTimeBarData")){
+    Recent_RealTimeBarData=RealTimeBarData
+  }
+  
+  # if BarSize=5, no additional process is required
+  if(BarSize==5){
+    # if RealTimeBarData is not the new data
+    if(!is.null(BarData) & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
+      # remove RealTimeBarData at the end of everytime iteration
+      rm(RealTimeBarData, envir=.GlobalEnv)
+      
+      return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
+    }
+    
+    BarData<<-rbind(BarData, RealTimeBarData)
+    
+    New_Data=1
+  }
+  
+  # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
+  if(BarSize>5){
+    # if RealTimeBarData is not the new data
+    if(exists("Archiv") & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
+      # remove RealTimeBarData at the end of everytime iteration
+      rm(RealTimeBarData, envir=.GlobalEnv)
+      
+      return(New_Data) # if the new data is not derived, terminate the algorithm by returning New_Data=0
+    }
+    
+    # archive RealTimeBarData
+    # initiate archiving RealTimeBarData info once the remainder of time/BarSize is 0
+    # open info
+    if(as.numeric(RealTimeBarData$Time)%%BarSize==0){
+      # define the Archive indicator
+      Archiv<<-1
+      
+      Symbol<<-RealTimeBarData$Symbol
+      Time<<-RealTimeBarData$Time
+      Open<<-RealTimeBarData$Open
+      High<<-RealTimeBarData$High
+      Low<<-RealTimeBarData$Low
+      Volume<<-RealTimeBarData$Volume
+      Count<<-RealTimeBarData$Count
+    }
+    
+    # if Archiv hasn't been defined yet, no need to proceed further
+    if(!exists("Archiv", envir=.GlobalEnv)){
+      return(New_Data)
+    }
+    
+    # interim info (update High, Low, Volum, and Count)
+    if(as.numeric(RealTimeBarData$Time)%%BarSize>0){
+      High<<-max(High, RealTimeBarData$High)
+      Low<<-min(Low, RealTimeBarData$Low)
+      Volume<<-Volume+RealTimeBarData$Volume
+      Count<<-Count+RealTimeBarData$Count
+    }
+    
+    # close info
+    if(as.numeric(RealTimeBarData$Time)%%BarSize==(BarSize-5)){
+      # remove the Archive indicator
+      rm(Archiv, envir=.GlobalEnv)
+      
+      Close<<-RealTimeBarData$Close
+      
+      BarData<<-unique(rbind(BarData, 
+                             data.table(
+                               Symbol=Symbol,
+                               Time=Time,
+                               Open=Open,
+                               High=High,
+                               Low=Low,
+                               Close=Close,
+                               Volume=Volume,
+                               Count=Count
+                             )))
+      
+      # remove values in the global environment after generating a data point
+      rm(Symbol, envir=.GlobalEnv)
+      rm(Time, envir=.GlobalEnv)
+      rm(Open, envir=.GlobalEnv)
+      rm(High, envir=.GlobalEnv)
+      rm(Low, envir=.GlobalEnv)
+      rm(Close, envir=.GlobalEnv)
+      rm(Volume, envir=.GlobalEnv)
+      rm(Count, envir=.GlobalEnv)
+      
+      New_Data=1
+      
+    }
+    
+  }
+  
+  # if the new data is added in BarData
+  if(New_Data==1){
+    # echo the updated data
+    print(tail(BarData, 1))
+    
+    # write log everytime new data is added
+    if(Log==T){
+      if(file.exists(paste0(working.dir, "Log/Live_Trading_Log.csv"))){
+        Log=data.table(Time=Sys.time())
+        Log=rbind(Log,
+                  fread(paste0(working.dir, "Log/Live_Trading_Log.csv")))
+        fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
+      }else{
+        Log=data.table(Time=Sys.time())
+        fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
+      }
+    }
+  }
+  
+  # save Recent_RealTimeBarData
+  Recent_RealTimeBarData<<-RealTimeBarData
+  
+  # remove RealTimeBarData at the end of everytime iteration
+  rm(RealTimeBarData, envir=.GlobalEnv)
+  
+  return(New_Data) # terminate the algorithm by retunning New_Data
+  
+} 
+
+
+
+
+
+#*********
+# snapShot
+#*********#
 # an example function provided from the interactive brokers' API archives
 snapShot = function(twsCon,
                     eWrapper,
@@ -66,11 +1608,9 @@ snapShot = function(twsCon,
 
 
 
-#**********************
-#
-# twsCALLBACK_cust ----
-#
-#**********************
+#*****************
+# twsCALLBACK_cust
+#*************************
 # customized twsCALLBACK()
 # revised lines are highlighted with # # # #
 twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...) 
@@ -134,11 +1674,9 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
 
 
 
-#*******************
-#
-# eWrapper_cust ----
-#
-#*******************
+#**************
+# eWrapper_cust
+#**********************
 # customized eWrapper()
 # revised lines (realtimeBars) are highlighted with #
 eWrapper_cust=function (debug = FALSE, errfile = stderr()) 
@@ -405,1568 +1943,5 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
 
 
 
-
-
-#*******************
-#
-# System_Break ----
-#
-#*******************
-# a break during the temporary market close time
-#******************************************************************************
-# Output : return Rerun_Live_Trading=1 (1) after break during market closure or 
-#                                      (2) after a temporary break (for test) during the market open time
-System_Break=function(Rerun_Trading=0,
-                      Log=F){
-  
-  #**************************
-  # No break (market is open)
-  # re-run indicator
-  Rerun=1
-  Duration=60
-  
-  # the market closes temporarily on weekdays
-  ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
-  CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
-  
-  #**********************
-  # Daily temporary break
-  # if time is between 13:10:00 and 13:15:00 PDT
-  if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")&
-     (CurrentTime>=(as.ITime("13:10:00"))&
-      CurrentTime<=(as.ITime("13:15:00")))){
-    
-    # (1) for 25 mins from 13:10:00 to 13:35:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
-    Duration=60*25
-    
-    # put the system to sleep
-    message("market closed : 13:15:00 to 13:30:00 PDT")
-    
-  }
-  
-  # if time is between 13:50:00 and 14:00:00 PDT
-  if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday")&
-     (CurrentTime>=(as.ITime("13:50:00"))&
-      CurrentTime<=(as.ITime("14:00:00")))){
-    
-    # (2) for 75 mins from 13:50:00 to 15:05:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
-    Duration=60*75
-    
-    # put the system to sleep
-    message("market closed : 14:00:00 to 15:00:00 PDT")
-    
-  }
-  
-  # # if time is between 23:40:00 and 23:45:00 PDT
-  # if(ToDay%in%c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday")&
-  #          (CurrentTime>=(as.ITime("23:40:00"))& 
-  #           CurrentTime<=(as.ITime("23:45:00")))){
-  # 
-  #   # (3) for 20 mins from 23:40:00 to 24:00:00 PDT (TWS automatic log-off)
-  #   Duration=60*20
-  # 
-  #   # put the system to sleep
-  #   message("TWS automatic log-off and restart")
-  # 
-  # }
-  
-  #***********
-  # Long break
-  if((ToDay=="Friday" & CurrentTime>=(as.ITime("13:50:00"))) | # the market closes at 14:00:00 PDT on Friday
-     (ToDay=="Saturday") | # the market closes on Saturday
-     (ToDay=="Sunday" & CurrentTime<(as.ITime("15:05:00")))){ # the market opens at 15:00:00 PDT on Sunday
-    
-    # no need to re-run the live trading algorithm during weekends
-    Rerun=0
-    Duration=600
-    
-    # put the system to sleep
-    message("weekend closure")
-  }
-  
-  # write log everytime System_Break is run
-  if(Log==T){
-    if(file.exists(paste0(working.dir, "Log/Stop_Live_Trading_Log.csv"))){
-      Log=data.table(Time=Sys.time())
-      Log=rbind(Log,
-                fread(paste0(working.dir, "Log/Stop_Live_Trading_Log.csv")))
-      fwrite(Log, paste0(working.dir, "Log/Stop_Live_Trading_Log.csv"))
-    }else{
-      Log=data.table(Time=Sys.time())
-      fwrite(Log, paste0(working.dir, "Log/Stop_Live_Trading_Log.csv"))
-    }
-  }
-  
-  # echo re-run message
-  if(Rerun==1){
-    for(Secs_Left in 1:Duration){
-      message(paste0("Re-run live trading in ", Duration-Secs_Left+1, " seconds"))
-      Sys.sleep(1)
-    }
-    message(paste0("Re-run live trading in : 0 seconds"))
-  }
-  
-  return(Rerun)
-}
-
-
-
-
-
-#**************************
-#
-# Daily_Hist_Data_Save ----
-#
-#*************************************************************
-# execute a daily save of 5 second bar data at 15:00:00 pm PDT
-Daily_Hist_Data_Save=function(Contract,
-                              Data_Dir,
-                              Working_Dir,
-                              Force=T,
-                              Log=F){
-  
-  # the market closes at 14:00:00 PDT on Friday; and
-  # at 15:00:00 PDT on the other weekdays
-  ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
-  CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
-  File_Exist=file.exists(paste0(Data_Dir, Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
-  
-  # if time is after 15:00:00 PDT on weekdays, proceed ot extract historical data
-  if(!ToDay%in%c("Saturday", "Sunday") &
-     CurrentTime>=(as.ITime("14:00:00"))){
-    
-    if(!File_Exist| # if 5 second bar has not been saved yet, or
-       Force==T){ # Force==1 (execute the saving process by force (overwrite the data))
-      
-      # request historical data of 5 seconds bar
-      HistData=as.data.table(reqHistoricalData(tws, Contract, barSize="5 secs", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
-      colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
-      
-      HistData[, hasGaps:=NULL] # hasGaps is redundant
-      
-      HistData=data.table(Symbol=Contract$symbol,
-                          HistData)
-      
-      # HistData=as.data.table(reqHistoricalData(tws, Contract, barSize="5 secs", duration="1 M", useRTH="0")) # useRTH="0" : not limited to regular trading hours
-      # colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
-      #
-      # HistData[, hasGaps:=NULL] # hasGaps is redundant
-      #
-      # HistData=data.table(Symbol=Contract$symbol,
-      #                     HistData)
-      #
-      # # "for statement" to get and save bar data day-by-day
-      # for(Date in seq(as.Date("2021-03-15"), as.Date(format(Sys.time(), tz="America/Los_Angeles")), by="day")){
-      #   if(weekdays.Date(as.Date(Date))=="Saturday"|
-      #      weekdays.Date(as.Date(Date))=="Sunday"){
-      #     next
-      #   }
-      #
-      #   Time_Cutoff=as.POSIXct(paste0(as.Date(Date), " 15:00:00"), tz="America/Los_Angeles")
-      #
-      #
-      #   HistData[Time>=(Time_Cutoff-60*60*24)&
-      #              Time<Time_Cutoff, ]
-      #
-      #   fwrite(HistData[Time>=(Time_Cutoff-60*60*24)&
-      #                     Time<Time_Cutoff, ],
-      #          paste0(Data_Dir, Contract$symbol, "_", as.Date(Date), ".csv"))
-      # }
-      
-      # remove redundant data
-      # different time zone examples : "GMT", "America/Los_Angeles", "Europe/London"
-      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 15:00:00"), tz="America/Los_Angeles")
-      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles")), " 15:00:00"), tz="America/Los_Angeles")
-      HistData=HistData[Time>=Time_From &
-                          Time<Time_To, ]
-      
-      HistData[, Time:=as.POSIXct(format(as.POSIXct(Time), 
-                                         tz="America/Los_Angeles"), 
-                                  tz="America/Los_Angeles")]
-      
-      # save historical data up to today's market closed at 15:00:00 pm PDT
-      fwrite(HistData,
-             paste0(Data_Dir, Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
-    }
-    
-    # create a folder if not exist
-    if(!dir.exists(paste0(Data_Dir, Contract$symbol))){
-      dir.create(paste0(Data_Dir, Contract$symbol))
-    }
-    
-    # write log everytime historical data is extracted and saved
-    if(Log==T){
-      if(!dir.exists(paste0(Working_Dir, "Log"))){
-        dir.create(paste0(Working_Dir, "Log"))
-      }
-      
-      if(file.exists(paste0(Working_Dir, "Log/Daily_Hist_Data_Save.csv"))){
-        Log=data.table(Symbol=Contract$symbol,
-                       Time=Sys.time())
-        Log=rbind(Log,
-                  fread(paste0(Working_Dir, "Log/Daily_Hist_Data_Save.csv")))
-        fwrite(Log, paste0(Working_Dir, "Log/Daily_Hist_Data_Save.csv"))
-      }else{
-        Log=data.table(Symbol=Contract$symbol,
-                       Time=Sys.time())
-        fwrite(Log, paste0(Working_Dir, "Log/Daily_Hist_Data_Save.csv"))
-      }
-    }
-  }else{
-    message("No new data to save yet.") # echo Message in terminal
-  }
-  
-}
-
-
-
-
-
-#*********************
-#
-# ReqRealTimeBars ----
-#
-#**************************
-# request realtime bar data
-#*******************************************
-# output : BarData in the global environment
-# return New_Data=1 if the new data is derived; and 0 if not
-ReqRealTimeBars=function(BarSize=5,
-                         Log=F){
-  # New_Data : 1 if the new bar data with the size of interest is added in BarData; and 0 if not
-  New_Data=0
-  
-  # if BarSize is not a multiple of 5
-  if(BarSize%%5!=0){
-    message("BarSize must be a multiple of 5.")
-    # round off BarSize to an integer
-    BarSize<<-round(BarSize, -1)
-    message(paste0("So, it is rounded off ", get("BarSize", envir=.GlobalEnv), "."))
-  }
-  
-  #****************************************************************
-  # RealTimeBarData is stored temporarily in the global environment
-  #*************************************************************************************************
-  # -> once RealTimeBarData is available, reqRealTimeBars is executed every 5 seconds automatically, 
-  # which I think is a built-in functionality in twsCALLBACK_cust
-  # -> nope... sometimes data is extracted faster than every 5 seconds
-  # -> so, the code is modified to echo out the new data only when it is added
-  #***************************************************************************
-  IBrokers::reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
-                            eventWrapper=eWrapper_cust(),
-                            CALLBACK=twsCALLBACK_cust)
-  
-  # if it fails to create RealTimeBarData
-  if(!exists("RealTimeBarData")){
-    Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
-    return(New_Data) # terminate the algorithm by retunning New_Data
-  }
-  
-  # initial Recent_RealTimeBarData
-  if(!exists("Recent_RealTimeBarData")){
-    Recent_RealTimeBarData=RealTimeBarData
-  }
-  
-  # if BarSize=5, no additional process is required
-  if(BarSize==5){
-    # if RealTimeBarData is not the new data
-    if(!is.null(BarData) & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
-      # remove RealTimeBarData at the end of everytime iteration
-      rm(RealTimeBarData, envir=.GlobalEnv)
-      
-      return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
-    }
-    
-    BarData<<-rbind(BarData, RealTimeBarData)
-    
-    New_Data=1
-  }
-  
-  # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
-  if(BarSize>5){
-    # if RealTimeBarData is not the new data
-    if(exists("Archiv") & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
-      # remove RealTimeBarData at the end of everytime iteration
-      rm(RealTimeBarData, envir=.GlobalEnv)
-      
-      return(New_Data) # if the new data is not derived, terminate the algorithm by returning New_Data=0
-    }
-    
-    # archive RealTimeBarData
-    # initiate archiving RealTimeBarData info once the remainder of time/BarSize is 0
-    # open info
-    if(as.numeric(RealTimeBarData$Time)%%BarSize==0){
-      # define the Archive indicator
-      Archiv<<-1
-      
-      Symbol<<-RealTimeBarData$Symbol
-      Time<<-RealTimeBarData$Time
-      Open<<-RealTimeBarData$Open
-      High<<-RealTimeBarData$High
-      Low<<-RealTimeBarData$Low
-      Volume<<-RealTimeBarData$Volume
-      Count<<-RealTimeBarData$Count
-    }
-    
-    # if Archiv hasn't been defined yet, no need to proceed further
-    if(!exists("Archiv", envir=.GlobalEnv)){
-      return(New_Data)
-    }
-    
-    # interim info (update High, Low, Volum, and Count)
-    if(as.numeric(RealTimeBarData$Time)%%BarSize>0){
-      High<<-max(High, RealTimeBarData$High)
-      Low<<-min(Low, RealTimeBarData$Low)
-      Volume<<-Volume+RealTimeBarData$Volume
-      Count<<-Count+RealTimeBarData$Count
-    }
-    
-    # close info
-    if(as.numeric(RealTimeBarData$Time)%%BarSize==(BarSize-5)){
-      # remove the Archive indicator
-      rm(Archiv, envir=.GlobalEnv)
-      
-      Close<<-RealTimeBarData$Close
-      
-      BarData<<-unique(rbind(BarData, 
-                             data.table(
-                               Symbol=Symbol,
-                               Time=Time,
-                               Open=Open,
-                               High=High,
-                               Low=Low,
-                               Close=Close,
-                               Volume=Volume,
-                               Count=Count
-                             )))
-      
-      # remove values in the global environment after generating a data point
-      rm(Symbol, envir=.GlobalEnv)
-      rm(Time, envir=.GlobalEnv)
-      rm(Open, envir=.GlobalEnv)
-      rm(High, envir=.GlobalEnv)
-      rm(Low, envir=.GlobalEnv)
-      rm(Close, envir=.GlobalEnv)
-      rm(Volume, envir=.GlobalEnv)
-      rm(Count, envir=.GlobalEnv)
-      
-      New_Data=1
-      
-    }
-    
-  }
-  
-  # if the new data is added in BarData
-  if(New_Data==1){
-    # echo the updated data
-    print(tail(BarData, 1))
-    
-    # write log everytime new data is added
-    if(Log==T){
-      if(file.exists(paste0(working.dir, "Log/Live_Trading_Log.csv"))){
-        Log=data.table(Time=Sys.time())
-        Log=rbind(Log,
-                  fread(paste0(working.dir, "Log/Live_Trading_Log.csv")))
-        fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
-      }else{
-        Log=data.table(Time=Sys.time())
-        fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
-      }
-    }
-  }
-  
-  # save Recent_RealTimeBarData
-  Recent_RealTimeBarData<<-RealTimeBarData
-  
-  # remove RealTimeBarData at the end of everytime iteration
-  rm(RealTimeBarData, envir=.GlobalEnv)
-  
-  return(New_Data) # terminate the algorithm by retunning New_Data
-  
-} 
-
-
-
-
-
-#**************
-#
-# Get_Data ----
-#
-#**********************************************************************************
-# get import historical data sets of specified symbols saved in a repository folder
-#**********************************************************************************
-Get_Data=function(Symbols,
-                  Data_Dir,
-                  BarSize=60*30,
-                  First_Date="2021-01-20",
-                  Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles")),
-                  Convert_Tz=F){
-  #************
-  # import data
-  #************
-  # output : `5SecsBarHistData`
-  for(Symbol in Symbols){
-    Get_5SecsBarHistData(Symbol=Symbol,
-                         Data_Dir=Data_Dir,
-                         First_Date=First_Date,
-                         Last_Date=Last_Date,
-                         Convert_Tz=F)
-    
-    # collapse data to the chosen-sized bar data
-    assign(Symbol, 
-           Collapse_5SecsBarData(`5SecsBarHistData`,
-                                 BarSize=BarSize,
-                                 Convert_Tz=Convert_Tz),
-           envir=.GlobalEnv)
-    
-    # remove `5SecsBarHistData`
-    rm(`5SecsBarHistData`, envir=.GlobalEnv)
-  }
-}
-
-
-
-
-
-#**************************
-#
-# Get_5SecsBarHistData ----
-#
-#****************************************************
-# import historical data saved in a repository folder
-#******************************************************
-# output : `5SecsBarHistData` in the global environment
-Get_5SecsBarHistData=function(Symbol,
-                              Data_Dir,
-                              First_Date,
-                              Last_Date,
-                              Convert_Tz=F){
-  # data table
-  lapply("data.table", checkpackages)
-  
-  # remove `5SecsBarHistData` in the global environment
-  if(exists("5SecsBarHistData")){rm(`5SecsBarHistData`, envir=.GlobalEnv)}
-  
-  # import
-  for(Date in as.character(seq(as.Date(First_Date), Last_Date, by="day"))){
-    File_name=paste0(Symbol, "_", Date, ".csv")
-    if(!file.exists(paste0(Data_Dir, Symbol, "/", File_name))){
-      next
-    }
-    
-    if(!exists("5SecsBarHistData", envir=.GlobalEnv)){
-      `5SecsBarHistData`<<-fread(paste0(Data_Dir, Symbol, "/", File_name))
-    }else{
-      `5SecsBarHistData`<<-rbind(`5SecsBarHistData`,
-                                 fread(paste0(Data_Dir, Symbol, "/", File_name)))
-    }
-  }
-  
-  # convert time zone
-  # this process of converting time to the PDT time zone can be skipped as needed for less processing time
-  if(Convert_Tz==T){
-    `5SecsBarHistData`[, Time:=as.POSIXct(format(as.POSIXct(Time),
-                                                 tz="America/Los_Angeles"),
-                                          tz="America/Los_Angeles")]
-  }
-}
-
-
-
-
-
-#***************************
-#
-# Collapse_5SecsBarData ----
-#
-#***************************
-# collapse 5 seconds bar data to a larger-sized bar data (maximum size is one day)
-#*********************************************************************************
-# # verify the collapsed bar data is generated properly by making a comparison with the historical data requested from Interactive Brokers TWS
-# HistData=as.data.table(reqHistoricalData(tws, contract, barSize="5 mins", duration="2 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
-# colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
-# HistData[, hasGaps:=NULL] # hasGaps is redundant
-# HistData=data.table(Symbol=contract$symbol,
-#                     HistData)
-# Merged_Data=HistData %>% 
-#   left_join(Collapsed_BarData,
-#             by=c("Symbol", "Time"))
-# Merged_Data=Merged_Data[Time%in%(Collapsed_BarData$Time),]
-# 
-# #
-# Merged_Data[Open.x!=Open.y, ]
-# Merged_Data[High.x!=High.y, ]
-# Merged_Data[Low.x!=Low.y, ]
-# Merged_Data[Close.x!=Close.y, ]
-# Merged_Data[Volume.x!=Volume.y, ]
-# Merged_Data[Count.x!=Count.y, ]
-# 
-# Merged_Data[is.na(Open.y), ]
-# Merged_Data[is.na(High.y), ]
-# Merged_Data[is.na(Low.y), ]
-# Merged_Data[is.na(Close.y), ]
-# Merged_Data[is.na(Volume.y), ]
-# Merged_Data[is.na(Count.y), ]
-Collapse_5SecsBarData=function(`5SecsBarData`,
-                               BarSize,
-                               Convert_Tz=F){
-  # `5SecsBarData`=`5SecsBarHistData`
-  if(BarSize%%5!=0){
-    return(message("BarSize must be a multiple of 5"))
-  }
-  
-  # if BarSize=5, no additional process is required
-  if(BarSize==5){
-    Collapsed_BarData=`5SecsBarData` %>% as.data.frame() %>% as.data.table()
-    Collapsed_BarData[, Wap:=NULL]
-  }
-  
-  # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
-  if(BarSize>5){
-    
-    # dates
-    Dates=seq(as.Date(min(`5SecsBarData`$Time)), # minimum Date
-              as.Date(max(`5SecsBarData`$Time)), # maximum Date
-              by="day")
-    
-    # time intervals
-    Times=as.ITime(seq(as.POSIXct(paste0(as.Date(format(Sys.time()))-1, " 00:00:00")),
-                       as.POSIXct(paste0(as.Date(format(Sys.time())), " 00:00:00"))-BarSize,
-                       by=BarSize))
-    
-    # Date_Time_From
-    Time_Intervals=data.table(
-      Date_Time_From=as.POSIXct(strptime(paste(rep(Dates, each = length(Times)), Times, sep = " "), 
-                                         "%Y-%m-%d %H:%M:%S"), 
-                                tz=attr(`5SecsBarData`$Time, "tzone"))
-    )
-    
-    # Date_Time_To
-    Time_Intervals[, Date_Time_To:=shift(Time_Intervals$Date_Time_From, -1)]
-    
-    # non-equal left_join Time_Intervals to `5SecsBarData`
-    Time_Intervals=`5SecsBarData`[Time_Intervals, on=c("Time>=Date_Time_From", "Time<Date_Time_To"),
-                                  nomatch=0,
-                                  .(Symbol, Date_Time_From=Time, Open, High, Low, Close, Volume, Wap, Count, Date_Time_To)]
-    
-    # Collapsed_BarData
-    Collapsed_BarData=Time_Intervals[, .(Symbol=unique(Symbol),
-                                         Open=Open[1], # first row by group (Date_Time_From)
-                                         High=max(High),
-                                         Low=min(Low), # row with minimum Low price by group
-                                         Close=Close[.N], # last row by group
-                                         Volume=sum(Volume),
-                                         Count=sum(Count)),
-                                     by="Date_Time_From"]
-    
-    # rename Date_Time_From to Time
-    setnames(Collapsed_BarData, "Date_Time_From", "Time")
-    
-    # switch the order "Symbol" and "Date_Time_From"
-    setcolorder(Collapsed_BarData, c("Symbol", "Time"))
-    
-    # `5SecsBarData`[, Group:=NULL]
-  }
-  
-  # convert time zone
-  # this process of converting time to the PDT time zone can be skipped as needed for less processing time
-  if(Convert_Tz==T){
-    Collapsed_BarData[, Time:=as.POSIXct(format(as.POSIXct(Time),
-                                                tz="America/Los_Angeles"),
-                                         tz="America/Los_Angeles")]
-  }
-  
-  return(as.data.table(Collapsed_BarData))
-}
-
-
-
-
-
-#******************
-#
-# Candle_Chart ----
-#
-#******************
-Candle_Chart=function(BarData){
-  if(!is.null(BarData)){
-    Temp_BarData=as.matrix(BarData[, 3:6])
-    rownames(Temp_BarData)=as.character(as.Date(BarData$Time)+(0:(nrow(Temp_BarData)-1)))
-    
-    # PlotCandlestick from "DescTools"
-    PlotCandlestick(x=as.Date(rownames(Temp_BarData)),
-                    y=Temp_BarData,
-                    border=NA,
-                    las=1,
-                    ylab="",
-                    xaxt="n")
-    
-    # x-axis labels
-    # year
-    j=Year(as.Date(BarData$Time))
-    j[!c(1, diff(j))]=NA
-    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=j, cex=1, line=0)
-    
-    # month
-    j=Month(as.Date(BarData$Time))
-    j[!c(1, diff(j))]=NA
-    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=month.name[j], cex=0.9, line=0.9)
-    
-    # day
-    j=Day(as.Date(BarData$Time))
-    j[!c(1, diff(j))]=NA
-    mtext(side=1, at=as.Date(rownames(Temp_BarData)), text=j, cex=0.8, line=1.7)
-    
-    # hour-min-sec
-    mtext(side=1,
-          at=as.Date(rownames(Temp_BarData)),
-          text=as.character(as.ITime(BarData$Time)),
-          cex=0.7,
-          line=2.4)
-  }
-}
-
-
-
-
-
-#****************
-#
-# BBands_Sim ----
-#
-#**************************************************
-# Fast simulation based on bollinger bands strategy
-#**************************************************
-BBands_Sim=function(Consec_Times,
-                    Long_PctB,
-                    Short_PctB,
-                    Commision=0.52){
-  # Long_Pos_Ind : indice of rows to which a long position is filled
-  # fill long positions if PctB is below Long_PctB for consecutive times (Consec_Times) in the recent bar data
-  if(Consec_Times==1){
-    Long_Pos_Ind=which(shift(Collapsed_BarData$PctB, 0)<Long_PctB)
-  }else{
-    Long_Pos_Ind=which(Reduce("+", lapply(shift(Collapsed_BarData$PctB, 0:(Consec_Times-1)),
-                                          function(x) x<Long_PctB))==Consec_Times)
-  }
-  Short_Pos_Ind=which(Collapsed_BarData$PctB>Short_PctB) # a short position must be filled after a long position
-  
-  #
-  Tradings=data.table(
-    Collapsed_BarData[c(Long_Pos_Ind+1), 
-                      .SD,
-                      .SDcols=c("Time", "Open")],
-    Collapsed_BarData[sapply(Long_Pos_Ind,
-                             function(x) Short_Pos_Ind[which(x<Short_Pos_Ind)[1]])+1,
-                      .SD,
-                      .SDcols=c("Time", "Open")]
-  )
-  colnames(Tradings)=c("Long_Time", "Long_Price", "Short_Time", "Short_Price")
-  
-  # remove rows with duplicated short positions
-  Tradings=Tradings[!duplicated(Tradings[,
-                                         .SD,
-                                         .SDcols=c("Short_Time", "Short_Price")])&
-                      !is.na(Short_Price), ]
-  
-  # output
-  Out=c()
-  
-  Out$Tradings=Tradings
-  Out$Profit=sum(Tradings$Short_Price-Tradings$Long_Price, na.rm=T)*4*0.5
-  Out$Commision=2*Commision*nrow(Tradings)
-  Out$Net_Profit=Out$Profit-Out$Commision
-  
-  return(Out)
-}
-
-
-
-
-
-#*****************
-#
-# Backtesting ----
-#
-#***********************************************************
-# run a fast version of backtesting algorithm for simulation
-#***********************************************************
-Backtesting=function(BarData,
-                     Strategy){
-  Order_Rules=Strategy$Order_Rules
-  Indicators=Strategy$Indicators
-  Models=Strategy$Models
-  
-  Simple_BBands_Info=get("Simple_BBands", envir=Models_Env)
-  assign("Simple_BBands", Simple_BBands_Info$Function, envir=.GlobalEnv)
-  
-  #****************
-  # import packages
-  #****************
-  lapply(c("IBrokers",
-           "TTR",
-           "data.table",
-           "dplyr"),
-         checkpackages)
-  
-  
-  #************************
-  # assign local parameters
-  #************************
-  # general parameters
-  Max_Rows=Strategy$Max_Rows
-  
-  # order parameters
-  General=Order_Rules$General
-  OrderType=Order_Rules$General$OrderType
-  Position_Direction=Order_Rules$General$Position_Direction
-  
-  # indicators
-  Passed_Indicators=names(Indicators)
-  Passed_Models=names(Models)
-  
-  # models
-  Long_Consec_Times=Models$Simple_BBands$Long_Consec_Times
-  Short_Consec_Times=Models$Simple_BBands$Short_Consec_Times
-  Long_PctB=Models$Simple_BBands$Long_PctB
-  Short_PctB=Models$Simple_BBands$Short_PctB
-  
-  
-  #******************
-  # preliminary steps
-  #******************
-  if(Position_Direction=="both"){
-    Max_Long_Orders=Max_Short_Orders=Max_Orders-1
-  }else if(Position_Direction=="long"){
-    Max_Long_Orders=Max_Orders-1
-    Max_Short_Orders=-1
-  }else if(Position_Direction=="short"){
-    Max_Long_Orders=-1
-    Max_Short_Orders=Max_Orders-1
-  }
-  
-  
-  #*********************
-  # simulation algorithm
-  #*********************
-  for(i in 1:(nrow(BarData)-1)){
-    # i=1
-    if(!exists("Live_Data")){
-      # define Live_Data
-      Live_Data=BarData[i, ]
-    }else{
-      Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
-    }
-    
-    if(!exists("Orders_Transmitted")){
-      # define Orders_Transmitted
-      Orders_Transmitted=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                    Submit_Time=tail(Live_Data, 1)[, Time],
-                                    Filled_Time=tail(Live_Data, 1)[, Time],
-                                    Action="", 
-                                    TotalQuantity=0,
-                                    OrderType=OrderType,
-                                    LmtPrice=0,
-                                    Filled=0)
-      Orders_Transmitted=Orders_Transmitted[-1,]
-    }
-    
-    
-    #*********************
-    # calculate indicators
-    #*********************
-    # bollinger bands
-    if("BBands"%in%Passed_Indicators){
-      if(nrow(Live_Data)>Indicators$BBands$n-1){
-        BBands_Data=Live_Data[, BBands(Close, n=Indicators$BBands$n, sd=Indicators$BBands$sd)]
-      }
-    }
-    
-    # rsi
-    if("RSI"%in%Passed_Indicators){
-      if(nrow(Live_Data)>Indicators$RSI$n+1){
-        Live_Data[, RSI:=RSI(Close, n=Indicators$RSI$n)]
-      }
-    }
-    
-    # macd
-    if("MACD"%in%Passed_Indicators){
-      if(nrow(Live_Data)>34){
-        MACD_Data=Live_Data[, MACD(Close)]
-      }
-    }
-    
-    
-    #***********
-    # fit models
-    #***********
-    # Simple_BBands
-    if("Simple_BBands"%in%Passed_Models){
-      # signal to enter a long (short) position determined by Simple_BBands
-      Long_Sig_by_Simple_BBands=0
-      Short_Sig_by_Simple_BBands=0
-      
-      if("BBands"%in%Passed_Indicators&
-         exists("BBands_Data")){
-        
-        # number of filled orders
-        N_Filled_Buys=nrow(Orders_Transmitted[Action=="Buy"&Filled==1, ]) # buy
-        N_Filled_Sells=nrow(Orders_Transmitted[Action=="Sell"&Filled==1, ]) # sell
-        
-        if(N_Filled_Buys-N_Filled_Sells==0){ # if there is no currently filled order
-          Sigs_by_Simple_BBands=Simple_BBands(BBands_Data,Long_Consec_Times, Short_Consec_Times, Long_PctB, Short_PctB)
-        }else if(N_Filled_Buys-N_Filled_Sells>0){ # if the currently filled order is buy order, generate signal to sell as soon as pctB>=Short_PctB
-          Sigs_by_Simple_BBands=Simple_BBands(BBands_Data, Long_Consec_Times, 1, Long_PctB, Short_PctB)
-        }else if(N_Filled_Buys-N_Filled_Sells<0){ # if the currently filled order is short order, generate signal to sell as soon as pctB<=Long_PctB
-          Sigs_by_Simple_BBands=Simple_BBands(BBands_Data, 1, Short_Consec_Times, Long_PctB, Short_PctB)
-        }
-        # determined signals
-        Long_Sig_by_Simple_BBands=Sigs_by_Simple_BBands[1]
-        Short_Sig_by_Simple_BBands=Sigs_by_Simple_BBands[2]
-        
-      }else{
-        if(!"BBands"%in%Passed_Indicators){
-          stop("BBands required")
-        }
-      }
-    }
-    
-    # Simple_RSI
-    if("Simple_RSI"%in%Passed_Models){
-      # signal to enter a long (short) position determined by Simple_RSI
-      Long_Sig_by_Simple_RSI=0
-      Short_Sig_by_Simple_RSI=0
-      
-      if("RSI"%in%Passed_Indicators&
-         length(Live_Data$RSI)>0){
-        
-      }else{
-        if(!"RSI"%in%Passed_Indicators){
-          stop("RSI required")
-        }
-      }
-    }
-    
-    
-    #***************
-    # transmit order
-    #***************
-    # buy
-    if(Long_Sig_by_Simple_BBands){
-      # determine the position
-      if(sum(Orders_Transmitted[Action=="Buy", TotalQuantity])-
-         sum(Orders_Transmitted[Action=="Sell", TotalQuantity])<=
-         (Max_Long_Orders)){ # the number of currently remaining filled or transmitted long positions is limited to Max_Orders(= Max_Long_Orders + 1)
-        print(paste0("buy : ", i))
-        Orders_Transmitted=rbind(Orders_Transmitted,
-                                 data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                            Submit_Time=tail(Live_Data, 1)[, Time],
-                                            Filled_Time=tail(Live_Data, 1)[, Time],
-                                            Action="Buy",
-                                            TotalQuantity=1,
-                                            OrderType=OrderType,
-                                            LmtPrice=tail(Live_Data, 1)[, Close],
-                                            Filled=0))
-      }
-    }
-    
-    # sell
-    if(Short_Sig_by_Simple_BBands){
-      if(sum(Orders_Transmitted[Action=="Sell", TotalQuantity])-
-         sum(Orders_Transmitted[Action=="Buy", TotalQuantity])<=
-         (Max_Short_Orders)){ # the number of currently remaining filled or transmitted short positions is limited to Max_Orders(= Max_Short_Orders + 1)
-        print(paste0("sell : ", i))
-        Orders_Transmitted=rbind(Orders_Transmitted,
-                                 data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                            Submit_Time=tail(Live_Data, 1)[, Time],
-                                            Filled_Time=tail(Live_Data, 1)[, Time],
-                                            Action="Sell",
-                                            TotalQuantity=1,
-                                            OrderType=OrderType,
-                                            LmtPrice=tail(Live_Data, 1)[, Close],
-                                            Filled=0))
-      }
-    }
-    
-    
-    #***********
-    # fill order
-    #***********
-    # buy
-    if(nrow(Orders_Transmitted[Action=="Buy"&Filled==0, ])>0){ # if there is any transmitted buy order that has not been filled yet
-      
-      Unfilled_Buy_Position_Times=Orders_Transmitted[Action=="Buy"&Filled==0, Submit_Time]
-      Unfilled_Buy_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
-      Which_Buy_Position_to_Fill=which(BarData[i+1, Low]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
-      
-      Orders_Transmitted[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
-                         `:=`(Filled_Time=BarData[i+1, Time],
-                              Filled=1)]
-    }
-    # sell
-    if(nrow(Orders_Transmitted[Action=="Sell"&Filled==0, ])>0){ # if there is any transmitted sell order that has not been filled yet
-      
-      Unfilled_Sell_Position_Times=Orders_Transmitted[Action=="Sell"&Filled==0, Submit_Time]
-      Unfilled_Sell_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
-      Which_Sell_Position_to_Fill=which(BarData[i+1, High]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
-      
-      Orders_Transmitted[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
-                         `:=`(Filled_Time=BarData[i+1, Time],
-                              Filled=1)]
-    }
-    
-  }
-  
-  
-  #**********************
-  # calculate the balance
-  #**********************
-  Collapse_Orders_Transmitted=cbind(Orders_Transmitted[Action=="Buy", 
-                                                       c("Filled_Time", "LmtPrice")],
-                                    Orders_Transmitted[Action=="Sell", 
-                                                       c("Filled_Time", "LmtPrice")])
-  colnames(Collapse_Orders_Transmitted)=c("Buy_Time", "Buy_Price", "Sell_Time", "Sell_Price")
-  Duplicated_Row=unique(c(which(duplicated(Collapse_Orders_Transmitted[, c("Buy_Time", "Buy_Price")])), 
-                          which(duplicated(Collapse_Orders_Transmitted[, c("Sell_Time", "Sell_Price")]))))
-  if(length(Duplicated_Row)>0){
-    Collapse_Orders_Transmitted=Collapse_Orders_Transmitted[-Duplicated_Row, ]
-  }
-  
-  Ind_Profit=2*Collapse_Orders_Transmitted[, Sell_Price-Buy_Price]-2*0.52
-  Net_Profit=sum(Ind_Profit)
-  
-  
-  return(list(BarData=BarData,
-              Orders_Transmitted=Orders_Transmitted,
-              Ind_Profit=Ind_Profit,
-              Net_Profit=Net_Profit))
-  
-}
-
-
-
-
-
-#***************************
-#
-# Live_Trading_Imitator ----
-#
-#*********************************************
-# run an algorithm under the realistic setting
-#************************************************
-Live_Trading_Imitator=function(BarData,
-                               Strategy){
-  Max_Rows=Strategy$Max_Rows
-  Order_Rules=Strategy$Order_Rules
-  Indicators=Strategy$Indicators
-  Models=Strategy$Models
-  
-  #****************
-  # import packages
-  #****************
-  lapply(c("IBrokers",
-           "TTR",
-           "data.table",
-           "dplyr"),
-         checkpackages)
-  
-  
-  #************************
-  # assign local parameters
-  #************************
-  Max_Orders=Order_Rules[["General"]][["Max_Orders"]]
-  Stop_Order=Order_Rules[["General"]][["Stop_Order"]]
-  Profit_Order=Order_Rules[["General"]][["Profit_Order"]]
-  Strategy_Indicators=names(Indicators)
-  Strategy_Models=names(Models)
-  General_Strategy="General"
-  
-  
-  #******************
-  # preliminary steps
-  #******************
-  # if(Position_Direction=="both"){
-  #   Max_Long_Orders=Max_Short_Orders=Max_Orders-1
-  # }else if(Position_Direction=="long"){
-  #   Max_Long_Orders=Max_Orders-1
-  #   Max_Short_Orders=-1
-  # }else if(Position_Direction=="short"){
-  #   Max_Long_Orders=-1
-  #   Max_Short_Orders=Max_Orders-1
-  # }
-  Strategy_Rules=names(Order_Rules)[names(Order_Rules)!="General"]
-  
-  #*********************
-  # simulation algorithm
-  #*********************
-  # define Live_Data
-  Live_Data=BarData[1, ]
-  # define Orders_Transmitted
-  Orders_Transmitted=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                Submit_Time=tail(Live_Data, 1)[, Time],
-                                Filled_Time=tail(Live_Data, 1)[, Time],
-                                Action="",
-                                Detail="",
-                                TotalQuantity=0,
-                                OrderType="MKT",
-                                LmtPrice=0,
-                                Filled=0,
-                                Sigs_N=0)
-  Orders_Transmitted=Orders_Transmitted[-1,]
-  Live_Data[, `:=`(Symbol=NULL, Time=NULL, Open=NULL,
-                   High=NULL, Low=NULL, Close=NULL,
-                   Volume=NULL, Count=NULL)]
-  for(i in 1:(nrow(BarData)-1)){
-    # i=3807
-    Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
-    
-    #***********************
-    #
-    #***********************
-    # Orders_Transmitted
-    # Order_Rules[[General_Strategy]]
-    # OrderRules_Env[[]]
-    # tail(Live_Data, 1)
-    # skip if there is transmitted order to fill
-    if(sum(Orders_Transmitted$Filled==0)<Max_Orders){
-      #*********************
-      # calculate indicators
-      #*********************
-      Calculated_Indicators=sapply(Strategy_Indicators,
-                                   function(x)
-                                     if(nrow(Live_Data)>Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
-                                       list(do.call(x, 
-                                                    c(list(Live_Data[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
-                                                      Indicators[[x]])))
-                                     })
-      
-      
-      #***********
-      # fit models
-      #***********
-      Signals=as.data.table(sapply(Strategy_Models,
-                                   function(x){
-                                     Model_Info=Models_Env[[x]] # variables and functions defined for the model object
-                                     Calculated_Indicators_Combined=do.call(cbind, Calculated_Indicators) # combined Calculated_Indicators
-                                     Calculated_Indicators_Names=names(Calculated_Indicators)[unlist(lapply(Calculated_Indicators, function(x) !is.null(x)))] #
-                                     if(sum(!Model_Info[["Essential_Indicators"]]%in%Calculated_Indicators_Names)==0){ # if none of essential indicators hasn't been calculated in Calculated_Indicators, proceed to run the model
-                                       do.call(Model_Info[["Function"]],
-                                               c(list(Calculated_Indicators_Combined),
-                                                 Models[[x]]))}
-                                   }))
-      
-      
-      #***************
-      # transmit order
-      #***************
-      if(nrow(Signals)>0){
-        # - N of models <= Sigs_N <= N of models
-        Sigs_N=sum(apply(Signals, 1, sum)*c(1, -1))
-        
-        # number of orders held (+:more long, -:more short)
-        N_Orders_held=sum(Orders_Transmitted$Action=="Buy")-
-          sum(Orders_Transmitted$Action=="Sell")
-        
-        # Order_to_Transmit
-        Order_to_Transmit=lapply(Strategy_Rules,
-                                 function(x){
-                                   do.call(OrderRules_Env[[paste0(x, "_Function")]],
-                                           c(list(Live_Data=Live_Data,
-                                                  Max_Orders=Max_Orders,
-                                                  Sigs_N=Sigs_N,
-                                                  N_Orders_held=N_Orders_held),
-                                             Params=list(Order_Rules[[x]])))
-                                 })
-        
-        # add Order_to_Transmit to Orders_Transmitted
-        Orders_Transmitted=rbind(Orders_Transmitted,
-                                 do.call(rbind, Order_to_Transmit),
-                                 fill=T)
-        
-        if(!is.null(do.call(rbind, Order_to_Transmit))){
-          print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
-        }
-        
-        # remove Signals
-        rm(Signals)
-        rm(Order_to_Transmit)
-      }
-    }
-    
-    # skip if there is no order transmitted
-    if(sum(Orders_Transmitted$Filled==0)==0){
-      next
-    }
-    
-    #***********
-    # fill order
-    #***********
-    # buy
-    if(sum(Orders_Transmitted$Action=="Buy"&
-           Orders_Transmitted$Filled==0)>0){ # if there is any transmitted buy order that has not been filled yet
-      
-      Unfilled_Buy_Position_Times=Orders_Transmitted[Action=="Buy"&Filled==0, Submit_Time]
-      Unfilled_Buy_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Buy_Position_Times, LmtPrice]
-      Which_Buy_Position_to_Fill=which(BarData[["Low"]][i+1]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
-      
-      # loc=Orders_Transmitted$Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill]
-      # Orders_Transmitted$Filled[loc]=1
-      # Orders_Transmitted$Filled_Time[loc]=BarData[i+1, Time]
-      
-      Orders_Transmitted[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
-                         `:=`(Filled_Time=BarData[i+1, Time],
-                              Filled=1)]
-      
-    }
-    
-    # sell
-    if(sum(Orders_Transmitted$Action=="Sell"&
-           Orders_Transmitted$Filled==0)>0){ # if there is any transmitted sell order that has not been filled yet
-      
-      Unfilled_Sell_Position_Times=Orders_Transmitted[Action=="Sell"&Filled==0, Submit_Time]
-      Unfilled_Sell_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Sell_Position_Times, LmtPrice]
-      
-      Which_Sell_Position_to_Fill=which(BarData[["High"]][i+1]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
-      
-      # loc=Orders_Transmitted$Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill]
-      # Orders_Transmitted$Filled[loc]=1
-      # Orders_Transmitted$Filled_Time[loc]=BarData[i+1, Time]
-      
-      Orders_Transmitted[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
-                         `:=`(Filled_Time=BarData[i+1, Time],
-                              Filled=1)]
-      
-    }
-    
-    # skip if there is no remaining untransmitted order
-    if(sum(Orders_Transmitted$Filled==0)==0){
-      next
-    }
-    
-    #*********************
-    # stop or early profit
-    #*********************
-    N_Remaining_Orders=sum(Orders_Transmitted$Action=="Buy"&Orders_Transmitted$Filled==1)-
-      sum(Orders_Transmitted$Action=="Sell"&Orders_Transmitted$Filled==1)
-    if(N_Remaining_Orders==0){ # orders are all balanced
-      next
-    }else if(N_Remaining_Orders>0){ # still on long
-      
-      Profit_Price=tail(Orders_Transmitted[Action=="Buy"&Filled==1], N_Remaining_Orders)[["LmtPrice"]][1]+Profit_Order
-      
-      if(Profit_Price<BarData[["Low"]][i+1]){
-        Profit_Ind=which(Orders_Transmitted[["Submit_Time"]]==Unfilled_Buy_Position_Times)
-        Orders_Transmitted[["Filled_Time"]][Profit_Ind]=BarData[["Time"]][i+1]
-        Orders_Transmitted[["Detail"]][Profit_Ind]="Early_Profit"
-        Orders_Transmitted[["LmtPrice"]][Profit_Ind]=Profit_Price
-        Orders_Transmitted[["Filled"]][Profit_Ind]=1
-      }
-      
-    }else if(N_Remaining_Orders<0){ # still on short
-      
-      Stop_Price=tail(Orders_Transmitted[Action=="Sell"&Filled==1], -N_Remaining_Orders)[["LmtPrice"]][1]+Stop_Order
-      
-      if(Stop_Price<BarData[["High"]][i+1]){
-        Stop_Ind=which(Orders_Transmitted[["Submit_Time"]]==Unfilled_Buy_Position_Times)
-        Orders_Transmitted[["Filled_Time"]][Stop_Ind]=BarData[["Time"]][i+1]
-        Orders_Transmitted[["Detail"]][Stop_Ind]="Stop"
-        Orders_Transmitted[["LmtPrice"]][Stop_Ind]=Stop_Price
-        Orders_Transmitted[["Filled"]][Stop_Ind]=1
-        
-        # Orders_Transmitted[Submit_Time==Unfilled_Buy_Position_Times,
-        #                    `:=`(Filled_Time=BarData[["Time"]][i+1],
-        #                         Detail="Stop",
-        #                         LmtPrice=Stop_Price,
-        #                         Filled=1)]
-        
-      }
-      
-    }
-    
-  }
-  
-  
-  #**********************
-  # calculate the balance
-  #**********************
-  Collapse_Orders_Transmitted=cbind(Orders_Transmitted[Action=="Buy", 
-                                                       c("Filled_Time", "LmtPrice")],
-                                    Orders_Transmitted[Action=="Sell", 
-                                                       c("Filled_Time", "LmtPrice")])
-  colnames(Collapse_Orders_Transmitted)=c("Buy_Time", "Buy_Price", "Sell_Time", "Sell_Price")
-  Duplicated_Row=unique(c(which(duplicated(Collapse_Orders_Transmitted[, c("Buy_Time", "Buy_Price")])), 
-                          which(duplicated(Collapse_Orders_Transmitted[, c("Sell_Time", "Sell_Price")]))))
-  if(length(Duplicated_Row)>0){
-    Collapse_Orders_Transmitted=Collapse_Orders_Transmitted[-Duplicated_Row, ]
-  }
-  
-  Ind_Profit=2*Collapse_Orders_Transmitted[, Sell_Price-Buy_Price]-2*0.52
-  Net_Profit=sum(Ind_Profit)
-  
-  
-  return(list(BarData=BarData,
-              Orders_Transmitted=Orders_Transmitted,
-              Ind_Profit=Ind_Profit,
-              Net_Profit=Net_Profit))
-  
-}
-
-
-
-
-
-#************************
-#
-# checkBlotterUpdate ----
-#
-#****************************************************************
-# a function in 'quantstrat' to check the update state of Blotter
-checkBlotterUpdate <- function(port.st = portfolio.st, 
-                               account.st = account.st, 
-                               verbose = TRUE) {
-  
-  ok <- TRUE
-  p <- getPortfolio(port.st)
-  a <- getAccount(account.st)
-  syms <- names(p$symbols)
-  port.tot <- sum(
-    sapply(
-      syms, 
-      FUN = function(x) eval(
-        parse(
-          text = paste("sum(p$symbols", 
-                       x, 
-                       "posPL.USD$Net.Trading.PL)", 
-                       sep = "$")))))
-  
-  port.sum.tot <- sum(p$summary$Net.Trading.PL)
-  
-  if(!isTRUE(all.equal(port.tot, port.sum.tot))) {
-    ok <- FALSE
-    if(verbose) print("portfolio P&L doesn't match sum of symbols P&L")
-  }
-  
-  initEq <- as.numeric(first(a$summary$End.Eq))
-  endEq <- as.numeric(last(a$summary$End.Eq))
-  
-  if(!isTRUE(all.equal(port.tot, endEq - initEq)) ) {
-    ok <- FALSE
-    if(verbose) print("portfolio P&L doesn't match account P&L")
-  }
-  
-  if(sum(duplicated(index(p$summary)))) {
-    ok <- FALSE
-    if(verbose)print("duplicate timestamps in portfolio summary")
-    
-  }
-  
-  if(sum(duplicated(index(a$summary)))) {
-    ok <- FALSE
-    if(verbose) print("duplicate timestamps in account summary")
-  }
-  return(ok)
-}
-
-
-
-
-
-#*******************
-#
-# Init_Strategy ----
-#
-#*****************************************************************************
-# initialize an environment with lists of parameters to function as a strategy
-#*****************************************************************************
-# Init_Strategy=function(Name){
-#   Strategy_temp=list(Indicators=list(),
-#                      Order_Rules=list(),
-#                      Models=list()) # model parameters
-#   class(Strategy_temp)="Strategy"
-#   assign(Name,
-#          Strategy_temp,
-#          envir=.GlobalEnv)
-# }
-Init_Strategy=function(Name,
-                       Max_Rows=50){
-  env_temp=environment()
-  class(env_temp)="Strategy"
-  
-  Indicators=list()
-  Order_Rules=list()
-  Models=list()
-  
-  assign(Name, env_temp, envir = .GlobalEnv)
-  
-  rm(list=c("Name", "env_temp"))
-}
-
-
-
-
-
-#*******************
-#
-# Add_Indicator ----
-#
-#*****************************
-# add an indicator to Strategy
-Add_Indicator=function(Strategy,
-                       Indicator=NULL,
-                       IndicatorParams=NULL){
-  
-  # check TTR installation
-  checkpackages("TTR")
-  
-  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
-    #Init.Strategy(Name=Strategy)
-    stop(paste0("No strategy found named ", Strategy))
-  }
-  
-  # TTR objects
-  TTR_Objects=ls("package:TTR")
-  
-  # check the availability of Indicator in TTR
-  if(!Indicator%in%TTR_Objects){
-    stop("Available indicators in TTR : ", paste(TTR_Objects, collapse=", "))
-  }
-  
-  
-  #*****************
-  # check parameters
-  #******************
-  # names of passed arguments
-  Passed_IndicatorParams_Names=names(IndicatorParams)
-  
-  # arguments/parameters in the function of Model in Models_Env
-  TTR_Params=unlist(as.list(args(Indicator)))
-  
-  # names
-  TTR_Params_Names=names(TTR_Params)
-  
-  # error if any of passed arguments is not defined in the function
-  if(sum(!Passed_IndicatorParams_Names%in%TTR_Params_Names>0)){
-    stop("Valid parameters : ", paste(TTR_Params_Names, collapse=", "))
-  }
-  
-  
-  #***********************************************
-  # assign default values to unspecified arguments
-  #***********************************************
-  # arguments/parameters with defined default values
-  TTR_Params_with_Default=TTR_Params[TTR_Params!=""]
-  TTR_Params_with_Default_Names=names(TTR_Params_with_Default)
-  
-  New_IndicatorParams=c(IndicatorParams,
-                        TTR_Params_with_Default[!TTR_Params_with_Default_Names%in%Passed_IndicatorParams_Names])
-  
-  # New_Passed_IndicatorParams_Names
-  New_Passed_IndicatorParams_Names=names(New_IndicatorParams)
-  
-  # error if any of passed arguments is not defined in the function
-  if(sum(!New_Passed_IndicatorParams_Names%in%TTR_Params_Names>0)){
-    stop("Valid parameters : ", paste(TTR_Params_Names, collapse=", "))
-  }
-  
-  # sort the arguments (not important)
-  Ordered_Arguments=New_Passed_IndicatorParams_Names[order(match(New_Passed_IndicatorParams_Names, TTR_Params_Names))]
-  New_IndicatorParams=New_IndicatorParams[Ordered_Arguments]
-  
-  # add an indicator to the corresponding strategy
-  Strategy_temp=get(Strategy, envir=.GlobalEnv)
-  Strategy_temp$Indicators[[Indicator]]=New_IndicatorParams
-  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
-}
-
-
-
-
-
-#***************
-#
-# Add_Model ----
-#
-#************************
-# add a model to Strategy
-Add_Model=function(Strategy,
-                   Model=NULL,
-                   ModelParams=NULL){
-  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
-    #Init.Strategy(Name=Strategy)
-    stop(paste0("No strategy found named ", Strategy))
-  }
-  
-  # available models
-  Available_Models=ls(Models_Env)
-  
-  # check the availability of Model in Models_Env
-  if(!Model%in%Available_Models){
-    stop("Available models : ", paste(Available_Models, collapse=", "))
-  }
-  
-  # pull the info for Model
-  Model_Info=Models_Env[[Model]]
-  
-  
-  # check required indicators
-  Strategy_temp=get(Strategy, envir=.GlobalEnv)
-  Essential_Indicators=Model_Info$Essential_Indicators
-  Excluded_Indicators=Essential_Indicators[!Essential_Indicators%in%names(Strategy_temp[["Indicators"]])]
-  if(length(Excluded_Indicators)>0){
-    stop("Add necessary indicators : ", paste(Excluded_Indicators, collapse=", "))
-  }
-  
-  
-  #*****************
-  # check parameters
-  #**************************
-  # names of passed arguments
-  Passed_Arguments_Names=names(ModelParams)
-  
-  # arguments/parameters in the function of Model in Models_Env
-  Model_Params=unlist(as.list(args(Model_Info$Function)))
-  
-  # names
-  Model_Params_Names=names(Model_Params)
-  
-  # error if any of passed arguments is not defined in the function
-  if(sum(!Passed_Arguments_Names%in%Model_Params_Names>0)){
-    stop("Valid parameters : ", paste(Model_Params_Names, collapse=", "))
-  }
-  
-  
-  #***********************************************
-  # assign default values to unspecified arguments
-  #***********************************************
-  # arguments/parameters with defined default values
-  Model_Params_with_Default=Model_Params[Model_Params!=""]
-  Model_Params_with_Default_Names=names(Model_Params_with_Default)
-  
-  New_ModelParams=c(ModelParams,
-                    Model_Params_with_Default[!Model_Params_with_Default_Names%in%Passed_Arguments_Names])
-  
-  # New_Passed_Arguments_Names
-  New_Passed_Arguments_Names=names(New_ModelParams)
-  
-  # sort the arguments (not important)
-  Ordered_Arguments=New_Passed_Arguments_Names[order(match(New_Passed_Arguments_Names, Model_Params_Names))]
-  New_ModelParams=New_ModelParams[Ordered_Arguments]
-  
-  # add a model to the corresponding strategy
-  Strategy_temp=get(Strategy, envir=.GlobalEnv)
-  Strategy_temp$Models[[Model]]=New_ModelParams
-  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
-}
-
-
-
-
-#*******************
-#
-# Add_OrderRule ----
-#
-#******************************
-# add an order rule to Strategy
-Add_OrderRule=function(Strategy,
-                       OrderRule=NULL,
-                       OrderRuleParams=NULL){
-  #
-  lapply(c("plyr"), checkpackages)
-  
-  if(!exists(paste0(Strategy), envir=.GlobalEnv)){
-    #Init.Strategy(Name=Strategy)
-    stop(paste0("No strategy found named ", Strategy))
-  }
-  
-  # available Orders
-  Available_OrderRules=ls(OrderRules_Env)
-  
-  # check the availability of OrderRule in OrderRules_Env
-  if(!OrderRule%in%Available_OrderRules){
-    stop("Available Orders : ", paste(Available_OrderRules, collapse=", "))
-  }
-  
-  # pull the info for OrderRule
-  OrderRules_Info=OrderRules_Env[[OrderRule]]
-  
-  #********************
-  # check element names
-  #********************
-  OrderRules_Info=as.relistable(OrderRules_Info)
-  All.default.elements=unlist(OrderRules_Info)
-  #
-  if(is.null(OrderRuleParams)){
-    OrderRuleParams=OrderRules_Info
-  }
-  
-  OrderRuleParams=as.relistable(OrderRuleParams)
-  All.passed.elements=unlist(OrderRuleParams)
-  #
-  All.default.elements.concat.names=names(All.default.elements)
-  All.passed.elements.concat.names=names(All.passed.elements)
-  #
-  All.default.elements.names=unique(unlist(strsplit(All.default.elements.concat.names, "[.]")))
-  All.passed.elements.names=unique(unlist(strsplit(All.passed.elements.concat.names, "[.]")))
-  if(sum(!All.passed.elements.names%in%All.default.elements.names)>0){
-    stop("Invalid parameters entered : ",
-         paste(All.passed.elements.names[!All.passed.elements.names%in%All.default.elements.names], collapse=", "),
-         
-         "\n
-         Valid parameters : ",
-         paste(All.default.elements.names, collapse=", "))
-  }
-  
-  Passed.string.split=strsplit(All.passed.elements.concat.names, "[.]")
-  
-  Default.string.split=strsplit(All.default.elements.concat.names, "[.]")
-  
-  # depth
-  # rbind.fill(lapply(Passed.string.split,
-  #                   function(y){as.data.frame(t(y))}))
-  # rbind.fill(lapply(Default.string.split,
-  #                   function(y){as.data.frame(t(y))}))
-  
-  #****************************
-  # compare values at each node
-  #****************************
-  comparing.table=data.table(Default=names(All.default.elements),
-                             Value=All.default.elements) %>%
-    left_join(data.table(Default=names(All.passed.elements),
-                         Value=All.passed.elements),
-              by="Default")
-  
-  # locations of elements with different values
-  diff.loc=which(comparing.table$Value.x!=comparing.table$Value.y)
-  
-  # update the values in the default list
-  for(ui in diff.loc){
-    All.default.elements[ui]=comparing.table[ui, Value.y]
-  }
-  
-  # 
-  New_ModelParams=relist(All.default.elements)
-  #New_ModelParams=as.data.table(New_ModelParams) %>% as.list()
-  
-  # add a model to the corresponding strategy
-  Strategy_temp=get(Strategy, envir=.GlobalEnv)
-  
-  # Min_Sig_N must be smaller or equal to the number of models
-  if(OrderRule=="Long"){
-    if((length(names(Strategy_temp$Models))<New_ModelParams[["BuyToOpen"]][["Min_Sig_N"]])|
-       (length(names(Strategy_temp$Models))<New_ModelParams[["SellToClose"]][["Min_Sig_N"]])){
-      stop("Min_Sig_N must be smaller or equal to the number of models")
-    }
-  }
-  if(OrderRule=="Short"){
-    if((length(names(Strategy_temp$Models))<New_ModelParams[["SellToOpen"]][["Min_Sig_N"]])|
-       (length(names(Strategy_temp$Models))<New_ModelParams[["BuyToClose"]][["Min_Sig_N"]])){
-      stop("Min_Sig_N must be smaller or equal to the number of models")
-    }
-  }
-  
-  Strategy_temp$Order_Rules[[OrderRule]]=New_ModelParams
-  assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
-}
 
 
