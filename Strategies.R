@@ -69,8 +69,9 @@ Add_Model(Strategy="Strategy_Simple_BBands",
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="General",
               OrderRuleParams=list(Max_Orders=1,
-                                   Stop_Order=20,
-                                   Profit_Order=20)) # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
+                                   Scenario="Negative", # Positive : early profit is prioritized over loss cut
+                                   Stop_Order=2000,
+                                   Profit_Order=2000)) # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
@@ -87,6 +88,7 @@ Add_OrderRule(Strategy="Strategy_Simple_BBands",
                                    BuyToClose=list(OrderType="MKT",
                                                    Quantity=1,
                                                    Min_Sig_N=1))) # minimum number of positive signals from models to transmit
+
 
 
 

@@ -17,6 +17,8 @@ OrderRules_Env=new.env()
 OrderRules_Env$General=list(
   Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
   #Position_Direction="both",
+  Scenario="Positive", # Positive : early profit is prioritized over loss cut
+                       # Negative : loss cut is prioritized over early profit
   Stop_Order=10,
   Profit_Order=10
 )
