@@ -35,15 +35,15 @@ Add_Indicator(Strategy="Strategy_Simple_BBands",
 #********************************************************************************************
 Add_Model(Strategy="Strategy_Simple_BBands",
           Model="Simple_BBands_1",
-          ModelParams=list(Long_Consec_Times=2,
+          ModelParams=list(Long_Consec_Times=3,
                            Short_Consec_Times=1,
                            Long_PctB=0.1,
-                           Short_PctB=0.9))
+                           Short_PctB=0.8))
 Add_Model(Strategy="Strategy_Simple_BBands",
           Model="Simple_BBands_2",
           ModelParams=list(Long_Consec_Times=1,
-                           Short_Consec_Times=2,
-                           Long_PctB=0.1,
+                           Short_Consec_Times=3,
+                           Long_PctB=0.2,
                            Short_PctB=0.9))
 
 # Add_Model(Strategy="Strategy_Simple_BBands",
@@ -70,8 +70,8 @@ Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="General",
               OrderRuleParams=list(Max_Orders=1,
                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
-                                   Stop_Order=2000,
-                                   Profit_Order=2000)) # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
+                                   Stop_Order=400,
+                                   Profit_Order=10000)) # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
 Add_OrderRule(Strategy="Strategy_Simple_BBands",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",

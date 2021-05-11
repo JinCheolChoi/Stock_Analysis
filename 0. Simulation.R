@@ -13,10 +13,10 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-# working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-# data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
-data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+# working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+# data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
 
 
 #****************
@@ -42,17 +42,17 @@ for(pack in c("IBrokers",
   lapply(pack, checkpackages)
 }
 
-# import strategies
-source(paste0(working.dir, "Strategies.R"))
-
 # import data
 Get_Data(Symbols=list("MNQ", "SPY"),
          Data_Dir=data.dir,
-         BarSize=60*30)
+         BarSize=60*1)
 
 # bar data
 # SPY
 BarData=MNQ
+
+# import strategies
+source(paste0(working.dir, "Strategies.R"))
 
 #*********************
 #
@@ -64,14 +64,14 @@ Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
 
 # run Backtesting
 T1=system.time({
-  Sim_Results=Live_Trading_Imitator(BarData<-MNQ,
-                                    Strategy<-get(Strategies[1]))
+  Sim_Results=Live_Trading_Imitator(BarData=MNQ,
+                                    Strategy=get(Strategies[1]))
 })
 Sim_Results
 T1
 
-
-
+Strategy$Order_Rules$General
+1052.68
 # run Backtesting
 T2=system.time({
   Sim_Results=Backtesting(BarData<-MNQ,

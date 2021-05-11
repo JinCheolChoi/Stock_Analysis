@@ -742,6 +742,8 @@ Live_Trading_Imitator=function(BarData,
                          `:=`(Filled_Time=BarData[i+1, Time],
                               Filled=1)]
       
+      # if not filled, just cancel the transmit
+      Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
     }
     
     # sell
@@ -761,6 +763,8 @@ Live_Trading_Imitator=function(BarData,
                          `:=`(Filled_Time=BarData[i+1, Time],
                               Filled=1)]
       
+      # if not filled, just cancel the transmit
+      Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
     }
     
     
