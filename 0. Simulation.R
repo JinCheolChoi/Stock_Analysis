@@ -67,10 +67,10 @@ T1=system.time({
   Sim_Results=Live_Trading_Imitator(BarData<-MNQ,
                                     Strategy<-get(Strategies[1]))
 })
-T1
 Sim_Results
+T1
 
-
+2144.06
 # run Backtesting
 T2=system.time({
   Sim_Results=Backtesting(BarData<-MNQ,
