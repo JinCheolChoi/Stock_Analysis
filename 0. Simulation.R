@@ -45,7 +45,7 @@ for(pack in c("IBrokers",
 # import data
 Get_Data(Symbols=list("MNQ", "SPY"),
          Data_Dir=data.dir,
-         BarSize=60*1)
+         BarSize=60*5)
 
 # bar data
 # SPY
