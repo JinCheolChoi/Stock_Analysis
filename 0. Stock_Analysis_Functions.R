@@ -292,7 +292,7 @@ Get_5SecsBarHistData=function(Symbol,
   if(exists("5SecsBarHistData")){rm(`5SecsBarHistData`, envir=.GlobalEnv)}
   
   # import
-  for(Date in as.character(seq(as.Date(First_Date), Last_Date, by="day"))){
+  for(Date in as.character(seq(as.Date(First_Date), as.Date(Last_Date), by="day"))){
     File_name=paste0(Symbol, "_", Date, ".csv")
     if(!file.exists(paste0(Data_Dir, Symbol, "/", File_name))){
       next
