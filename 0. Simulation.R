@@ -45,7 +45,9 @@ for(pack in c("IBrokers",
 # import data
 Get_Data(Symbols=list("MNQ", "SPY"),
          Data_Dir=data.dir,
-         BarSize=60*5)
+         BarSize=60*5,
+         Convert_Tz=T,
+         First_Date="2021-03-01")
 
 # bar data
 # SPY
@@ -62,21 +64,60 @@ source(paste0(working.dir, "Strategies.R"))
 # all strategies saved in the global environment
 Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
 
+
 # run Backtesting
 T1=system.time({
   Sim_Results=Live_Trading_Imitator(BarData=MNQ,
-                                    Strategy=get(Strategies[1]))
+                                    Strategy=get(Strategies[which(Strategies=="Test_Strategy")]))
 })
 Sim_Results
 T1
+3731.6
+1472.32
+RSIs=RSI(BarData$Close, n=9)
+RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])]
+RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][2])]
 
-Strategy$Order_Rules$General
-1052.68
+
+RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])]
+RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][2])]
+
+RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][5])]
+RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][6])]
+
+MNQ[, RSI:=RSI(Close, n=9)]
+MNQ[, Shift_Close:=shift(Close, 1)]
+MNQ[, Shift_RSI:=shift(RSI, 1)]
+MNQ[, Diff_Close:=Close-Shift_Close]
+MNQ[, Trend:=sign(Diff_Close)]
+MNQ[, Shift_Trend:=shift(Trend, 1)]
+MNQ[, Diff_RSI:=RSI-Shift_RSI]
+MNQ[, BBands:=BBands(Close)[, 4]]
+MNQ[, Shift_BBands:=shift(BBands, 1)]
+
+MNQ[, .SD, .SDcols=c("Shift_RSI", "Diff_Close")] %>% plot
+MNQ[, .SD, .SDcols=c("Shift_RSI", "Diff_Close")] %>% cor(use="complete.obs")
+MNQ[, .SD, .SDcols=c("Shift_BBands", "Diff_Close")] %>% plot
+MNQ[, .SD, .SDcols=c("Shift_BBands", "Diff_Close")] %>% cor(use="complete.obs")
+
+
+plot(MNQ[, .SD, .SDcols=c("Diff_Close", "")])
+
+MNQ[, .SD, .SDcols=c("Diff_Close", "Shift_RSI", "Shift_BBands", "Shift_Trend")]
+
+which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])
+
+summary(RSIs)
+sum((RSIs<=20), na.rm=T)/length(RSIs[!is.na(RSIs)])*100
+sum((RSIs>=(80)), na.rm=T)/length(RSIs[!is.na(RSIs)])*100
+
+
 # run Backtesting
 T2=system.time({
   Sim_Results=Backtesting(BarData<-MNQ,
                           Strategy<-get(Strategies[1]))
 })
+
 
 
 
