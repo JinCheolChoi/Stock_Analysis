@@ -22,7 +22,7 @@ data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
 #****************
 # data parameters
 #****************
-Symbols=c("MNQ", "SPY")
+Symbols=c("MNQ")
 
 
 #*****************
@@ -43,11 +43,10 @@ for(pack in c("IBrokers",
 }
 
 # import data
-Get_Data(Symbols=list("MNQ", "SPY"),
+Get_Data(Symbols=list("MNQ"),
          Data_Dir=data.dir,
          BarSize=60*5,
-         Convert_Tz=T,
-         First_Date="2021-03-01")
+         Convert_Tz=T)
 
 # bar data
 # SPY
@@ -100,8 +99,6 @@ MNQ[, .SD, .SDcols=c("Shift_RSI", "Diff_Close")] %>% cor(use="complete.obs")
 MNQ[, .SD, .SDcols=c("Shift_BBands", "Diff_Close")] %>% plot
 MNQ[, .SD, .SDcols=c("Shift_BBands", "Diff_Close")] %>% cor(use="complete.obs")
 
-
-plot(MNQ[, .SD, .SDcols=c("Diff_Close", "")])
 
 MNQ[, .SD, .SDcols=c("Diff_Close", "Shift_RSI", "Shift_BBands", "Shift_Trend")]
 

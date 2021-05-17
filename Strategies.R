@@ -36,10 +36,10 @@ Add_Indicator(Strategy="Test_Strategy",
 #********************************************************************************************
 # add model (to run in combination with other included models to decide to transmit an order)
 #********************************************************************************************
-Add_Model(Strategy="Test_Strategy",
-          Model="Trend",
-          ModelParams=c(Interval=10,
-                        Extent=0))
+# Add_Model(Strategy="Test_Strategy",
+#           Model="Trend",
+#           ModelParams=c(Interval=10,
+#                         Extent=0))
 Add_Model(Strategy="Test_Strategy",
           Model="Simple_BBands_1",
           ModelParams=list(Long_Consec_Times=1,
@@ -83,18 +83,18 @@ Add_OrderRule(Strategy="Test_Strategy",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
                                                   Quantity=1,
-                                                  Min_Sig_N=3),
+                                                  Min_Sig_N=2),
                                    SellToClose=list(OrderType="MKT",
                                                     Quantity=1,
-                                                    Min_Sig_N=5)))
+                                                    Min_Sig_N=4)))
 Add_OrderRule(Strategy="Test_Strategy",
               OrderRule="Short",
               OrderRuleParams=list(SellToOpen=list(OrderType="MKT",
                                                    Quantity=1,
-                                                   Min_Sig_N=3), # minimum number of positive signals from models to transmit
+                                                   Min_Sig_N=2), # minimum number of positive signals from models to transmit
                                    BuyToClose=list(OrderType="MKT",
                                                    Quantity=1,
-                                                   Min_Sig_N=5))) # minimum number of positive signals from models to transmit
+                                                   Min_Sig_N=4))) # minimum number of positive signals from models to transmit
 
 
 
