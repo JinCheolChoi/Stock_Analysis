@@ -592,7 +592,7 @@ Live_Trading_Imitator=function(BarData,
                    High=NULL, Low=NULL, Close=NULL,
                    Volume=NULL, Count=NULL)]
   for(i in 1:(nrow(BarData)-1)){
-    # i=22
+    # i=1477
     Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
     
     #***********************************************
@@ -752,7 +752,7 @@ Live_Trading_Imitator=function(BarData,
       
       # if not filled, just cancel the transmit
       if(sum(Orders_Transmitted[["Filled"]]==0)){
-        if((BarData[i+1, Time]-Orders_Transmitted[Filled==0, Submit_Time])>1){
+        if(as.numeric(BarData[i+1, Time]-Orders_Transmitted[Filled==0, Submit_Time])>60*60){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
         }
       }
@@ -774,7 +774,7 @@ Live_Trading_Imitator=function(BarData,
       
       # if not filled, just cancel the transmit
       if(sum(Orders_Transmitted[["Filled"]]==0)){
-        if((BarData[i+1, Time]-Orders_Transmitted[Filled==0, Submit_Time])>1){
+        if(as.numeric(BarData[i+1, Time]-Orders_Transmitted[Filled==0, Submit_Time])>60*60){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
         }
       }
