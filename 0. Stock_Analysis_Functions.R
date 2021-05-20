@@ -754,6 +754,7 @@ Live_Trading_Imitator=function(BarData,
       if(sum(Orders_Transmitted[["Filled"]]==0)){
         if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>60*60){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
+          print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
       }
       
@@ -776,6 +777,7 @@ Live_Trading_Imitator=function(BarData,
       if(sum(Orders_Transmitted[["Filled"]]==0)){
         if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>60*60){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
+          print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
       }
       
