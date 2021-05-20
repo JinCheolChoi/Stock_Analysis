@@ -752,7 +752,7 @@ Live_Trading_Imitator=function(BarData,
       
       # if not filled, just cancel the transmit
       if(sum(Orders_Transmitted[["Filled"]]==0)){
-        if(as.numeric(BarData[i+1, Time]-Orders_Transmitted[Filled==0, Submit_Time])>60*60){
+        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>60*60){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
         }
       }
@@ -774,7 +774,7 @@ Live_Trading_Imitator=function(BarData,
       
       # if not filled, just cancel the transmit
       if(sum(Orders_Transmitted[["Filled"]]==0)){
-        if(as.numeric(BarData[i+1, Time]-Orders_Transmitted[Filled==0, Submit_Time])>60*60){
+        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>60*60){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
         }
       }
@@ -782,7 +782,6 @@ Live_Trading_Imitator=function(BarData,
     }
     
   }
-  
   
   #**********************
   # calculate the balance
