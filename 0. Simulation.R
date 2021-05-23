@@ -14,14 +14,15 @@ rm(list=ls())
 # working directory
 #******************
 working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+# working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+# data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
 
 
 #****************
 # data parameters
 #****************
-Symbols=c("MNQ", "SPY")
+Symbols=c("MNQ")
 
 
 #*****************
@@ -29,8 +30,8 @@ Symbols=c("MNQ", "SPY")
 # preliminary step
 #
 #*******************
-# import strategies
-source(paste0(working.dir, "Strategies.R"))
+# load functions
+source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
 
 # import libraries
 for(pack in c("IBrokers",
@@ -41,16 +42,18 @@ for(pack in c("IBrokers",
   lapply(pack, checkpackages)
 }
 
-
 # import data
-Get_Data(Symbols=list("MNQ", "SPY"),
+Get_Data(Symbols=list("MNQ"),
          Data_Dir=data.dir,
-         BarSize=60*1)
+         BarSize=60*5,
+         Convert_Tz=T)
 
 # bar data
 # SPY
 BarData=MNQ
 
+# import strategies
+source(paste0(working.dir, "Strategies.R"))
 
 #*********************
 #
@@ -60,18 +63,59 @@ BarData=MNQ
 # all strategies saved in the global environment
 Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
 
+
 # run Backtesting
 T1=system.time({
-  Sim_Results=Live_Trading_Imitator(BarData<-MNQ,
-                                    Strategy<-get(Strategies[1]))
+  Sim_Results=Live_Trading_Imitator(BarData=MNQ,
+                                    Strategy=get(Strategies[which(Strategies=="Test_Strategy")]))
 })
+Sim_Results
+T1
+3731.6
+1472.32
+RSIs=RSI(BarData$Close, n=9)
+RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])]
+RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][2])]
+
+
+RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])]
+RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][2])]
+
+RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][5])]
+RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][6])]
+
+MNQ[, RSI:=RSI(Close, n=9)]
+MNQ[, Shift_Close:=shift(Close, 1)]
+MNQ[, Shift_RSI:=shift(RSI, 1)]
+MNQ[, Diff_Close:=Close-Shift_Close]
+MNQ[, Trend:=sign(Diff_Close)]
+MNQ[, Shift_Trend:=shift(Trend, 1)]
+MNQ[, Diff_RSI:=RSI-Shift_RSI]
+MNQ[, BBands:=BBands(Close)[, 4]]
+MNQ[, Shift_BBands:=shift(BBands, 1)]
+
+MNQ[, .SD, .SDcols=c("Shift_RSI", "Diff_Close")] %>% plot
+MNQ[, .SD, .SDcols=c("Shift_RSI", "Diff_Close")] %>% cor(use="complete.obs")
+MNQ[, .SD, .SDcols=c("Shift_BBands", "Diff_Close")] %>% plot
+MNQ[, .SD, .SDcols=c("Shift_BBands", "Diff_Close")] %>% cor(use="complete.obs")
+
+
+MNQ[, .SD, .SDcols=c("Diff_Close", "Shift_RSI", "Shift_BBands", "Shift_Trend")]
+
+which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])
+
+summary(RSIs)
+sum((RSIs<=20), na.rm=T)/length(RSIs[!is.na(RSIs)])*100
+sum((RSIs>=(80)), na.rm=T)/length(RSIs[!is.na(RSIs)])*100
+
+
 # run Backtesting
 T2=system.time({
   Sim_Results=Backtesting(BarData<-MNQ,
                           Strategy<-get(Strategies[1]))
 })
-T1
-T2
+
+
 
 
 #***********************************************
