@@ -638,10 +638,11 @@ Live_Trading_Imitator=function(BarData,
                                    }))
       
       # Signals are assigned opposite if Trend=TRUE
-      if(Trend==TRUE){
-        Signals=Signals[c(2, 1), ]
+      if(nrow(Signals)==2){
+        if(Trend==TRUE){
+          Signals[, which(sapply(Signals, function(x) sum(x==T)>0)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)>0))]
+        }
       }
-      
       
       #***************
       # transmit order
