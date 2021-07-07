@@ -71,8 +71,8 @@ T1=system.time({
 })
 Sim_Results
 T1
-3731.6
-1472.32
+4159.12
+
 RSIs=RSI(BarData$Close, n=9)
 RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])]
 RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][2])]
