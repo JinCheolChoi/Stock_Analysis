@@ -707,7 +707,7 @@ Live_Trading_Imitator=function(BarData,
                                  do.call(rbind, Order_to_Transmit),
                                  fill=T)
         
-        print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+        #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
       }
       
       # remove Orders_Transmitted
@@ -743,7 +743,7 @@ Live_Trading_Imitator=function(BarData,
                                    fill=T)
         }
       }
-      print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+      #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
       
       # remove Orders_Transmitted
       rm(Order_to_Transmit)
@@ -773,7 +773,7 @@ Live_Trading_Imitator=function(BarData,
       if(sum(Orders_Transmitted[["Filled"]]==0)){
         if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>60*60){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
-          print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
+          #print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
       }
       
@@ -796,7 +796,7 @@ Live_Trading_Imitator=function(BarData,
       if(sum(Orders_Transmitted[["Filled"]]==0)){
         if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>60*60){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
-          print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
+          #print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
       }
       

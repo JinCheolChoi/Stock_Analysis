@@ -41,26 +41,26 @@ Add_Model(Strategy="Test_Strategy",
           Model="Simple_BBands_1",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
-                           Long_PctB=0.25,
+                           Long_PctB=Params$Simple_BBands_1_Long_PctB[i],
                            Short_PctB=Inf))
 Add_Model(Strategy="Test_Strategy",
           Model="Simple_BBands_2",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
                            Long_PctB=-Inf,
-                           Short_PctB=0.7))
+                           Short_PctB=Params$Simple_BBands_2_Short_PctB[i]))
 Add_Model(Strategy="Test_Strategy",
           Model="Simple_RSI_1",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
-                           Long_RSI=25,
+                           Long_RSI=Params$Simple_BBands_1_Long_PctB[i]*100,
                            Short_RSI=Inf))
 Add_Model(Strategy="Test_Strategy",
           Model="Simple_RSI_2",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
                            Long_RSI=-Inf,
-                           Short_RSI=70))
+                           Short_RSI=Params$Simple_BBands_2_Short_PctB[i]*100))
 Add_Model(Strategy="Test_Strategy",
           Model="Trend",
           ModelParams=list(Interval=5,
@@ -76,8 +76,8 @@ Add_OrderRule(Strategy="Test_Strategy",
               OrderRule="General",
               OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
-                                   Stop_Order=300,
-                                   Profit_Order=10,
+                                   Stop_Order=Params$Stop_Order[i],
+                                   Profit_Order=Params$Profit_Order[i],
                                    Trend=TRUE))
 Add_OrderRule(Strategy="Test_Strategy",
               OrderRule="Long",
