@@ -46,7 +46,8 @@ for(pack in c("IBrokers",
 Get_Data(Symbols=list("MNQ"),
          Data_Dir=data.dir,
          BarSize=60*5,
-         Convert_Tz=T)
+         Convert_Tz=T,
+         Filter=T)
 
 # bar data
 # SPY
@@ -54,7 +55,6 @@ BarData=MNQ
 
 # import strategies
 source(paste0(working.dir, "Strategies.R"))
-
 
 #*********************
 #
@@ -64,15 +64,22 @@ source(paste0(working.dir, "Strategies.R"))
 # all strategies saved in the global environment
 Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
 
-
 # run Backtesting
 T1=system.time({
   Sim_Results=Live_Trading_Imitator(BarData=MNQ,
-                                    Strategy=get(Strategies[which(Strategies=="Best_Strategy")]))
+                                    Strategy=get(Strategies[which(Strategies=="Test_Strategy")]))
 })
 Sim_Results$Net_Profit
-T1
+
+#Sim_Results$Ind_Profit[, .SD, .SDcols=c("Time", "Cum_Profit")] %>% plot(type='o')
+Sim_Results$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o')
+unique(Sim_Results$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")])
+unique(Sim_Results$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")]) %>% plot(type="o")
+
 5027.28
+4901.04
+
+3566.96
 
 RSIs=RSI(BarData$Close, n=9)
 RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])]
