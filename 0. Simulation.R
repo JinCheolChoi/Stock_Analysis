@@ -55,6 +55,7 @@ BarData=MNQ
 # import strategies
 source(paste0(working.dir, "Strategies.R"))
 
+
 #*********************
 #
 # simulation algorithm
@@ -67,11 +68,11 @@ Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
 # run Backtesting
 T1=system.time({
   Sim_Results=Live_Trading_Imitator(BarData=MNQ,
-                                    Strategy=get(Strategies[which(Strategies=="Test_Strategy")]))
+                                    Strategy=get(Strategies[which(Strategies=="Best_Strategy")]))
 })
-Sim_Results
+Sim_Results$Net_Profit
 T1
-4159.12
+5027.28
 
 RSIs=RSI(BarData$Close, n=9)
 RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])]
