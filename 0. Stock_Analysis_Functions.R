@@ -592,7 +592,7 @@ Live_Trading_Imitator=function(BarData,
                    High=NULL, Low=NULL, Close=NULL,
                    Volume=NULL, Count=NULL)]
   for(i in 1:(nrow(BarData)-1)){
-    # i=1477
+    # i=134
     Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
     
     #***********************************************
@@ -800,9 +800,11 @@ Live_Trading_Imitator=function(BarData,
     Collapse_Orders_Transmitted=Collapse_Orders_Transmitted[-Duplicated_Row, ]
   }
   
-  Ind_Profit=2*Collapse_Orders_Transmitted[, Sell_Price-Buy_Price]-2*0.52
-  Net_Profit=sum(Ind_Profit)
-  
+  Collapse_Orders_Transmitted[, Profit:=2*(Sell_Price-Buy_Price)-2*0.52]
+  Collapse_Orders_Transmitted[, Cum_Profit:=cumsum(Profit)]
+  Collapse_Orders_Transmitted[, Time:=max(Buy_Time, Sell_Time), by=1:nrow(Collapse_Orders_Transmitted)]
+  Ind_Profit=Collapse_Orders_Transmitted[, .SD, .SDcols=c("Time", "Profit", "Cum_Profit")]
+  Net_Profit=tail(Collapse_Orders_Transmitted$Cum_Profit, 1)
   
   return(list(BarData=BarData,
               Orders_Transmitted=Orders_Transmitted,
@@ -810,8 +812,6 @@ Live_Trading_Imitator=function(BarData,
               Net_Profit=Net_Profit))
   
 }
-
-
 
 
 
@@ -1128,7 +1128,9 @@ Backtesting=function(BarData,
 
 
 
-
+#****************************
+# Profit_Loss_Cut_Transmitted
+#****************************
 Profit_Loss_Cut_Transmitted=function(Orders_Transmitted, Next_BarData, Profit_Order, Stop_Order){
   N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
     sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
