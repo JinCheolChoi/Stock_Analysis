@@ -48,8 +48,8 @@ System_Break=function(Rerun_Trading=0,
      (CurrentTime>=(as.ITime("13:10:00"))&
       CurrentTime<=(as.ITime("13:15:00")))){
     
-    # (1) for 25 mins from 13:10:00 to 13:35:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
-    Duration=60*25
+    # (1) for 23 mins from 13:10:00 to 13:33:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
+    Duration=60*23
     
     # put the system to sleep
     message("market closed : 13:15:00 to 13:30:00 PDT")
@@ -61,8 +61,8 @@ System_Break=function(Rerun_Trading=0,
      (CurrentTime>=(as.ITime("13:50:00"))&
       CurrentTime<=(as.ITime("14:00:00")))){
     
-    # (2) for 75 mins from 13:50:00 to 15:05:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
-    Duration=60*75
+    # (2) for 73 mins from 13:50:00 to 15:03:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
+    Duration=60*73
     
     # put the system to sleep
     message("market closed : 14:00:00 to 15:00:00 PDT")
@@ -246,7 +246,8 @@ Get_Data=function(Symbols,
                   BarSize=60*30,
                   First_Date="2021-01-20",
                   Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles")),
-                  Convert_Tz=F){
+                  Convert_Tz=F,
+                  Filter=TRUE){
   #************
   # import data
   #************
@@ -256,7 +257,8 @@ Get_Data=function(Symbols,
                          Data_Dir=Data_Dir,
                          First_Date=First_Date,
                          Last_Date=Last_Date,
-                         Convert_Tz=F)
+                         Convert_Tz=F,
+                         Filter=Filter)
     
     # collapse data to the chosen-sized bar data
     assign(Symbol, 
@@ -284,7 +286,8 @@ Get_5SecsBarHistData=function(Symbol,
                               Data_Dir,
                               First_Date,
                               Last_Date,
-                              Convert_Tz=F){
+                              Convert_Tz=F,
+                              Filter=T){
   # data table
   lapply("data.table", checkpackages)
   
@@ -312,6 +315,21 @@ Get_5SecsBarHistData=function(Symbol,
     `5SecsBarHistData`[, Time:=as.POSIXct(format(as.POSIXct(Time),
                                                  tz="America/Los_Angeles"),
                                           tz="America/Los_Angeles")]
+  }
+  
+  # remove data while system is halted during temporary market close times
+  if(Filter==T){
+    #(1) for 23 mins from 13:10:00 to 13:33:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
+    #(2) for 73 mins from 13:50:00 to 15:03:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
+    # (ToDay=="Friday" & CurrentTime>=(as.ITime("13:50:00"))) | # the market closes at 14:00:00 PDT on Friday
+    #   (ToDay=="Saturday") | # the market closes on Saturday
+    #   (ToDay=="Sunday" & CurrentTime<(as.ITime("15:05:00")))
+    `5SecsBarHistData`[, Daily_Time:=strftime(Time, format="%H:%M:%S", tz="America/Los_Angeles")]
+    `5SecsBarHistData`<<-`5SecsBarHistData`[!(Daily_Time>="13:10:00" &
+                                                Daily_Time<"13:35:00"), ]
+    `5SecsBarHistData`<<-`5SecsBarHistData`[!(Daily_Time>="13:50:00" &
+                                                Daily_Time<"15:05:00"), ]
+    `5SecsBarHistData`[, Daily_Time:=NULL]
   }
 }
 
@@ -592,7 +610,7 @@ Live_Trading_Imitator=function(BarData,
                    High=NULL, Low=NULL, Close=NULL,
                    Volume=NULL, Count=NULL)]
   for(i in 1:(nrow(BarData)-1)){
-    # i=134
+    # i=30
     Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
     
     #***********************************************
@@ -689,7 +707,7 @@ Live_Trading_Imitator=function(BarData,
                                  do.call(rbind, Order_to_Transmit),
                                  fill=T)
         
-        print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+        #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
       }
       
       # remove Orders_Transmitted
@@ -725,7 +743,7 @@ Live_Trading_Imitator=function(BarData,
                                    fill=T)
         }
       }
-      print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+      #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
       
       # remove Orders_Transmitted
       rm(Order_to_Transmit)
@@ -755,7 +773,7 @@ Live_Trading_Imitator=function(BarData,
       if(sum(Orders_Transmitted[["Filled"]]==0)){
         if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>60*60){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
-          print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
+          #print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
       }
       
@@ -778,7 +796,7 @@ Live_Trading_Imitator=function(BarData,
       if(sum(Orders_Transmitted[["Filled"]]==0)){
         if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>60*60){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
-          print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
+          #print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
       }
       
@@ -802,8 +820,13 @@ Live_Trading_Imitator=function(BarData,
   
   Collapse_Orders_Transmitted[, Profit:=2*(Sell_Price-Buy_Price)-2*0.52]
   Collapse_Orders_Transmitted[, Cum_Profit:=cumsum(Profit)]
-  Collapse_Orders_Transmitted[, Time:=max(Buy_Time, Sell_Time), by=1:nrow(Collapse_Orders_Transmitted)]
-  Ind_Profit=Collapse_Orders_Transmitted[, .SD, .SDcols=c("Time", "Profit", "Cum_Profit")]
+  Collapse_Orders_Transmitted[, Time:=as.POSIXct(format(as.POSIXct(max(Buy_Time, Sell_Time)),
+                                                        tz="America/Los_Angeles")), by=1:nrow(Collapse_Orders_Transmitted)]
+  Collapse_Orders_Transmitted[, Date:=as.Date(Time, tz="America/Los_Angeles")]
+  Collapse_Orders_Transmitted[, Daily_Cum_Profit:=Cum_Profit[Time==max(Time)], by="Date"]
+  Collapse_Orders_Transmitted[, Daily_Profit:=sum(Profit), by="Date"]
+  
+  Ind_Profit=Collapse_Orders_Transmitted[, .SD, .SDcols=c("Time", "Date", "Profit", "Daily_Profit", "Cum_Profit", "Daily_Cum_Profit")]
   Net_Profit=tail(Collapse_Orders_Transmitted$Cum_Profit, 1)
   
   return(list(BarData=BarData,
@@ -2057,7 +2080,8 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
   }
   eW <- list(.Data = .Data, get.Data = get.Data, assign.Data = assign.Data, 
              remove.Data = remove.Data, tickPrice = tickPrice, tickSize = tickSize, 
-             tickOptionComputation = tickOptioLive_Trading_ImitatornComputation, tickGeneric = tickGeneric, 
+             #tickOptionComputation = tickOptioLive_Trading_ImitatornComputation,
+             tickGeneric = tickGeneric, 
              tickString = tickString, tickEFP = tickEFP, orderStatus = orderStatus, 
              errorMessage = errorMessage, openOrder = openOrder, 
              openOrderEnd = openOrderEnd, updateAccountValue = updateAccountValue, 

@@ -29,6 +29,9 @@ Models_Env$Trend=list(
         Linear_Model=lm(as.numeric(tail(Data[, "Close"], Interval))~seq(1:Interval))
         Trend=Linear_Model$coefficients[2]
         
+        Long_Sig=FALSE
+        Short_Sig=FALSE
+        
         if(abs(Trend)>=Extent){
           # if there is an upward trend, short signal becomes positive with an expectation that the trend will soon turn bearish
           if(Trend>0){
@@ -42,10 +45,10 @@ Models_Env$Trend=list(
             Short_Sig=FALSE
           }
           
-          # return signals
-          return(c(Long_Sig, Short_Sig))
         }
         
+        # return signals
+        return(c(Long_Sig, Short_Sig))
       }
       
     }

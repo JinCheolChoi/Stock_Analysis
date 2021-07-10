@@ -46,33 +46,75 @@ for(pack in c("IBrokers",
 Get_Data(Symbols=list("MNQ"),
          Data_Dir=data.dir,
          BarSize=60*5,
-         Convert_Tz=T)
+         Convert_Tz=T,
+         Filter=T)
 
 # bar data
 # SPY
 BarData=MNQ
 
-# import strategies
-source(paste0(working.dir, "Strategies.R"))
+#************
+# grid search
+#************
+Simple_BBands_1_Long_PctB=c(0.25)
+Simple_BBands_2_Short_PctB=c(0.7)
+# Simple_BBands_1_Long_PctB=seq(0, 0.5, by=0.05)
+# Simple_BBands_2_Short_PctB=seq(0.5, 1, by=0.05)
+Stop_Order=c(1000000, 10, seq(20, 200, by=20))
+Profit_Order=seq(10, 200, by=5)
+Params=data.table(
+  expand.grid(Simple_BBands_1_Long_PctB,
+              Simple_BBands_2_Short_PctB,
+              Stop_Order,
+              Profit_Order),
+  NA
+)
+colnames(Params)=c("Simple_BBands_1_Long_PctB",
+                   "Simple_BBands_2_Short_PctB",
+                   "Stop_Order",
+                   "Profit_Order",
+                   "Net_Profit")
 
+Net_Profit=c()
+for(i in 1:nrow(Params)){
+  # import strategies
+  source(paste0(working.dir, "Strategies.R"))
+  
+  #*********************
+  #
+  # simulation algorithm
+  #
+  #***********************************************
+  # all strategies saved in the global environment
+  Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
+  
+  # run Backtesting
+  T1=system.time({
+    Sim_Results=Live_Trading_Imitator(BarData=MNQ,
+                                      Strategy=get(Strategies[which(Strategies=="Test_Strategy")]))
+  })
+  
+  # save results
+  assign(paste0("Setting_", i),
+         list(T1,
+              Sim_Results))
+  
+  # save net profits
+  Params$Net_Profit[i]=Setting_1[[2]]$Net_Profit
+  
+  # print the progress
+  print(paste0(i, " / ", nrow(Params), " (", round(i/nrow(Params)*100, 2), "%)"))
+}
 
-#*********************
-#
-# simulation algorithm
-#
-#***********************************************
-# all strategies saved in the global environment
-Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
+#Sim_Results$Ind_Profit[, .SD, .SDcols=c("Time", "Cum_Profit")] %>% plot(type='o')
+Sim_Results$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o')
+unique(Sim_Results$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")])
+unique(Sim_Results$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")]) %>% plot(type="o")
 
-
-# run Backtesting
-T1=system.time({
-  Sim_Results=Live_Trading_Imitator(BarData=MNQ,
-                                    Strategy=get(Strategies[which(Strategies=="Best_Strategy")]))
-})
-Sim_Results$Net_Profit
-T1
 5027.28
+4901.04
+
+3566.96
 
 RSIs=RSI(BarData$Close, n=9)
 RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])]
