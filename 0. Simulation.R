@@ -153,8 +153,8 @@ Params$Net_Profit[i]=get(paste0("Setting_", i))[[2]]$Net_Profit
 #**************
 # save and load
 #**************
-#save.image(paste0(working.dir, "Rdata/Futures_2021-07-11.Rdata"))
-#load(paste0(working.dir, "Rdata/Futures_2021-07-11.Rdata"))
+#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-07-11.Rdata")
+#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-07-11.Rdata")
 
 
 
