@@ -56,12 +56,19 @@ BarData=MNQ
 #************
 # grid search
 #************
-Simple_BBands_1_Long_PctB=c(0.25)
-Simple_BBands_2_Short_PctB=c(0.7)
-# Simple_BBands_1_Long_PctB=seq(0, 0.5, by=0.05)
-# Simple_BBands_2_Short_PctB=seq(0.5, 1, by=0.05)
-Stop_Order=c(1000000, 10, seq(20, 200, by=20))
-Profit_Order=seq(10, 200, by=5)
+# Simple_BBands_1_Long_PctB=c(0.25)
+# Simple_BBands_2_Short_PctB=c(0.7)
+# Stop_Order=c(1000000, 10, seq(20, 200, by=20))
+# Profit_Order=seq(10, 200, by=5)
+Simple_BBands_1_Long_PctB=seq(0, 1, by=0.05)
+Simple_BBands_2_Short_PctB=seq(0, 1, by=0.05)
+Stop_Order=c(10)
+Profit_Order=c(100)
+
+# Simple_BBands_1_Long_PctB=0.25
+# Simple_BBands_2_Short_PctB=0.7
+# Stop_Order=c(20)
+# Profit_Order=c(175)
 Params=data.table(
   expand.grid(Simple_BBands_1_Long_PctB,
               Simple_BBands_2_Short_PctB,
@@ -69,6 +76,7 @@ Params=data.table(
               Profit_Order),
   NA
 )
+
 colnames(Params)=c("Simple_BBands_1_Long_PctB",
                    "Simple_BBands_2_Short_PctB",
                    "Stop_Order",
@@ -77,6 +85,11 @@ colnames(Params)=c("Simple_BBands_1_Long_PctB",
 
 Net_Profit=c()
 for(i in 1:nrow(Params)){
+  if(Params[i, Simple_BBands_1_Long_PctB]==0 &
+     Params[i, Simple_BBands_2_Short_PctB]==1){
+    Params$Net_Profit[i]=0
+    next
+  }
   # import strategies
   source(paste0(working.dir, "Strategies.R"))
   
@@ -100,21 +113,51 @@ for(i in 1:nrow(Params)){
               Sim_Results))
   
   # save net profits
-  Params$Net_Profit[i]=Setting_1[[2]]$Net_Profit
+  Params$Net_Profit[i]=get(paste0("Setting_", i))[[2]]$Net_Profit
   
   # print the progress
   print(paste0(i, " / ", nrow(Params), " (", round(i/nrow(Params)*100, 2), "%)"))
 }
 
 #Sim_Results$Ind_Profit[, .SD, .SDcols=c("Time", "Cum_Profit")] %>% plot(type='o')
-Sim_Results$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o')
-unique(Sim_Results$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")])
-unique(Sim_Results$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")]) %>% plot(type="o")
+Params[, Row:=1:nrow(Params)]
 
-5027.28
-4901.04
+Temp=Params
 
-3566.96
+Temp=Params[Stop_Order<=10000 &
+              Stop_Order>Profit_Order, ]
+
+Temp=Params[Stop_Order<=10000 &
+              Stop_Order<Profit_Order, ]
+
+Temp=Params[Stop_Order<=10000, ]
+
+i=Temp[Net_Profit==max(Net_Profit), Row]
+Params[Row>=(i-10) &
+         Row<=(i+10), ]
+Params[i, ]
+
+get(paste0("Setting_", i))[[2]]$Net_Profit
+get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o')
+unique(get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")])
+unique(get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")]) %>% plot(type="o")
+
+
+
+Params[Stop_Order==10 & Profit_Order==100, ]
+Params$Net_Profit[i]=get(paste0("Setting_", i))[[2]]$Net_Profit
+
+
+4970.64
+
+#**************
+# save and load
+#**************
+#save.image(paste0(working.dir, "Rdata/Futures_2021-07-11.Rdata"))
+#load(paste0(working.dir, "Rdata/Futures_2021-07-11.Rdata"))
+
+
+
 
 RSIs=RSI(BarData$Close, n=9)
 RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])]
@@ -240,12 +283,6 @@ setdiff(seq(from=min(as.POSIXct(BarData$Time)),
 
 
 
-
-#**************
-# save and load
-#**************
-#save.image(paste0(working.dir, "Rdata/Futures_2021-04-12.Rdata"))
-#load(paste0(working.dir, "Rdata/Futures_2021-04-12.Rdata"))
 
 
 
