@@ -39,14 +39,14 @@ Add_Indicator(Strategy="Test_Strategy",
 #********************************************************************************************
 Add_Model(Strategy="Test_Strategy",
           Model="Simple_BBands_1",
-          ModelParams=list(Long_Consec_Times=1,
+          ModelParams=list(Long_Consec_Times=2,
                            Short_Consec_Times=1,
                            Long_PctB=Params$Simple_BBands_1_Long_PctB[i],
                            Short_PctB=Inf))
 Add_Model(Strategy="Test_Strategy",
           Model="Simple_BBands_2",
           ModelParams=list(Long_Consec_Times=1,
-                           Short_Consec_Times=1,
+                           Short_Consec_Times=2,
                            Long_PctB=-Inf,
                            Short_PctB=Params$Simple_BBands_2_Short_PctB[i]))
 Add_Model(Strategy="Test_Strategy",

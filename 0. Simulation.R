@@ -60,15 +60,16 @@ BarData=MNQ
 # Simple_BBands_2_Short_PctB=c(0.7)
 # Stop_Order=c(1000000, 10, seq(20, 200, by=20))
 # Profit_Order=seq(10, 200, by=5)
-Simple_BBands_1_Long_PctB=seq(0, 1, by=0.05)
-Simple_BBands_2_Short_PctB=seq(0, 1, by=0.05)
+
+# Simple_BBands_1_Long_PctB=seq(0, 1, by=0.05)
+# Simple_BBands_2_Short_PctB=seq(0, 1, by=0.05)
+# Stop_Order=c(10)
+# Profit_Order=c(100)
+
+Simple_BBands_1_Long_PctB=0.5
+Simple_BBands_2_Short_PctB=0.75
 Stop_Order=c(10)
 Profit_Order=c(100)
-
-# Simple_BBands_1_Long_PctB=0.25
-# Simple_BBands_2_Short_PctB=0.7
-# Stop_Order=c(20)
-# Profit_Order=c(175)
 Params=data.table(
   expand.grid(Simple_BBands_1_Long_PctB,
               Simple_BBands_2_Short_PctB,
@@ -76,6 +77,7 @@ Params=data.table(
               Profit_Order),
   NA
 )
+
 
 colnames(Params)=c("Simple_BBands_1_Long_PctB",
                    "Simple_BBands_2_Short_PctB",
@@ -85,6 +87,7 @@ colnames(Params)=c("Simple_BBands_1_Long_PctB",
 
 Net_Profit=c()
 for(i in 1:nrow(Params)){
+  
   if(Params[i, Simple_BBands_1_Long_PctB]==0 &
      Params[i, Simple_BBands_2_Short_PctB]==1){
     Params$Net_Profit[i]=0
@@ -147,8 +150,32 @@ unique(get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Dail
 Params[Stop_Order==10 & Profit_Order==100, ]
 Params$Net_Profit[i]=get(paste0("Setting_", i))[[2]]$Net_Profit
 
+Non_NA_Params=Params[Stop_Order<=10000, ]
+Non_NA_Params[which.max(Net_Profit), ]
+Non_NA_Params$Net_Profit %>% plot
 
-4970.64
+Non_NA_Params[, c("Stop_Order", "Net_Profit")] %>% plot
+Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
+
+1893.12 # 0.5
+        # 0.75
+        # 20
+        # 175
+
+4765.44   # 0.25
+          # 0.7
+          # 20
+          # 175
+
+5705.84   # 0.5
+          # 0.75
+          # 10
+          # 100
+
+4795.84   # 0.25
+          # 0.7
+          # 10
+          # 100
 
 #**************
 # save and load
