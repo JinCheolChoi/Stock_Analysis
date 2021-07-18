@@ -45,7 +45,7 @@ for(pack in c("IBrokers",
 # import data
 Get_Data(Symbols=list("MNQ"),
          Data_Dir=data.dir,
-         BarSize=60*5,
+         BarSize=60*1,
          Convert_Tz=T,
          Filter=T)
 
@@ -133,7 +133,7 @@ Temp=Params[Stop_Order<=10000 &
 Temp=Params[Stop_Order<=10000 &
               Stop_Order<Profit_Order, ]
 
-Temp=Params[Stop_Order<=10000, ]
+Temp=Params[Stop_Order>=10000, ]
 
 i=Temp[Net_Profit==max(Net_Profit), Row]
 Params[Row>=(i-10) &
@@ -168,7 +168,7 @@ Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
           # 20
           # 175
 
-5631.28   # 0.5
+5627.6    # 0.5
           # 0.75
           # 10
           # 100
@@ -181,8 +181,8 @@ Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
 #**************
 # save and load
 #**************
-#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-07-15.Rdata")
-#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-07-13.Rdata")
+#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-07-16.Rdata")
+#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-07-15.Rdata")
 
 
 
