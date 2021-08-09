@@ -45,7 +45,7 @@ for(pack in c("IBrokers",
 # import data
 Get_Data(Symbols=list("MNQ"),
          Data_Dir=data.dir,
-         BarSize=60*1,
+         BarSize=60*15,
          Convert_Tz=T,
          Filter=T)
 
@@ -56,20 +56,22 @@ BarData=MNQ
 #************
 # grid search
 #************
-Simple_BBands_1_Long_PctB=c(0.5)
-Simple_BBands_2_Short_PctB=c(0.75)
+Simple_BBands_1_Long_PctB=c(0.25)
+Simple_BBands_2_Short_PctB=c(0.7)
 Stop_Order=c(1000000, 10, seq(20, 200, by=20))
-Profit_Order=seq(10, 200, by=5)
+Profit_Order=c(5, seq(10, 200, by=5))
 
-# Simple_BBands_1_Long_PctB=seq(0, 1, by=0.05)
-# Simple_BBands_2_Short_PctB=seq(0, 1, by=0.05)
-# Stop_Order=c(10)
-# Profit_Order=c(100)
 
-# Simple_BBands_1_Long_PctB=0.5
-# Simple_BBands_2_Short_PctB=0.75
+# Simple_BBands_1_Long_PctB=seq(0.05, 0.95, by=0.05)
+# Simple_BBands_2_Short_PctB=seq(0.05, 0.95, by=0.05)
 # Stop_Order=c(10)
-# Profit_Order=c(100)
+# Profit_Order=c(120)
+ 
+# Simple_BBands_1_Long_PctB=0.65
+# Simple_BBands_2_Short_PctB=0.7
+# Stop_Order=c(10)
+# Profit_Order=c(120)
+
 Params=data.table(
   expand.grid(Simple_BBands_1_Long_PctB,
               Simple_BBands_2_Short_PctB,
@@ -77,7 +79,6 @@ Params=data.table(
               Profit_Order),
   NA
 )
-
 
 colnames(Params)=c("Simple_BBands_1_Long_PctB",
                    "Simple_BBands_2_Short_PctB",
@@ -128,20 +129,22 @@ Params[, Row:=1:nrow(Params)]
 Temp=Params
 
 Temp=Params[Stop_Order<=10000 &
-              Stop_Order>Profit_Order, ]
+              Stop_Order>Profit_Order &
+              Stop_Order<100&
+              Profit_Order<100, ]
 
 Temp=Params[Stop_Order<=10000 &
               Stop_Order<Profit_Order, ]
 
 Temp=Params[Stop_Order>=10000, ]
 
-i=Temp[Net_Profit==max(Net_Profit), Row]
+i=Temp[which.max(Temp$Net_Profit), Row]
 Params[Row>=(i-10) &
          Row<=(i+10), ]
 Params[i, ]
 
 get(paste0("Setting_", i))[[2]]$Net_Profit
-get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Cum_Profit")] %>% plot(type='o')
+#get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Cum_Profit")] %>% plot(type='o')
 get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o')
 unique(get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")])
 unique(get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")]) %>% plot(type="o")
@@ -158,31 +161,22 @@ Non_NA_Params$Net_Profit %>% plot
 Non_NA_Params[, c("Stop_Order", "Net_Profit")] %>% plot
 Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
 
-1893.12 # 0.5
-        # 0.75
-        # 20
-        # 175
-
-4765.44   # 0.25
-          # 0.7
-          # 20
-          # 175
-
-5627.6    # 0.5
+5721.76   # 0.5
           # 0.75
           # 10
-          # 100
+          # 120
 
-4795.84   # 0.25
+6548.4    # 0.65
           # 0.7
           # 10
-          # 100
+          # 120
+
 
 #**************
 # save and load
 #**************
-#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-07-16.Rdata")
-#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-07-15.Rdata")
+#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-07-30.Rdata")
+#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-07-30.Rdata")
 
 
 
