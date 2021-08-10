@@ -812,22 +812,28 @@ Live_Trading_Imitator=function(BarData,
                                     Orders_Transmitted[Action=="Sell", 
                                                        c("Filled_Time", "LmtPrice")])
   colnames(Collapse_Orders_Transmitted)=c("Buy_Time", "Buy_Price", "Sell_Time", "Sell_Price")
-  Duplicated_Row=unique(c(which(duplicated(Collapse_Orders_Transmitted[, c("Buy_Time", "Buy_Price")])), 
-                          which(duplicated(Collapse_Orders_Transmitted[, c("Sell_Time", "Sell_Price")]))))
-  if(length(Duplicated_Row)>0){
-    Collapse_Orders_Transmitted=Collapse_Orders_Transmitted[-Duplicated_Row, ]
+  
+  if(nrow(Collapse_Orders_Transmitted)>0){
+    Duplicated_Row=unique(c(which(duplicated(Collapse_Orders_Transmitted[, c("Buy_Time", "Buy_Price")])), 
+                            which(duplicated(Collapse_Orders_Transmitted[, c("Sell_Time", "Sell_Price")]))))
+    if(length(Duplicated_Row)>0){
+      Collapse_Orders_Transmitted=Collapse_Orders_Transmitted[-Duplicated_Row, ]
+    }
+    
+    Collapse_Orders_Transmitted[, Profit:=2*(Sell_Price-Buy_Price)-2*0.52]
+    Collapse_Orders_Transmitted[, Cum_Profit:=cumsum(Profit)]
+    Collapse_Orders_Transmitted[, Time:=as.POSIXct(format(as.POSIXct(max(Buy_Time, Sell_Time)),
+                                                          tz="America/Los_Angeles")), by=1:nrow(Collapse_Orders_Transmitted)]
+    Collapse_Orders_Transmitted[, Date:=as.Date(Time, tz="America/Los_Angeles")]
+    Collapse_Orders_Transmitted[, Daily_Cum_Profit:=Cum_Profit[Time==max(Time)], by="Date"]
+    Collapse_Orders_Transmitted[, Daily_Profit:=sum(Profit), by="Date"]
+    
+    Ind_Profit=Collapse_Orders_Transmitted[, .SD, .SDcols=c("Time", "Date", "Profit", "Daily_Profit", "Cum_Profit", "Daily_Cum_Profit")]
+    Net_Profit=tail(Collapse_Orders_Transmitted$Cum_Profit, 1)
+  }else{
+    Ind_Profit=-Inf
+    Net_Profit=-Inf
   }
-  
-  Collapse_Orders_Transmitted[, Profit:=2*(Sell_Price-Buy_Price)-2*0.52]
-  Collapse_Orders_Transmitted[, Cum_Profit:=cumsum(Profit)]
-  Collapse_Orders_Transmitted[, Time:=as.POSIXct(format(as.POSIXct(max(Buy_Time, Sell_Time)),
-                                                        tz="America/Los_Angeles")), by=1:nrow(Collapse_Orders_Transmitted)]
-  Collapse_Orders_Transmitted[, Date:=as.Date(Time, tz="America/Los_Angeles")]
-  Collapse_Orders_Transmitted[, Daily_Cum_Profit:=Cum_Profit[Time==max(Time)], by="Date"]
-  Collapse_Orders_Transmitted[, Daily_Profit:=sum(Profit), by="Date"]
-  
-  Ind_Profit=Collapse_Orders_Transmitted[, .SD, .SDcols=c("Time", "Date", "Profit", "Daily_Profit", "Cum_Profit", "Daily_Cum_Profit")]
-  Net_Profit=tail(Collapse_Orders_Transmitted$Cum_Profit, 1)
   
   return(list(BarData=BarData,
               Orders_Transmitted=Orders_Transmitted,
