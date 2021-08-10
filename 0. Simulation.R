@@ -56,21 +56,26 @@ BarData=MNQ
 #************
 # grid search
 #************
-Simple_BBands_1_Long_PctB=c(0.25)
-Simple_BBands_2_Short_PctB=c(0.7)
-Stop_Order=c(1000000, 10, seq(20, 200, by=20))
-Profit_Order=c(5, seq(10, 200, by=5))
+# Simple_BBands_1_Long_PctB=c(0.25)
+# Simple_BBands_2_Short_PctB=c(0.7)
+# Stop_Order=c(1000000, 10, seq(20, 200, by=20))
+# Profit_Order=c(5, seq(10, 200, by=5))
 
 
 # Simple_BBands_1_Long_PctB=seq(0.05, 0.95, by=0.05)
 # Simple_BBands_2_Short_PctB=seq(0.05, 0.95, by=0.05)
-# Stop_Order=c(10)
+# Stop_Order=c(1000000)
 # Profit_Order=c(120)
  
 # Simple_BBands_1_Long_PctB=0.65
 # Simple_BBands_2_Short_PctB=0.7
 # Stop_Order=c(10)
 # Profit_Order=c(120)
+
+Simple_BBands_1_Long_PctB=seq(0.05, 0.4, by=0.05)
+Simple_BBands_2_Short_PctB=seq(0.6, 0.95, by=0.05)
+Stop_Order=c(1000, 5, seq(10, 100, by=10))
+Profit_Order=c(5, seq(10, 50, by=5))
 
 Params=data.table(
   expand.grid(Simple_BBands_1_Long_PctB,
@@ -94,6 +99,7 @@ for(i in 1:nrow(Params)){
     Params$Net_Profit[i]=0
     next
   }
+  
   # import strategies
   source(paste0(working.dir, "Strategies.R"))
   
@@ -138,10 +144,13 @@ Temp=Params[Stop_Order<=10000 &
 
 Temp=Params[Stop_Order>=10000, ]
 
-i=Temp[which.max(Temp$Net_Profit), Row]
+i=Temp[Net_Profit==sort(Temp$Net_Profit, decreasing=T)[1], Row]
+Temp[order(Net_Profit, decreasing=T), ] %>% head(30)
+
 Params[Row>=(i-10) &
          Row<=(i+10), ]
 Params[i, ]
+
 
 get(paste0("Setting_", i))[[2]]$Net_Profit
 #get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Cum_Profit")] %>% plot(type='o')
@@ -175,8 +184,8 @@ Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
 #**************
 # save and load
 #**************
-#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-07-30.Rdata")
-#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-07-30.Rdata")
+#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-09.Rdata")
+#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-09.Rdata")
 
 
 
