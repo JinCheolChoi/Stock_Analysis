@@ -51,7 +51,18 @@ Get_Data(Symbols=list("MNQ"),
 
 # bar data
 # SPY
-BarData=MNQ
+BarData=MNQ[Time>="2021-08-11 06:30:00", ]
+
+#***********************
+# visualize in bar chart
+#***********************
+# convert xts.Collapsed_BarData
+BarData[, Volume:=abs(Net_Volume)]
+xts.Collapsed_BarData=as.xts.data.table(BarData[, -1])
+chartSeries(xts.Collapsed_BarData,
+            name=Symbols,
+            theme="white")
+
 
 #************
 # grid search
@@ -132,7 +143,6 @@ for(i in 1:nrow(Params)){
 #Sim_Results$Ind_Profit[, .SD, .SDcols=c("Time", "Cum_Profit")] %>% plot(type='o')
 Params[, Row:=1:nrow(Params)]
 
-Temp=Params
 
 Temp=Params[Stop_Order<=10000 &
               Stop_Order>Profit_Order &
@@ -184,8 +194,8 @@ Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
 #**************
 # save and load
 #**************
-#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-09.Rdata")
-#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-09.Rdata")
+#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-10.Rdata")
+#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-10.Rdata")
 
 
 

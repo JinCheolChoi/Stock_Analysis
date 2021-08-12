@@ -381,6 +381,11 @@ Collapse_5SecsBarData=function(`5SecsBarData`,
   if(BarSize==5){
     Collapsed_BarData=`5SecsBarData` %>% as.data.frame() %>% as.data.table()
     Collapsed_BarData[, Wap:=NULL]
+    
+    # Net_Volume
+    Collapsed_BarData[Open<Close, Net_Volume:=Volume]
+    Collapsed_BarData[Open==Close, Net_Volume:=Volume]
+    Collapsed_BarData[Open>Close, Net_Volume:=-Volume]
   }
   
   # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
@@ -406,10 +411,15 @@ Collapse_5SecsBarData=function(`5SecsBarData`,
     # Date_Time_To
     Time_Intervals[, Date_Time_To:=shift(Time_Intervals$Date_Time_From, -1)]
     
+    # Net_Volume
+    `5SecsBarData`[Open<Close, Net_Volume:=Volume]
+    `5SecsBarData`[Open==Close, Net_Volume:=Volume]
+    `5SecsBarData`[Open>Close, Net_Volume:=-Volume]
+    
     # non-equal left_join Time_Intervals to `5SecsBarData`
     Time_Intervals=`5SecsBarData`[Time_Intervals, on=c("Time>=Date_Time_From", "Time<Date_Time_To"),
                                   nomatch=0,
-                                  .(Symbol, Date_Time_From=Time, Open, High, Low, Close, Volume, Wap, Count, Date_Time_To)]
+                                  .(Symbol, Date_Time_From=Time, Open, High, Low, Close, Volume, Wap, Count, Net_Volume, Date_Time_To)]
     
     # Collapsed_BarData
     Collapsed_BarData=Time_Intervals[, .(Symbol=unique(Symbol),
@@ -418,7 +428,8 @@ Collapse_5SecsBarData=function(`5SecsBarData`,
                                          Low=min(Low), # row with minimum Low price by group
                                          Close=Close[.N], # last row by group
                                          Volume=sum(Volume),
-                                         Count=sum(Count)),
+                                         Count=sum(Count),
+                                         Net_Volume=sum(Net_Volume)),
                                      by="Date_Time_From"]
     
     # rename Date_Time_From to Time

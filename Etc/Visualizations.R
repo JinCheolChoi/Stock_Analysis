@@ -72,13 +72,21 @@ Get_Data(Symbols,
 # convert xts.Collapsed_BarData
 xts.Collapsed_BarData=as.xts.data.table(MNQ[, -1])
 
-# create a chart
+# create a chart - 1
 system.time({
   chartSeries(xts.Collapsed_BarData,
               name=Symbols,
               theme="white",
               TA=c("addMACD()"))
 })
+
+# create a chart - 2
+system.time({
+  chartSeries(xts.Collapsed_BarData,
+              name=Symbols,
+              theme="white")
+})
+
 
 # performance summary chart
 charts.PerformanceSummary(ROC(xts.Collapsed_BarData$Close))
