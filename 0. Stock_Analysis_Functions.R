@@ -619,9 +619,9 @@ Live_Trading_Imitator=function(BarData,
   Orders_Transmitted=Orders_Transmitted[-1,]
   Live_Data[, `:=`(Symbol=NULL, Time=NULL, Open=NULL,
                    High=NULL, Low=NULL, Close=NULL,
-                   Volume=NULL, Count=NULL)]
+                   Volume=NULL, Net_Volume=NULL, Count=NULL)]
   for(i in 1:(nrow(BarData)-1)){
-    # i=30
+    # i=69
     Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
     
     #***********************************************
@@ -700,69 +700,16 @@ Live_Trading_Imitator=function(BarData,
       }
     }
     
-    #*********************
-    # stop or early profit
-    #*********************
-    # Orders_Transmitted
-    # BarData
-    # Scenario
-    Early_Order_Transmit=Profit_Loss_Cut_Transmitted(Orders_Transmitted=Orders_Transmitted,
-                                                     Next_BarData=BarData[i+1, ],
-                                                     Profit_Order=Profit_Order,
-                                                     Stop_Order=Stop_Order)
-    
-    if(is.null(do.call(rbind, Early_Order_Transmit)) & exists("Order_to_Transmit")){
+    if(exists("Order_to_Transmit")){
       if(!is.null(do.call(rbind, Order_to_Transmit))){
         # add Order_to_Transmit to Orders_Transmitted
         Orders_Transmitted=rbind(Orders_Transmitted,
                                  do.call(rbind, Order_to_Transmit),
                                  fill=T)
-        
+        # remove Orders_Transmitted
+        rm(Order_to_Transmit)
         #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
       }
-      
-      # remove Orders_Transmitted
-      rm(Order_to_Transmit)
-      
-    }else if(!is.null(do.call(rbind, Early_Order_Transmit))){
-      Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
-      Order_to_Transmit=Early_Order_Transmit
-      if(Scenario=="Positive"){
-        Orders_Transmitted=rbind(Orders_Transmitted,
-                                 Order_to_Transmit[["Profit_Transmitted"]],
-                                 fill=T)
-        
-        # recalculate N_Remaining_Orders
-        N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
-          sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
-        if(N_Remaining_Orders!=0){
-          Orders_Transmitted=rbind(Orders_Transmitted,
-                                   Order_to_Transmit[["Stop_Transmitted"]],
-                                   fill=T)
-        }
-      }
-      if(Scenario=="Negative"){
-        Orders_Transmitted=rbind(Orders_Transmitted,
-                                 Order_to_Transmit[["Stop_Transmitted"]],
-                                 fill=T)
-        # recalculate N_Remaining_Orders
-        N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
-          sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
-        if(N_Remaining_Orders!=0){
-          Orders_Transmitted=rbind(Orders_Transmitted,
-                                   Order_to_Transmit[["Profit_Transmitted"]],
-                                   fill=T)
-        }
-      }
-      #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
-      
-      # remove Orders_Transmitted
-      rm(Order_to_Transmit)
-    }
-    
-    # skip if currently on no position & there is no order transmitted
-    if(sum(Orders_Transmitted[["Filled"]]==0)==0){ # orders are all balanced
-      next
     }
     
     #***********
@@ -813,6 +760,57 @@ Live_Trading_Imitator=function(BarData,
       
     }
     
+    # # skip if currently on no position & there is no order transmitted
+    # if(sum(Orders_Transmitted[["Filled"]]==0)==0){ # orders are all balanced
+    #   next
+    # }
+    
+    #*********************
+    # stop or early profit
+    #*********************
+    # Orders_Transmitted
+    # BarData
+    # Scenario
+    Early_Order_Transmit=Profit_Loss_Cut_Transmitted(Orders_Transmitted=Orders_Transmitted,
+                                                     Next_BarData=BarData[i+1, ],
+                                                     Profit_Order=Profit_Order,
+                                                     Stop_Order=Stop_Order)
+    
+    if(!is.null(do.call(rbind, Early_Order_Transmit))){
+      Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
+      Order_to_Transmit=Early_Order_Transmit
+      if(Scenario=="Positive"){
+        Orders_Transmitted=rbind(Orders_Transmitted,
+                                 Order_to_Transmit[["Profit_Transmitted"]],
+                                 fill=T)
+        
+        # recalculate N_Remaining_Orders
+        N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
+          sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
+        if(N_Remaining_Orders!=0){
+          Orders_Transmitted=rbind(Orders_Transmitted,
+                                   Order_to_Transmit[["Stop_Transmitted"]],
+                                   fill=T)
+        }
+      }
+      if(Scenario=="Negative"){
+        Orders_Transmitted=rbind(Orders_Transmitted,
+                                 Order_to_Transmit[["Stop_Transmitted"]],
+                                 fill=T)
+        # recalculate N_Remaining_Orders
+        N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
+          sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
+        if(N_Remaining_Orders!=0){
+          Orders_Transmitted=rbind(Orders_Transmitted,
+                                   Order_to_Transmit[["Profit_Transmitted"]],
+                                   fill=T)
+        }
+      }
+      #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+      
+      # remove Orders_Transmitted
+      rm(Order_to_Transmit)
+    }
   }
   
   #**********************

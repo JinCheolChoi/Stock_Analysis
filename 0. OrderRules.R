@@ -72,7 +72,7 @@ OrderRules_Env$Long_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_he
   if(exists("Action")){
     if(Action=="Buy"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                        Submit_Time=tail(Live_Data, 1)[, Time],
+                        Submit_Time=tail(Live_Data, 1)[, Time]+max(tail(Live_Data, 1)[, Time]-tail(Live_Data, 2)[, Time]),
                         #Filled_Time=tail(Live_Data, 1)[, Time],
                         Action=Action,
                         Detail=Detail,
@@ -84,7 +84,7 @@ OrderRules_Env$Long_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_he
     }
     if(Action=="Sell"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                        Submit_Time=tail(Live_Data, 1)[, Time],
+                        Submit_Time=tail(Live_Data, 1)[, Time]+max(tail(Live_Data, 1)[, Time]-tail(Live_Data, 2)[, Time]),
                         #Filled_Time=tail(Live_Data, 1)[, Time],
                         Action=Action,
                         Detail=Detail,
@@ -141,7 +141,7 @@ OrderRules_Env$Short_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_h
   if(exists("Action")){
     if(Action=="Sell"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                        Submit_Time=tail(Live_Data, 1)[, Time],
+                        Submit_Time=tail(Live_Data, 1)[, Time]+max(tail(Live_Data, 1)[, Time]-tail(Live_Data, 2)[, Time]),
                         #Filled_Time=tail(Live_Data, 1)[, Time],
                         Action=Action,
                         Detail=Detail,
@@ -153,7 +153,7 @@ OrderRules_Env$Short_Function=function(Live_Data, Max_Orders, Sigs_N, N_Orders_h
     }
     if(Action=="Buy"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                        Submit_Time=tail(Live_Data, 1)[, Time],
+                        Submit_Time=tail(Live_Data, 1)[, Time]+max(tail(Live_Data, 1)[, Time]-tail(Live_Data, 2)[, Time]),
                         #Filled_Time=tail(Live_Data, 1)[, Time],
                         Action=Action,
                         Detail=Detail,

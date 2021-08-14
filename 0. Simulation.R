@@ -51,18 +51,7 @@ Get_Data(Symbols=list("MNQ"),
 
 # bar data
 # SPY
-BarData=MNQ[Time>="2021-08-11 06:30:00", ]
-
-#***********************
-# visualize in bar chart
-#***********************
-# convert xts.Collapsed_BarData
-BarData[, Volume:=abs(Net_Volume)]
-xts.Collapsed_BarData=as.xts.data.table(BarData[, -1])
-chartSeries(xts.Collapsed_BarData,
-            name=Symbols,
-            theme="white")
-
+BarData=MNQ
 
 #************
 # grid search
@@ -77,11 +66,12 @@ chartSeries(xts.Collapsed_BarData,
 # Simple_BBands_2_Short_PctB=seq(0.05, 0.95, by=0.05)
 # Stop_Order=c(1000000)
 # Profit_Order=c(120)
- 
-# Simple_BBands_1_Long_PctB=0.65
-# Simple_BBands_2_Short_PctB=0.7
+
+# Simple_BBands_1_Long_PctB=0.5
+# Simple_BBands_2_Short_PctB=0.75
 # Stop_Order=c(10)
 # Profit_Order=c(120)
+
 
 Simple_BBands_1_Long_PctB=seq(0.05, 0.4, by=0.05)
 Simple_BBands_2_Short_PctB=seq(0.6, 0.95, by=0.05)
@@ -124,7 +114,7 @@ for(i in 1:nrow(Params)){
   
   # run Backtesting
   T1=system.time({
-    Sim_Results=Live_Trading_Imitator(BarData=MNQ,
+    Sim_Results=Live_Trading_Imitator(BarData=BarData,
                                       Strategy=get(Strategies[which(Strategies=="Test_Strategy")]))
   })
   
@@ -140,9 +130,9 @@ for(i in 1:nrow(Params)){
   print(paste0(i, " / ", nrow(Params), " (", round(i/nrow(Params)*100, 2), "%)"))
 }
 
+
 #Sim_Results$Ind_Profit[, .SD, .SDcols=c("Time", "Cum_Profit")] %>% plot(type='o')
 Params[, Row:=1:nrow(Params)]
-
 
 Temp=Params[Stop_Order<=10000 &
               Stop_Order>Profit_Order &
@@ -180,13 +170,8 @@ Non_NA_Params$Net_Profit %>% plot
 Non_NA_Params[, c("Stop_Order", "Net_Profit")] %>% plot
 Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
 
-5721.76   # 0.5
+7211.2    # 0.5
           # 0.75
-          # 10
-          # 120
-
-6548.4    # 0.65
-          # 0.7
           # 10
           # 120
 
@@ -194,10 +179,62 @@ Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
 #**************
 # save and load
 #**************
-#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-10.Rdata")
-#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-10.Rdata")
+#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-14_Trend.Rdata")
+#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-14_Trend.Rdata")
+
+#***********************
+# visualize in bar chart
+#***********************
+# convert xts.Collapsed_BarData
+BarData[, Volume:=abs(Net_Volume)]
+xts.Collapsed_BarData=as.xts.data.table(BarData[, -1])
+chartSeries(xts.Collapsed_BarData,
+            name=Symbols,
+            theme="white")
 
 
+
+lm(Net_Profit~Simple_BBands_1_Long_PctB+
+     Simple_BBands_2_Short_PctB+
+     Stop_Order+
+     Profit_Order, data=Params[!(is.na(Net_Profit)|
+                                   Net_Profit==-Inf), ]) %>% summary
+Params[!(is.na(Net_Profit)|
+           Net_Profit==-Inf),
+       .SD,
+       .SDcols=c("Stop_Order", "Net_Profit")] %>% plot
+Params[!(is.na(Net_Profit)|
+           Net_Profit==-Inf),
+       .SD,
+       .SDcols=c("Profit_Order", "Net_Profit")] %>% plot
+Params[!(is.na(Net_Profit)|
+           Net_Profit==-Inf),
+       .SD,
+       .SDcols=c("Simple_BBands_1_Long_PctB", "Net_Profit")] %>% plot
+Params[!(is.na(Net_Profit)|
+           Net_Profit==-Inf),
+       .SD,
+       .SDcols=c("Simple_BBands_2_Short_PctB", "Net_Profit")] %>% plot
+
+Params[!(is.na(Net_Profit)|
+           Net_Profit==-Inf)&
+         Stop_Order==1000,
+       .SD,
+       .SDcols=c("Simple_BBands_2_Short_PctB", "Net_Profit")] %>% plot
+
+Params[!(is.na(Net_Profit)|
+           Net_Profit==-Inf)&
+         Stop_Order==5,
+       .SD,
+       .SDcols=c("Profit_Order", "Net_Profit")] %>% plot
+
+
+Params[!(is.na(Net_Profit)|
+           Net_Profit==-Inf)&
+         Stop_Order==5 &
+         Profit_Order==35,
+       .SD,
+       .SDcols=c("Net_Profit")]$Net_Profit %>% hist
 
 
 RSIs=RSI(BarData$Close, n=9)
