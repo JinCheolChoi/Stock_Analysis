@@ -155,7 +155,7 @@ Add_Model(Strategy="Long_Strategy",
 Add_Model(Strategy="Long_Strategy",
           Model="Trend",
           ModelParams=list(Interval=5,
-                           Extent=1))
+                           Extent=5))
 
 # Long_Strategy$Indicators$BBands
 # Long_Strategy$Models$Simple_BBands

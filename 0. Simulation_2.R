@@ -102,7 +102,7 @@ for(i in 1:nrow(Params)){
   }
   
   # import strategies
-  source(paste0(working.dir, "Strategies.R"))
+  source(paste0(working.dir, "Strategies_2.R"))
   
   #*********************
   #
@@ -129,6 +129,7 @@ for(i in 1:nrow(Params)){
   # print the progress
   print(paste0(i, " / ", nrow(Params), " (", round(i/nrow(Params)*100, 2), "%)"))
 }
+
 
 #Sim_Results$Ind_Profit[, .SD, .SDcols=c("Time", "Cum_Profit")] %>% plot(type='o')
 Params[, Row:=1:nrow(Params)]
@@ -178,8 +179,8 @@ Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
 #**************
 # save and load
 #**************
-#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-14_Trend.Rdata")
-#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-14_Trend.Rdata")
+#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-14_No_Trend.Rdata")
+#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-14_No_Trend.Rdata")
 
 #***********************
 # visualize in bar chart
