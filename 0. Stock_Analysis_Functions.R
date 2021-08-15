@@ -620,9 +620,17 @@ Live_Trading_Imitator=function(BarData,
   Live_Data[, `:=`(Symbol=NULL, Time=NULL, Open=NULL,
                    High=NULL, Low=NULL, Close=NULL,
                    Volume=NULL, Net_Volume=NULL, Count=NULL)]
+  Time_Unit=BarData$Time[2]-BarData$Time[1]
+  Early_Order_Transmit_Proceeded="No"
   for(i in 1:(nrow(BarData)-1)){
-    # i=69
+    # i=67
     Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
+    
+    # if Early_Order_Transmit_Proceeded was done at i-1, skip
+    if(Early_Order_Transmit_Proceeded=="Yes"){
+      Early_Order_Transmit_Proceeded="No"
+      next
+    }
     
     #***********************************************
     #
@@ -633,8 +641,11 @@ Live_Trading_Imitator=function(BarData,
     # Order_Rules[[General_Strategy]]
     # OrderRules_Env[[]]
     # tail(Live_Data, 1)
-    # skip if there is transmitted order to fill
-    if(sum(Orders_Transmitted[["Filled"]]==0)<Max_Orders){
+    # proceed if there is no transmitted order(s) to fill
+    # proceed if the number of filled orders is smaller than Max_Orders
+    if(sum(Orders_Transmitted[["Filled"]]==0)<Max_Orders & 
+       abs(nrow(Orders_Transmitted[Filled==1 & Action=="Buy", ])-
+           nrow(Orders_Transmitted[Filled==1 & Action=="Sell", ]))<Max_Orders){
       #*********************
       # calculate indicators
       #*********************
@@ -668,8 +679,8 @@ Live_Trading_Imitator=function(BarData,
       
       # Signals are assigned opposite if Trend=TRUE
       if(nrow(Signals)==2){
-        if(Trend==TRUE){
-          Signals[, which(sapply(Signals, function(x) sum(x==T)>0)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)>0))]
+        if(Trend==TRUE & sum(Signals$Trend)>0){
+          Signals[, which(sapply(Signals, function(x) sum(x==T)==1)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)==1))]
         }
       }
       
@@ -689,6 +700,7 @@ Live_Trading_Imitator=function(BarData,
                                  function(x){
                                    do.call(OrderRules_Env[[paste0(x, "_Function")]],
                                            c(list(Live_Data=Live_Data,
+                                                  Time_Unit=Time_Unit,
                                                   Max_Orders=Max_Orders,
                                                   Sigs_N=Sigs_N,
                                                   N_Orders_held=N_Orders_held),
@@ -727,7 +739,7 @@ Live_Trading_Imitator=function(BarData,
                          `:=`(Filled_Time=BarData[i+1, Time],
                               Filled=1)]
       
-      # if not filled, just cancel the transmit
+      # if not filled, just cancel the transmit 60 minutes later
       if(sum(Orders_Transmitted[["Filled"]]==0)){
         if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>60*60){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
@@ -759,58 +771,59 @@ Live_Trading_Imitator=function(BarData,
       }
       
     }
-    
-    # # skip if currently on no position & there is no order transmitted
-    # if(sum(Orders_Transmitted[["Filled"]]==0)==0){ # orders are all balanced
-    #   next
-    # }
-    
-    #*********************
-    # stop or early profit
-    #*********************
-    # Orders_Transmitted
-    # BarData
-    # Scenario
-    Early_Order_Transmit=Profit_Loss_Cut_Transmitted(Orders_Transmitted=Orders_Transmitted,
-                                                     Next_BarData=BarData[i+1, ],
-                                                     Profit_Order=Profit_Order,
-                                                     Stop_Order=Stop_Order)
-    
-    if(!is.null(do.call(rbind, Early_Order_Transmit))){
-      Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
-      Order_to_Transmit=Early_Order_Transmit
-      if(Scenario=="Positive"){
-        Orders_Transmitted=rbind(Orders_Transmitted,
-                                 Order_to_Transmit[["Profit_Transmitted"]],
-                                 fill=T)
+
+    # skip if currently on no position & there is no order transmitted
+    if(nrow(Orders_Transmitted[Filled==1 & Action=="Buy", ])!=nrow(Orders_Transmitted[Filled==1 & Action=="Sell", ])){ # orders are all balanced
+      #*********************
+      # stop or early profit
+      #*********************
+      # Orders_Transmitted
+      # BarData
+      # Scenario
+      Early_Order_Transmit=Profit_Loss_Cut_Transmitted(Orders_Transmitted=Orders_Transmitted,
+                                                       Next_BarData=BarData[i+1, ],
+                                                       Profit_Order=Profit_Order,
+                                                       Stop_Order=Stop_Order)
+      
+      if(!is.null(do.call(rbind, Early_Order_Transmit))){
+        Early_Order_Transmit_Proceeded="Yes"
         
-        # recalculate N_Remaining_Orders
-        N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
-          sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
-        if(N_Remaining_Orders!=0){
-          Orders_Transmitted=rbind(Orders_Transmitted,
-                                   Order_to_Transmit[["Stop_Transmitted"]],
-                                   fill=T)
-        }
-      }
-      if(Scenario=="Negative"){
-        Orders_Transmitted=rbind(Orders_Transmitted,
-                                 Order_to_Transmit[["Stop_Transmitted"]],
-                                 fill=T)
-        # recalculate N_Remaining_Orders
-        N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
-          sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
-        if(N_Remaining_Orders!=0){
+        Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
+        Order_to_Transmit=Early_Order_Transmit
+        if(Scenario=="Positive"){
           Orders_Transmitted=rbind(Orders_Transmitted,
                                    Order_to_Transmit[["Profit_Transmitted"]],
                                    fill=T)
+          
+          # recalculate N_Remaining_Orders
+          N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
+            sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
+          if(N_Remaining_Orders!=0){
+            Orders_Transmitted=rbind(Orders_Transmitted,
+                                     Order_to_Transmit[["Stop_Transmitted"]],
+                                     fill=T)
+          }
         }
+        if(Scenario=="Negative"){
+          Orders_Transmitted=rbind(Orders_Transmitted,
+                                   Order_to_Transmit[["Stop_Transmitted"]],
+                                   fill=T)
+          # recalculate N_Remaining_Orders
+          N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
+            sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
+          if(N_Remaining_Orders!=0){
+            Orders_Transmitted=rbind(Orders_Transmitted,
+                                     Order_to_Transmit[["Profit_Transmitted"]],
+                                     fill=T)
+          }
+        }
+        #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+        
+        # remove Orders_Transmitted
+        rm(Order_to_Transmit)
       }
-      #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
-      
-      # remove Orders_Transmitted
-      rm(Order_to_Transmit)
     }
+    
   }
   
   #**********************
@@ -850,7 +863,6 @@ Live_Trading_Imitator=function(BarData,
               Net_Profit=Net_Profit))
   
 }
-
 
 
 #************

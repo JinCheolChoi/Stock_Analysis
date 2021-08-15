@@ -128,6 +128,10 @@ for(i in 1:nrow(Params)){
   
   # print the progress
   print(paste0(i, " / ", nrow(Params), " (", round(i/nrow(Params)*100, 2), "%)"))
+  
+  if(i%%500==0){
+    save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-14_Trend.Rdata")
+  }
 }
 
 #Sim_Results$Ind_Profit[, .SD, .SDcols=c("Time", "Cum_Profit")] %>% plot(type='o')
@@ -170,9 +174,9 @@ Non_NA_Params[, c("Stop_Order", "Net_Profit")] %>% plot
 Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
 
 7211.2    # 0.5
-          # 0.75
-          # 10
-          # 120
+# 0.75
+# 10
+# 120
 
 
 #**************

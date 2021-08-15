@@ -64,7 +64,7 @@ Add_Model(Strategy="Test_Strategy",
 Add_Model(Strategy="Test_Strategy",
           Model="Trend",
           ModelParams=list(Interval=5,
-                           Extent=1))
+                           Extent=5))
 
 # Test_Strategy$Indicators$BBands
 # Test_Strategy$Models$Simple_BBands
@@ -247,7 +247,7 @@ Add_Model(Strategy="Short_Strategy",
 Add_Model(Strategy="Short_Strategy",
           Model="Trend",
           ModelParams=list(Interval=5,
-                           Extent=1))
+                           Extent=5))
 
 # Short_Strategy$Indicators$BBands
 # Short_Strategy$Models$Simple_BBands
@@ -340,7 +340,7 @@ Add_Model(Strategy="Best_Strategy",
 Add_Model(Strategy="Best_Strategy",
           Model="Trend",
           ModelParams=list(Interval=5,
-                           Extent=1))
+                           Extent=5))
 
 # Best_Strategy$Indicators$BBands
 # Best_Strategy$Models$Simple_BBands
