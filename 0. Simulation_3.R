@@ -67,16 +67,15 @@ BarData=MNQ
 # Stop_Order=c(1000000)
 # Profit_Order=c(120)
 
-# Simple_BBands_1_Long_PctB=0.5
-# Simple_BBands_2_Short_PctB=0.75
-# Stop_Order=c(10)
-# Profit_Order=c(120)
+Simple_BBands_1_Long_PctB=0.15
+Simple_BBands_2_Short_PctB=0.65
+Stop_Order=c(100)
+Profit_Order=c(15)
 
-
-Simple_BBands_1_Long_PctB=seq(0.05, 0.4, by=0.05)
-Simple_BBands_2_Short_PctB=seq(0.6, 0.95, by=0.05)
-Stop_Order=c(1000, 5, seq(10, 100, by=10))
-Profit_Order=c(5, seq(10, 50, by=5))
+# Simple_BBands_1_Long_PctB=seq(0.05, 0.4, by=0.05)
+# Simple_BBands_2_Short_PctB=seq(0.6, 0.95, by=0.05)
+# Stop_Order=c(1000, 5, seq(10, 100, by=10))
+# Profit_Order=c(5, seq(10, 50, by=5))
 
 Params=data.table(
   expand.grid(Simple_BBands_1_Long_PctB,
@@ -94,7 +93,6 @@ colnames(Params)=c("Simple_BBands_1_Long_PctB",
 
 Net_Profit=c()
 for(i in 1:nrow(Params)){
-  
   if(Params[i, Simple_BBands_1_Long_PctB]==0 &
      Params[i, Simple_BBands_2_Short_PctB]==1){
     Params$Net_Profit[i]=0
@@ -102,7 +100,7 @@ for(i in 1:nrow(Params)){
   }
   
   # import strategies
-  source(paste0(working.dir, "Strategies_2.R"))
+  source(paste0(working.dir, "Strategies_3.R"))
   
   #*********************
   #
@@ -129,16 +127,18 @@ for(i in 1:nrow(Params)){
   # print the progress
   print(paste0(i, " / ", nrow(Params), " (", round(i/nrow(Params)*100, 2), "%)"))
   
-  #
-  if(i%%500==0){
-    save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-17_No_Trend.Rdata")
-  }
+  # if(i%%500==0){
+  #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-17_Trend.Rdata")
+  # }
 }
 
+Test_Strategy$Order_Rules$General
+#Sim_Results$Ind_Profit[, .SD, .SDcols=c("Time", "Cum_Profit")] %>% plot(type='o')
 Params[, Row:=1:nrow(Params)]
 Temp=Params[!is.na(Net_Profit) & Net_Profit!=-Inf, ]
 Temp$Net_Profit %>% summary
-Temp$Net_Profit %>% hist
+Temp$Net_Profit %>% hist(breaks=30)
+
 
 Temp=Params[Stop_Order<=10000 &
               Stop_Order>Profit_Order &
@@ -161,15 +161,7 @@ Params[i, ]
 get(paste0("Setting_", i))[[2]]$Net_Profit
 #get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Cum_Profit")] %>% plot(type='o')
 get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o')
-unique(get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")])
-unique(get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")]) %>% plot(type="o")
-
-
-
-get(paste0("Setting_", i))[[2]]$Net_Profit
-#get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Cum_Profit")] %>% plot(type='o')
-get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o')
-unique(get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")])
+unique(gt(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")])
 unique(get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Profit")]) %>% plot(type="o")
 
 
@@ -193,8 +185,8 @@ Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
 #**************
 # save and load
 #**************
-#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-14_No_Trend.Rdata")
-#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-14_No_Trend.Rdata")
+#save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-17_Trend.Rdata")
+#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-17_Trend.Rdata")
 
 #***********************
 # visualize in bar chart
@@ -308,7 +300,6 @@ names(Strategy_Simple_BBands$Models)
 Strategy_Simple_BBands
 
 
-
 # compute indicators
 # Bollinger Bands
 Collapsed_BarData=data.table(Collapsed_BarData,
@@ -384,6 +375,9 @@ sma_len1=1
 sma_len2=5
 max_pos=2
 currentPosition=0
+while(!isConnected(tws)){
+  tws=twsConnect(port=Port)
+}
 
 if(!exists("toyData") ){
   toydata=reqMktData(tws,contract, eventWrapper=eWrapper.data(1), CALLBACK=snapShot)

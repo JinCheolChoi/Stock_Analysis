@@ -67,10 +67,10 @@ BarData=MNQ
 # Stop_Order=c(1000000)
 # Profit_Order=c(120)
 
-# Simple_BBands_1_Long_PctB=0.5
-# Simple_BBands_2_Short_PctB=0.75
-# Stop_Order=c(10)
-# Profit_Order=c(120)
+Simple_BBands_1_Long_PctB=0.15
+Simple_BBands_2_Short_PctB=0.65
+Stop_Order=c(100)
+Profit_Order=c(15)
 
 
 Simple_BBands_1_Long_PctB=seq(0.05, 0.4, by=0.05)
@@ -94,7 +94,6 @@ colnames(Params)=c("Simple_BBands_1_Long_PctB",
 
 Net_Profit=c()
 for(i in 1:nrow(Params)){
-  
   if(Params[i, Simple_BBands_1_Long_PctB]==0 &
      Params[i, Simple_BBands_2_Short_PctB]==1){
     Params$Net_Profit[i]=0
@@ -130,12 +129,14 @@ for(i in 1:nrow(Params)){
   print(paste0(i, " / ", nrow(Params), " (", round(i/nrow(Params)*100, 2), "%)"))
   
   if(i%%500==0){
-    save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-14_Trend.Rdata")
+    save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-17_Trend.Rdata")
   }
 }
 
 #Sim_Results$Ind_Profit[, .SD, .SDcols=c("Time", "Cum_Profit")] %>% plot(type='o')
 Params[, Row:=1:nrow(Params)]
+Temp=Params[!is.na(Net_Profit), ]
+
 
 Temp=Params[Stop_Order<=10000 &
               Stop_Order>Profit_Order &
@@ -145,7 +146,7 @@ Temp=Params[Stop_Order<=10000 &
 Temp=Params[Stop_Order<=10000 &
               Stop_Order<Profit_Order, ]
 
-Temp=Params[Stop_Order>=10000, ]
+Temp=Params[Stop_Order<1000, ]
 
 i=Temp[Net_Profit==sort(Temp$Net_Profit, decreasing=T)[1], Row]
 Temp[order(Net_Profit, decreasing=T), ] %>% head(30)
@@ -154,7 +155,7 @@ Params[Row>=(i-10) &
          Row<=(i+10), ]
 Params[i, ]
 
-
+Temp[Stop_Order==0, Net_Profit] %>% summary
 get(paste0("Setting_", i))[[2]]$Net_Profit
 #get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Cum_Profit")] %>% plot(type='o')
 get(paste0("Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o')
@@ -183,15 +184,16 @@ Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
 # save and load
 #**************
 #save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-14_Trend.Rdata")
-#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-14_Trend.Rdata")
+#load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-08-17_Trend.Rdata")
 
 #***********************
 # visualize in bar chart
 #***********************
 # convert xts.Collapsed_BarData
+library(quantmod)
 BarData[, Volume:=abs(Net_Volume)]
 xts.Collapsed_BarData=as.xts.data.table(BarData[, -1])
-chartSeries(xts.Collapsed_BarData,
+chartSeries(xts.Collapsed_BarData[1:1000, ],
             name=Symbols,
             theme="white")
 
@@ -240,190 +242,7 @@ Params[!(is.na(Net_Profit)|
        .SDcols=c("Net_Profit")]$Net_Profit %>% hist
 
 
-RSIs=RSI(BarData$Close, n=9)
-RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])]
-RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][2])]
 
-
-RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])]
-RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][2])]
-
-RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][5])]
-RSIs[which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][6])]
-
-MNQ[, RSI:=RSI(Close, n=9)]
-MNQ[, Shift_Close:=shift(Close, 1)]
-MNQ[, Shift_RSI:=shift(RSI, 1)]
-MNQ[, Diff_Close:=Close-Shift_Close]
-MNQ[, Trend:=sign(Diff_Close)]
-MNQ[, Shift_Trend:=shift(Trend, 1)]
-MNQ[, Diff_RSI:=RSI-Shift_RSI]
-MNQ[, BBands:=BBands(Close)[, 4]]
-MNQ[, Shift_BBands:=shift(BBands, 1)]
-
-MNQ[, .SD, .SDcols=c("Shift_RSI", "Diff_Close")] %>% plot
-MNQ[, .SD, .SDcols=c("Shift_RSI", "Diff_Close")] %>% cor(use="complete.obs")
-MNQ[, .SD, .SDcols=c("Shift_BBands", "Diff_Close")] %>% plot
-MNQ[, .SD, .SDcols=c("Shift_BBands", "Diff_Close")] %>% cor(use="complete.obs")
-
-
-MNQ[, .SD, .SDcols=c("Diff_Close", "Shift_RSI", "Shift_BBands", "Shift_Trend")]
-
-which(MNQ$Time==Sim_Results$Orders_Transmitted[,Submit_Time][1])
-
-summary(RSIs)
-sum((RSIs<=20), na.rm=T)/length(RSIs[!is.na(RSIs)])*100
-sum((RSIs>=(80)), na.rm=T)/length(RSIs[!is.na(RSIs)])*100
-
-
-# run Backtesting
-T2=system.time({
-  Sim_Results=Backtesting(BarData<-MNQ,
-                          Strategy<-get(Strategies[1]))
-})
-
-
-
-
-#***********************************************
-#
-# 
-#
-#***********************************************
-names(unlist(as.list(args(Add_Model)))) # see all arguments in a function
-names(Strategy_Simple_BBands$Models)
-
-#********************************************************
-Strategy_Simple_BBands
-
-
-# compute indicators
-# Bollinger Bands
-Collapsed_BarData=data.table(Collapsed_BarData,
-                             Collapsed_BarData[, BBands(Close)])
-setnames(Collapsed_BarData,
-         c("dn", "mavg", "up", "pctB"),
-         c("LBand", "MBand", "HBand", "PctB"))
-
-# RSI
-Collapsed_BarData[, RSI:=RSI(Close)]
-
-
-
-# parse Collapsed_BarData to determine an action to take
-# Bollinger bands strategy simulation
-Result=BBands_Sim(Consec_Times=2,
-                  Long_PctB=0,
-                  Short_PctB=1)
-
-Result
-
-
-
-
-#
-Result$Tradings[, Time_Diff:=as.numeric(Short_Time-Long_Time)]
-Result$Tradings[Time_Diff>100, ]
-Result$Tradings[, Time_Diff] %>% summary
-#
-
-
-
-Collapsed_BarData[, Sign_in_Price_Change:=sign(Close-Open)]
-Collapsed_BarData[, Volume_Change:=Volume/shift(Volume, 1)]
-Collapsed_BarData[, Future_Direction:=sign(shift(Close, -1)-Close)]
-
-
-Collapsed_BarData=Collapsed_BarData[!is.na(Future_Direction)&
-                                      !is.na(RSI)&
-                                      !is.na(Volume_Change), ]
-#
-cor(Collapsed_BarData[, .SD, .SDcols=c("RSI", "Future_Direction")])
-cor(Collapsed_BarData[RSI>=80, .SD, .SDcols=c("RSI", "Future_Direction")])
-cor(Collapsed_BarData[RSI>=80 & Volume_Change>2.5, .SD, .SDcols=c("RSI", "Future_Direction")])
-
-Collapsed_BarData[RSI>=80 & Volume_Change>2.5, ]
-# establish criteria to make a deicision
-
-
-
-
-Collapsed_BarData
-
-#
-# remove a line displaying an error message in eWrapper_cust
-
-#
-
-
-# missing times
-setdiff(seq(from=min(as.POSIXct(BarData$Time)),
-            to=max(as.POSIXct(BarData$Time)),
-            by=5),
-        as.POSIXct(BarData$Time)) %>% as.POSIXct(origin="1970-01-01")
-
-
-
-
-
-
-
-sma_len1=1
-sma_len2=5
-max_pos=2
-currentPosition=0
-
-if(!exists("toyData") ){
-  toydata=reqMktData(tws,contract, eventWrapper=eWrapper.data(1), CALLBACK=snapShot)
-}
-while(TRUE){
-  toydata=rbind(toydata, reqMktData(tws, contract, eventWrapper= eWrapper.data(1),
-                                    CALLBACK=snapShot))
-  
-  toydata=unique(toydata)
-  if(nrow(toydata)<sma_len2){
-    print(paste0("not enough data yet: ", nrow(toydata)," lines"))
-    Sys.sleep(1)
-    next
-  }
-  short_sma= mean(tail(toydata$Last,sma_len1))
-  long_sma= mean(tail(toydata$Last,sma_len2))
-  action =""
-  if(short_sma >(long_sma+0.005))
-    action="BUY"
-  if(short_sma <(long_sma-0.005))
-    action="SELL"
-  quantity=1
-  if(action!=""){
-    print(paste(action,quantity,currentPosition))
-    if(abs(currentPosition+ (action=="BUY") *as.numeric(quantity)
-           - (action=="SELL")*as.numeric(quantity))<max_pos)
-    {
-      orderId=as.numeric(reqIds(tws))
-      toyorder=twsOrder(orderId,orderType="MKT",action=action,
-                        totalQuantity=quantity,transmit=T)
-      placeOrder(tws,contract,toyorder)
-      currentPosition=currentPosition+ (action=="BUY") *as.numeric(quantity)
-      - (action=="SELL")*as.numeric(quantity)
-    }
-  }
-  else
-  {print(paste0("not action yet: ",nrow(toydata)," lines ; ",
-                "smas: short long ", short_sma, " ", long_sma," ", currentPosition))}
-}
-
-
-
-ac=reqAccountUpdates(tws)
-twsPortfolioValue(ac)
-
-orderId=as.numeric(reqIds(tws))
-myorder=twsOrder(orderId, orderType="MKT", action="BUY", totalQuantity="1", transmit=T)
-placeOrder(tws, contract, myorder)
-
-orderId=as.numeric(reqIds(tws))
-myorder=twsOrder(orderId, orderType="MKT", action="SELL", totalQuantity="1", transmit=T)
-placeOrder(tws, contract, myorder)
 
 
 
