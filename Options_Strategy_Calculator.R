@@ -51,14 +51,14 @@ round(Capital, 1)==round((New_Stop_Price*100)/New_Kelly*Maximum_Contracts_Num, 1
 
 
 #***************
-# short strategy
+# long strategy
 #***************
 # determine stop-price (stop-long)
 A=0.06 # ask price
 C=8500 # capital
 Contracts_Num=1
 Commissions=1.04*2*Contracts_Num
-P=1-0.91 # maxx loss chance
+P=1-0.91 # 1 - max loss chance
 
 # PP : profit price (short order)
 PP=((1-P)*(A+Commissions/100/Contracts_Num))/(P-1/C*(100*A*Contracts_Num+Commissions))+(A+Commissions/100/Contracts_Num)
@@ -67,6 +67,14 @@ b=(100*PP*Contracts_Num)/(100*A*Contracts_Num+Commissions)
 (P)-(1-P)/(b-1)
 (Commissions+A*100*Contracts_Num)/C
 
+#
+Net_Return=100*(PP-A)*Contracts_Num-Commissions
+if(PP>A){ # x > 0 equivalently translantes to Profit_price > Ask price
+  print(paste0("Ask_Price : ", round(A, 2), " / Profit_Price : ", round(PP, 2), " / Kelly : ", round((P)-(1-P)/(b-1), 4), " / Bet : $", round(A*100*Contracts_Num, 2), " / Loss (w/ Commissions): $", round(A*100*Contracts_Num+Commissions, 2)))
+  print(paste0("Return : $", round(Net_Return+A*100*Contracts_Num+Commissions, 2), " / Return_Rate (w/ Commissions) : ", round(((Net_Return+A*100*Contracts_Num+Commissions)/(A*100*Contracts_Num+Commissions))*100, 2), "%"))
+  print(paste0("Net_Return : $", round(Net_Return, 2), " / Net_Return_Rate (w/ Commissions) : ", round((Net_Return/(A*100*Contracts_Num+Commissions))*100, 2), "%"))
+  
+}
 
 
 
