@@ -54,11 +54,11 @@ round(Capital, 1)==round((New_Stop_Price*100)/New_Kelly*Maximum_Contracts_Num, 1
 # long strategy
 #***************
 # determine stop-price (stop-long)
-A=0.06 # ask price
+A=1.7 # ask price
 C=8500 # capital
 Contracts_Num=1
 Commissions=1.04*2*Contracts_Num
-P=1-0.91 # 1 - max loss chance
+P=1-0.54 # 1 - max loss chance
 
 # PP : profit price (short order)
 PP=((1-P)*(A+Commissions/100/Contracts_Num))/(P-1/C*(100*A*Contracts_Num+Commissions))+(A+Commissions/100/Contracts_Num)
@@ -78,6 +78,13 @@ if(PP>A){ # x > 0 equivalently translantes to Profit_price > Ask price
 
 
 
+#****************
+# option leverage
+#****************
+ask=2.39
+delta=0.484
+spot_price=374.67
 
+delta*spot_price/ask
 
 
