@@ -64,7 +64,7 @@ Add_Model(Strategy="Test_Strategy",
 Add_Model(Strategy="Test_Strategy",
           Model="Trend",
           ModelParams=list(Interval=5,
-                           Extent=5))
+                           Extent=2))
 
 # Test_Strategy$Indicators$BBands
 # Test_Strategy$Models$Simple_BBands
@@ -78,7 +78,7 @@ Add_OrderRule(Strategy="Test_Strategy",
                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
                                    Stop_Order=Params$Stop_Order[i],
                                    Profit_Order=Params$Profit_Order[i],
-                                   Trend=TRUE))
+                                   Trend=FALSE))
 Add_OrderRule(Strategy="Test_Strategy",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
@@ -155,7 +155,7 @@ Add_Model(Strategy="Long_Strategy",
 Add_Model(Strategy="Long_Strategy",
           Model="Trend",
           ModelParams=list(Interval=5,
-                           Extent=5))
+                           Extent=2))
 
 # Long_Strategy$Indicators$BBands
 # Long_Strategy$Models$Simple_BBands
@@ -247,7 +247,7 @@ Add_Model(Strategy="Short_Strategy",
 Add_Model(Strategy="Short_Strategy",
           Model="Trend",
           ModelParams=list(Interval=5,
-                           Extent=5))
+                           Extent=2))
 
 # Short_Strategy$Indicators$BBands
 # Short_Strategy$Models$Simple_BBands
@@ -340,7 +340,7 @@ Add_Model(Strategy="Best_Strategy",
 Add_Model(Strategy="Best_Strategy",
           Model="Trend",
           ModelParams=list(Interval=5,
-                           Extent=5))
+                           Extent=2))
 
 # Best_Strategy$Indicators$BBands
 # Best_Strategy$Models$Simple_BBands

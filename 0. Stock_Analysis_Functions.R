@@ -381,6 +381,11 @@ Collapse_5SecsBarData=function(`5SecsBarData`,
   if(BarSize==5){
     Collapsed_BarData=`5SecsBarData` %>% as.data.frame() %>% as.data.table()
     Collapsed_BarData[, Wap:=NULL]
+    
+    # Net_Volume
+    Collapsed_BarData[Open<Close, Net_Volume:=Volume]
+    Collapsed_BarData[Open==Close, Net_Volume:=Volume]
+    Collapsed_BarData[Open>Close, Net_Volume:=-Volume]
   }
   
   # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
@@ -406,10 +411,15 @@ Collapse_5SecsBarData=function(`5SecsBarData`,
     # Date_Time_To
     Time_Intervals[, Date_Time_To:=shift(Time_Intervals$Date_Time_From, -1)]
     
+    # Net_Volume
+    `5SecsBarData`[Open<Close, Net_Volume:=Volume]
+    `5SecsBarData`[Open==Close, Net_Volume:=Volume]
+    `5SecsBarData`[Open>Close, Net_Volume:=-Volume]
+    
     # non-equal left_join Time_Intervals to `5SecsBarData`
     Time_Intervals=`5SecsBarData`[Time_Intervals, on=c("Time>=Date_Time_From", "Time<Date_Time_To"),
                                   nomatch=0,
-                                  .(Symbol, Date_Time_From=Time, Open, High, Low, Close, Volume, Wap, Count, Date_Time_To)]
+                                  .(Symbol, Date_Time_From=Time, Open, High, Low, Close, Volume, Wap, Count, Net_Volume, Date_Time_To)]
     
     # Collapsed_BarData
     Collapsed_BarData=Time_Intervals[, .(Symbol=unique(Symbol),
@@ -418,7 +428,8 @@ Collapse_5SecsBarData=function(`5SecsBarData`,
                                          Low=min(Low), # row with minimum Low price by group
                                          Close=Close[.N], # last row by group
                                          Volume=sum(Volume),
-                                         Count=sum(Count)),
+                                         Count=sum(Count),
+                                         Net_Volume=sum(Net_Volume)),
                                      by="Date_Time_From"]
     
     # rename Date_Time_From to Time
@@ -608,10 +619,18 @@ Live_Trading_Imitator=function(BarData,
   Orders_Transmitted=Orders_Transmitted[-1,]
   Live_Data[, `:=`(Symbol=NULL, Time=NULL, Open=NULL,
                    High=NULL, Low=NULL, Close=NULL,
-                   Volume=NULL, Count=NULL)]
+                   Volume=NULL, Net_Volume=NULL, Count=NULL)]
+  Time_Unit=BarData$Time[2]-BarData$Time[1]
+  Early_Order_Transmit_Proceeded="No"
   for(i in 1:(nrow(BarData)-1)){
-    # i=30
+    # i=67
     Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
+    
+    # if Early_Order_Transmit_Proceeded was done at i-1, skip
+    if(Early_Order_Transmit_Proceeded=="Yes"){
+      Early_Order_Transmit_Proceeded="No"
+      next
+    }
     
     #***********************************************
     #
@@ -622,8 +641,11 @@ Live_Trading_Imitator=function(BarData,
     # Order_Rules[[General_Strategy]]
     # OrderRules_Env[[]]
     # tail(Live_Data, 1)
-    # skip if there is transmitted order to fill
-    if(sum(Orders_Transmitted[["Filled"]]==0)<Max_Orders){
+    # proceed if there is no transmitted order(s) to fill
+    # proceed if the number of filled orders is smaller than Max_Orders
+    if(sum(Orders_Transmitted[["Filled"]]==0)<Max_Orders & 
+       abs(nrow(Orders_Transmitted[Filled==1 & Action=="Buy", ])-
+           nrow(Orders_Transmitted[Filled==1 & Action=="Sell", ]))<Max_Orders){
       #*********************
       # calculate indicators
       #*********************
@@ -658,7 +680,12 @@ Live_Trading_Imitator=function(BarData,
       # Signals are assigned opposite if Trend=TRUE
       if(nrow(Signals)==2){
         if(Trend==TRUE){
-          Signals[, which(sapply(Signals, function(x) sum(x==T)>0)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)>0))]
+          if(sum(Signals$Trend)>0){
+            Signals[, which(sapply(Signals, function(x) sum(x==T)==1)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)==1))]
+          }else{
+            Signals[1, ]=FALSE
+            Signals[2, ]=FALSE
+          }
         }
       }
       
@@ -678,6 +705,7 @@ Live_Trading_Imitator=function(BarData,
                                  function(x){
                                    do.call(OrderRules_Env[[paste0(x, "_Function")]],
                                            c(list(Live_Data=Live_Data,
+                                                  Time_Unit=Time_Unit,
                                                   Max_Orders=Max_Orders,
                                                   Sigs_N=Sigs_N,
                                                   N_Orders_held=N_Orders_held),
@@ -689,69 +717,16 @@ Live_Trading_Imitator=function(BarData,
       }
     }
     
-    #*********************
-    # stop or early profit
-    #*********************
-    # Orders_Transmitted
-    # BarData
-    # Scenario
-    Early_Order_Transmit=Profit_Loss_Cut_Transmitted(Orders_Transmitted=Orders_Transmitted,
-                                                     Next_BarData=BarData[i+1, ],
-                                                     Profit_Order=Profit_Order,
-                                                     Stop_Order=Stop_Order)
-    
-    if(is.null(do.call(rbind, Early_Order_Transmit)) & exists("Order_to_Transmit")){
+    if(exists("Order_to_Transmit")){
       if(!is.null(do.call(rbind, Order_to_Transmit))){
         # add Order_to_Transmit to Orders_Transmitted
         Orders_Transmitted=rbind(Orders_Transmitted,
                                  do.call(rbind, Order_to_Transmit),
                                  fill=T)
-        
+        # remove Orders_Transmitted
+        rm(Order_to_Transmit)
         #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
       }
-      
-      # remove Orders_Transmitted
-      rm(Order_to_Transmit)
-      
-    }else if(!is.null(do.call(rbind, Early_Order_Transmit))){
-      Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
-      Order_to_Transmit=Early_Order_Transmit
-      if(Scenario=="Positive"){
-        Orders_Transmitted=rbind(Orders_Transmitted,
-                                 Order_to_Transmit[["Profit_Transmitted"]],
-                                 fill=T)
-        
-        # recalculate N_Remaining_Orders
-        N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
-          sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
-        if(N_Remaining_Orders!=0){
-          Orders_Transmitted=rbind(Orders_Transmitted,
-                                   Order_to_Transmit[["Stop_Transmitted"]],
-                                   fill=T)
-        }
-      }
-      if(Scenario=="Negative"){
-        Orders_Transmitted=rbind(Orders_Transmitted,
-                                 Order_to_Transmit[["Stop_Transmitted"]],
-                                 fill=T)
-        # recalculate N_Remaining_Orders
-        N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
-          sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
-        if(N_Remaining_Orders!=0){
-          Orders_Transmitted=rbind(Orders_Transmitted,
-                                   Order_to_Transmit[["Profit_Transmitted"]],
-                                   fill=T)
-        }
-      }
-      #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
-      
-      # remove Orders_Transmitted
-      rm(Order_to_Transmit)
-    }
-    
-    # skip if currently on no position & there is no order transmitted
-    if(sum(Orders_Transmitted[["Filled"]]==0)==0){ # orders are all balanced
-      next
     }
     
     #***********
@@ -769,7 +744,7 @@ Live_Trading_Imitator=function(BarData,
                          `:=`(Filled_Time=BarData[i+1, Time],
                               Filled=1)]
       
-      # if not filled, just cancel the transmit
+      # if not filled, just cancel the transmit 60 minutes later
       if(sum(Orders_Transmitted[["Filled"]]==0)){
         if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>60*60){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
@@ -800,6 +775,58 @@ Live_Trading_Imitator=function(BarData,
         }
       }
       
+    }
+    
+    # skip if currently on no position & there is no order transmitted
+    if(nrow(Orders_Transmitted[Filled==1 & Action=="Buy", ])!=nrow(Orders_Transmitted[Filled==1 & Action=="Sell", ])){ # orders are all balanced
+      #*********************
+      # stop or early profit
+      #*********************
+      # Orders_Transmitted
+      # BarData
+      # Scenario
+      Early_Order_Transmit=Profit_Loss_Cut_Transmitted(Orders_Transmitted=Orders_Transmitted,
+                                                       Next_BarData=BarData[i+1, ],
+                                                       Profit_Order=Profit_Order,
+                                                       Stop_Order=Stop_Order)
+      
+      if(!is.null(do.call(rbind, Early_Order_Transmit))){
+        Early_Order_Transmit_Proceeded="Yes"
+        
+        Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
+        Order_to_Transmit=Early_Order_Transmit
+        if(Scenario=="Positive"){
+          Orders_Transmitted=rbind(Orders_Transmitted,
+                                   Order_to_Transmit[["Profit_Transmitted"]],
+                                   fill=T)
+          
+          # recalculate N_Remaining_Orders
+          N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
+            sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
+          if(N_Remaining_Orders!=0){
+            Orders_Transmitted=rbind(Orders_Transmitted,
+                                     Order_to_Transmit[["Stop_Transmitted"]],
+                                     fill=T)
+          }
+        }
+        if(Scenario=="Negative"){
+          Orders_Transmitted=rbind(Orders_Transmitted,
+                                   Order_to_Transmit[["Stop_Transmitted"]],
+                                   fill=T)
+          # recalculate N_Remaining_Orders
+          N_Remaining_Orders=sum(Orders_Transmitted[["Action"]]=="Buy"&Orders_Transmitted[["Filled"]]==1)-
+            sum(Orders_Transmitted[["Action"]]=="Sell"&Orders_Transmitted[["Filled"]]==1)
+          if(N_Remaining_Orders!=0){
+            Orders_Transmitted=rbind(Orders_Transmitted,
+                                     Order_to_Transmit[["Profit_Transmitted"]],
+                                     fill=T)
+          }
+        }
+        #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+        
+        # remove Orders_Transmitted
+        rm(Order_to_Transmit)
+      }
     }
     
   }
@@ -841,7 +868,6 @@ Live_Trading_Imitator=function(BarData,
               Net_Profit=Net_Profit))
   
 }
-
 
 
 #************
@@ -1725,7 +1751,7 @@ ReqRealTimeBars=function(BarSize=5,
   
   return(New_Data) # terminate the algorithm by retunning New_Data
   
-} 
+}
 
 
 
@@ -1791,7 +1817,8 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
         sys.time <- as.POSIXct(strptime(paste(readBin(con, 
                                                       character(), 2), collapse = " "), timestamp))
         if (!is.null(last.time)) {
-          Sys.sleep((sys.time - last.time) * playback)
+          #Sys.sleep((sys.time - last.time) * playback)
+          Sys.sleep((0.1) * playback)
         }
         curMsg <- readBin(con, character(), 1)
         if (length(curMsg) < 1) 
@@ -1806,7 +1833,8 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
         processMsg(curMsg, con, eWrapper, timestamp, 
                    file, ...)
         if (curMsg == .twsIncomingMSG$REAL_TIME_BARS) 
-          Sys.sleep(5 * playback)
+          #Sys.sleep(5 * playback)
+          Sys.sleep(0.1 * playback)
       }
     }
   }
@@ -1824,11 +1852,11 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
       else {
         processMsg(curMsg, con, eWrapper, timestamp, 
                    file, twsCon, ...)
-        rep.ind=0 # # # #
       }
-      
+      rep.ind=0 # # # #
     }, error = function(e) {
       close(twsCon)
+      print(e)
       stop("IB connection error. Connection closed", 
            call. = FALSE)
     })
@@ -1836,176 +1864,173 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
 }
 
 
-
-
-
 #**************
 # eWrapper_cust
 #**********************
 # customized eWrapper()
 # revised lines (realtimeBars) are highlighted with #
-eWrapper_cust=function (debug = FALSE, errfile = stderr()) 
+eWrapper_cust=function (debug = FALSE, errfile = stderr())
 {
   .Data <- new.env()
   get.Data <- function(x) get(x, .Data)
   assign.Data <- function(x, value) assign(x, value, .Data)
   remove.Data <- function(x) remove(x, .Data)
   if (is.null(debug)) {
-    errorMessage <- function(curMsg, msg, timestamp, file, 
+    errorMessage <- function(curMsg, msg, timestamp, file,
                              twsconn, ...) {
       cat(msg, "\n", file = errfile)
     }
-    tickPrice <- tickSize <- tickOptionComputation <- tickGeneric <- tickString <- tickEFP <- orderStatus <- openOrder <- openOrderEnd <- updateAccountValue <- updateAccountTime <- updatePortfolio <- accountDownloadEnd <- nextValidId <- contractDetails <- bondContractDetails <- contractDetailsEnd <- execDetails <- execDetailsEnd <- updateMktDepth <- updateMktDepthL2 <- updateNewsBulletin <- managedAccounts <- receiveFA <- historicalData <- scannerParameters <- scannerData <- scannerDataEnd <- realtimeBars <- currentTime <- fundamentalData <- deltaNeutralValidation <- tickSnapshotEnd <- function(curMsg, 
+    tickPrice <- tickSize <- tickOptionComputation <- tickGeneric <- tickString <- tickEFP <- orderStatus <- openOrder <- openOrderEnd <- updateAccountValue <- updateAccountTime <- updatePortfolio <- accountDownloadEnd <- nextValidId <- contractDetails <- bondContractDetails <- contractDetailsEnd <- execDetails <- execDetailsEnd <- updateMktDepth <- updateMktDepthL2 <- updateNewsBulletin <- managedAccounts <- receiveFA <- historicalData <- scannerParameters <- scannerData <- scannerDataEnd <- realtimeBars <- currentTime <- fundamentalData <- deltaNeutralValidation <- tickSnapshotEnd <- function(curMsg,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           msg, timestamp, file, ...) {
       c(curMsg, msg)
     }
   }
   else if (!debug) {
-    tickPrice <- function(curMsg, msg, timestamp, file, 
+    tickPrice <- function(curMsg, msg, timestamp, file,
                           ...) {
       symbols <- get.Data("symbols")
-      e_tick_price(NULL, msg, timestamp, file, symbols, 
-                   ...)
+      # e_tick_price(NULL, msg, timestamp, file, symbols,
+      #              ...)
     }
     tickSize <- function(curMsg, msg, timestamp, file, ...) {
       symbols <- get.Data("symbols")
-      e_tick_size(NULL, msg, timestamp, file, symbols, 
-                  ...)
+      # e_tick_size(NULL, msg, timestamp, file, symbols,
+      #             ...)
     }
-    tickOptionComputation <- function(curMsg, msg, timestamp, 
+    tickOptionComputation <- function(curMsg, msg, timestamp,
                                       file, ...) {
       symbols <- get.Data("symbols")
-      e_tick_option(NULL, msg, timestamp, file, symbols, 
-                    ...)
+      # e_tick_option(NULL, msg, timestamp, file, symbols,
+      #               ...)
     }
-    tickGeneric <- function(curMsg, msg, timestamp, file, 
+    tickGeneric <- function(curMsg, msg, timestamp, file,
                             ...) {
       symbols <- get.Data("symbols")
-      e_tick_generic(NULL, msg, timestamp, file, symbols, 
-                     ...)
+      # e_tick_generic(NULL, msg, timestamp, file, symbols,
+      #                ...)
     }
-    tickString <- function(curMsg, msg, timestamp, file, 
+    tickString <- function(curMsg, msg, timestamp, file,
                            ...) {
       symbols <- get.Data("symbols")
-      e_tick_string(NULL, msg, timestamp, file, symbols, 
-                    ...)
+      # e_tick_string(NULL, msg, timestamp, file, symbols,
+      #               ...)
     }
     tickEFP <- function(curMsg, msg, timestamp, file, ...) {
       symbols <- get.Data("symbols")
-      e_tick_EFP(NULL, msg, timestamp, file, symbols, 
-                 ...)
+      # e_tick_EFP(NULL, msg, timestamp, file, symbols,
+      #            ...)
     }
-    orderStatus <- function(curMsg, msg, timestamp, file, 
+    orderStatus <- function(curMsg, msg, timestamp, file,
                             ...) {
-      e_order_status(curMsg, msg)
+      # e_order_status(curMsg, msg)
       c(curMsg, msg)
     }
-    errorMessage <- function(curMsg, msg, timestamp, file, 
+    errorMessage <- function(curMsg, msg, timestamp, file,
                              twsconn, ...) {
-      if (msg[3] == "1100") 
+      if (msg[3] == "1100")
         twsconn$connected <- FALSE
-      if (msg[3] %in% c("1101", "1102")) 
+      if (msg[3] %in% c("1101", "1102"))
         twsconn$connected <- TRUE
-      cat("TWS Message:", msg, "\n")
+      # cat("TWS Message:", msg, "\n")
     }
-    openOrder <- function(curMsg, msg, timestamp, file, 
+    openOrder <- function(curMsg, msg, timestamp, file,
                           ...) {
       c(curMsg, msg)
     }
-    openOrderEnd <- function(curMsg, msg, timestamp, file, 
+    openOrderEnd <- function(curMsg, msg, timestamp, file,
                              ...) {
       c(curMsg, msg)
     }
-    updateAccountValue <- function(curMsg, msg, timestamp, 
+    updateAccountValue <- function(curMsg, msg, timestamp,
                                    file, ...) {
       c(curMsg, msg)
     }
-    updatePortfolio <- function(curMsg, msg, timestamp, 
+    updatePortfolio <- function(curMsg, msg, timestamp,
                                 file, ...) {
-      e_portfolio_value(curMsg, msg)
+      # e_portfolio_value(curMsg, msg)
       c(curMsg, msg)
     }
-    updateAccountTime <- function(curMsg, msg, timestamp, 
+    updateAccountTime <- function(curMsg, msg, timestamp,
                                   file, ...) {
       c(curMsg, msg)
     }
-    accountDownloadEnd <- function(curMsg, msg, timestamp, 
+    accountDownloadEnd <- function(curMsg, msg, timestamp,
                                    file, ...) {
       c(curMsg, msg)
     }
-    nextValidId <- function(curMsg, msg, timestamp, file, 
+    nextValidId <- function(curMsg, msg, timestamp, file,
                             ...) {
       c(curMsg, msg)
     }
-    contractDetails <- function(curMsg, msg, timestamp, 
+    contractDetails <- function(curMsg, msg, timestamp,
                                 file, ...) {
       c(curMsg, msg)
     }
-    bondContractDetails <- function(curMsg, msg, timestamp, 
+    bondContractDetails <- function(curMsg, msg, timestamp,
                                     file, ...) {
       c(curMsg, msg)
     }
-    contractDetailsEnd <- function(curMsg, msg, timestamp, 
+    contractDetailsEnd <- function(curMsg, msg, timestamp,
                                    file, ...) {
       c(curMsg, msg)
     }
-    execDetails <- function(curMsg, msg, timestamp, file, 
+    execDetails <- function(curMsg, msg, timestamp, file,
                             ...) {
-      e_execDetails(curMsg, msg, file, ...)
+      # e_execDetails(curMsg, msg, file, ...)
     }
-    execDetailsEnd <- function(curMsg, msg, timestamp, file, 
+    execDetailsEnd <- function(curMsg, msg, timestamp, file,
                                ...) {
       c(curMsg, msg)
     }
-    updateMktDepth <- function(curMsg, msg, timestamp, file, 
+    updateMktDepth <- function(curMsg, msg, timestamp, file,
                                ...) {
       symbols <- get.Data("symbols")
-      e_update_mkt_depth(NULL, msg, timestamp, file, symbols, 
-                         ...)
+      # e_update_mkt_depth(NULL, msg, timestamp, file, symbols,
+      #                    ...)
     }
-    updateMktDepthL2 <- function(curMsg, msg, timestamp, 
+    updateMktDepthL2 <- function(curMsg, msg, timestamp,
                                  file, ...) {
       symbols <- get.Data("symbols")
-      e_update_mkt_depthL2(NULL, msg, timestamp, file, 
-                           symbols, ...)
+      # e_update_mkt_depthL2(NULL, msg, timestamp, file,
+      #                      symbols, ...)
     }
-    updateNewsBulletin <- function(curMsg, msg, timestamp, 
+    updateNewsBulletin <- function(curMsg, msg, timestamp,
                                    file, ...) {
-      cat("newsMsgId: ", msg[2], "newsMsgType: ", msg[3], 
-          "newsMessage: ", msg[4], "origExch:", msg[5], 
+      cat("newsMsgId: ", msg[2], "newsMsgType: ", msg[3],
+          "newsMessage: ", msg[4], "origExch:", msg[5],
           "\n")
       c(curMsg, msg)
     }
-    managedAccounts <- function(curMsg, msg, timestamp, 
+    managedAccounts <- function(curMsg, msg, timestamp,
                                 file, ...) {
       c(curMsg, msg)
     }
-    receiveFA <- function(curMsg, msg, timestamp, file, 
+    receiveFA <- function(curMsg, msg, timestamp, file,
                           ...) {
       c(curMsg, msg)
     }
-    historicalData <- function(curMsg, msg, timestamp, file, 
+    historicalData <- function(curMsg, msg, timestamp, file,
                                ...) {
       c(curMsg, msg)
     }
-    scannerParameters <- function(curMsg, msg, timestamp, 
+    scannerParameters <- function(curMsg, msg, timestamp,
                                   file, ...) {
-      cat(msg <- rawToChar(msg[-which(msg == as.raw(0))]))
+      # cat(msg <- rawToChar(msg[-which(msg == as.raw(0))]))
       c(curMsg, msg)
     }
-    scannerData <- function(curMsg, reqId, rank, contract, 
+    scannerData <- function(curMsg, reqId, rank, contract,
                             distance, benchmark, projection, legsStr) {
-      e_scannerData(curMsg, reqId, rank, contract, distance, 
-                    benchmark, projection, legsStr)
+      # e_scannerData(curMsg, reqId, rank, contract, distance,
+      #               benchmark, projection, legsStr)
     }
-    scannerDataEnd <- function(curMsg, msg, timestamp, file, 
+    scannerDataEnd <- function(curMsg, msg, timestamp, file,
                                ...) {
       c(curMsg, msg)
     }
-    realtimeBars <- function(curMsg, msg, timestamp, file, 
+    realtimeBars <- function(curMsg, msg, timestamp, file,
                              ...) {
       symbols <- get.Data("symbols")
-      
+
       `e_real_time_bars_dup` <- function(curMsg, msg, symbols, file, ...) {
         # msg[1] is VERSION
         columns <- c("Symbol","Time","Open","High","Low","Close","Volume",
@@ -2014,29 +2039,28 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
         file <- file[[id]]
         msg[2] <- symbols[as.numeric(msg[2])]
         msg[3] <- strftime(structure(as.numeric(msg[3]), class=c("POSIXt","POSIXct")))
-        
+
         #************
         # edited part
         #***************************
         Data=matrix(msg[-1], nrow=1)
         colnames(Data)=columns
         Data=as.data.table(Data)
-        
+
         #Corrected timezone
-        Adj_Time=as.POSIXct(format(as.POSIXct(Data$Time), 
-                                   tz="America/Los_Angeles"), 
+        Adj_Time=as.POSIXct(format(as.POSIXct(Data$Time),
+                                   tz="America/Los_Angeles"),
                             tz="America/Los_Angeles") # fix the timezone to PDT
-        
+
         Data[, Time:=NULL]
         Data[, Time:=Adj_Time]
         Data[, (columns[!columns%in%c("Symbol", "Time")]):=lapply(.SD, as.numeric), .SDcols=columns[!columns%in%c("Symbol", "Time")]]
-        
+
         setcolorder(Data, columns)
-        
+
         RealTimeBarData<<-as.data.table(Data) # generate RealTimeBarData in the global environment
         #************************************
-        
-        
+
       }
       #**************
       # original code
@@ -2051,57 +2075,58 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
       #   msg[3] <- strftime(structure(as.numeric(msg[3]), class=c("POSIXt","POSIXct")))
       #   cat(paste(columns,"=",msg[-1],sep=""),'\n',file=file,append=TRUE)
       # }
-      
-      
+
+
       e_real_time_bars_dup(curMsg, msg, symbols, file, ...) # # # #
     }
-    currentTime <- function(curMsg, msg, timestamp, file, 
+    currentTime <- function(curMsg, msg, timestamp, file,
                             ...) {
       c(curMsg, msg)
     }
-    fundamentalData <- function(curMsg, msg, timestamp, 
+    fundamentalData <- function(curMsg, msg, timestamp,
                                 file, ...) {
-      e_fundamentalData(curMsg, msg)
+      # e_fundamentalData(curMsg, msg)
     }
-    deltaNeutralValidation <- function(curMsg, msg, timestamp, 
+    deltaNeutralValidation <- function(curMsg, msg, timestamp,
                                        file, ...) {
       c(curMsg, msg)
     }
-    tickSnapshotEnd <- function(curMsg, msg, timestamp, 
+    tickSnapshotEnd <- function(curMsg, msg, timestamp,
                                 file, ...) {
       c(curMsg, msg)
     }
   }
   else {
-    tickPrice <- tickSize <- tickOptionComputation <- tickGeneric <- tickString <- tickEFP <- orderStatus <- openOrder <- openOrderEnd <- updateAccountValue <- updateAccountTime <- updatePortfolio <- accountDownloadEnd <- nextValidId <- contractDetails <- bondContractDetails <- contractDetailsEnd <- execDetails <- execDetailsEnd <- updateMktDepth <- updateMktDepthL2 <- updateNewsBulletin <- managedAccounts <- receiveFA <- historicalData <- scannerParameters <- scannerData <- scannerDataEnd <- realtimeBars <- currentTime <- fundamentalData <- deltaNeutralValidation <- tickSnapshotEnd <- function(curMsg, 
+    tickPrice <- tickSize <- tickOptionComputation <- tickGeneric <- tickString <- tickEFP <- orderStatus <- openOrder <- openOrderEnd <- updateAccountValue <- updateAccountTime <- updatePortfolio <- accountDownloadEnd <- nextValidId <- contractDetails <- bondContractDetails <- contractDetailsEnd <- execDetails <- execDetailsEnd <- updateMktDepth <- updateMktDepthL2 <- updateNewsBulletin <- managedAccounts <- receiveFA <- historicalData <- scannerParameters <- scannerData <- scannerDataEnd <- realtimeBars <- currentTime <- fundamentalData <- deltaNeutralValidation <- tickSnapshotEnd <- function(curMsg,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           msg, timestamp, file, ...) {
-      cat(as.character(timestamp), curMsg, msg, "\n", 
+      cat(as.character(timestamp), curMsg, msg, "\n",
           file = file[[1]], append = TRUE, ...)
     }
-    errorMessage <- function(curMsg, msg, timestamp, file, 
+    errorMessage <- function(curMsg, msg, timestamp, file,
                              twsconn, ...) {
-      cat(as.character(timestamp), curMsg, msg, "\n", 
+      cat(as.character(timestamp), curMsg, msg, "\n",
           file = file[[1]], append = TRUE, ...)
     }
+
   }
-  eW <- list(.Data = .Data, get.Data = get.Data, assign.Data = assign.Data, 
-             remove.Data = remove.Data, tickPrice = tickPrice, tickSize = tickSize, 
+  eW <- list(.Data = .Data, get.Data = get.Data, assign.Data = assign.Data,
+             remove.Data = remove.Data, tickPrice = tickPrice, tickSize = tickSize,
              #tickOptionComputation = tickOptioLive_Trading_ImitatornComputation,
-             tickGeneric = tickGeneric, 
-             tickString = tickString, tickEFP = tickEFP, orderStatus = orderStatus, 
-             errorMessage = errorMessage, openOrder = openOrder, 
-             openOrderEnd = openOrderEnd, updateAccountValue = updateAccountValue, 
-             updatePortfolio = updatePortfolio, updateAccountTime = updateAccountTime, 
-             accountDownloadEnd = accountDownloadEnd, nextValidId = nextValidId, 
-             contractDetails = contractDetails, bondContractDetails = bondContractDetails, 
-             contractDetailsEnd = contractDetailsEnd, execDetails = execDetails, 
-             execDetailsEnd = execDetailsEnd, updateMktDepth = updateMktDepth, 
-             updateMktDepthL2 = updateMktDepthL2, updateNewsBulletin = updateNewsBulletin, 
-             managedAccounts = managedAccounts, receiveFA = receiveFA, 
-             historicalData = historicalData, scannerParameters = scannerParameters, 
-             scannerData = scannerData, scannerDataEnd = scannerDataEnd, 
-             realtimeBars = realtimeBars, currentTime = currentTime, 
-             fundamentalData = fundamentalData, deltaNeutralValidation = deltaNeutralValidation, 
+             tickGeneric = tickGeneric,
+             tickString = tickString, tickEFP = tickEFP, orderStatus = orderStatus,
+             errorMessage = errorMessage, openOrder = openOrder,
+             openOrderEnd = openOrderEnd, updateAccountValue = updateAccountValue,
+             updatePortfolio = updatePortfolio, updateAccountTime = updateAccountTime,
+             accountDownloadEnd = accountDownloadEnd, nextValidId = nextValidId,
+             contractDetails = contractDetails, bondContractDetails = bondContractDetails,
+             contractDetailsEnd = contractDetailsEnd, execDetails = execDetails,
+             execDetailsEnd = execDetailsEnd, updateMktDepth = updateMktDepth,
+             updateMktDepthL2 = updateMktDepthL2, updateNewsBulletin = updateNewsBulletin,
+             managedAccounts = managedAccounts, receiveFA = receiveFA,
+             historicalData = historicalData, scannerParameters = scannerParameters,
+             scannerData = scannerData, scannerDataEnd = scannerDataEnd,
+             realtimeBars = realtimeBars, currentTime = currentTime,
+             fundamentalData = fundamentalData, deltaNeutralValidation = deltaNeutralValidation,
              tickSnapshotEnd = tickSnapshotEnd)
   class(eW) <- "eWrapper"
   invisible(eW)
