@@ -60,7 +60,7 @@ source(paste0(working.dir, "/Strategy.R"))
 #
 #***********************
 # contract info
-contract=twsFuture("MNQ", "GLOBEX", "202109")
+contract=twsFuture("MNQ", "GLOBEX", "202112")
 # connect to TWS
 tws=twsConnect(port=Port)
 # twsDisconnect(tws) # disconnect from TWS
