@@ -133,7 +133,8 @@ Daily_Hist_Data_Save=function(Contract,
                               Data_Dir,
                               Working_Dir,
                               Force=T,
-                              Log=F){
+                              Log=F,
+                              Market="Futures"){
   
   # the market closes at 14:00:00 PDT on Friday; and
   # at 15:00:00 PDT on the other weekdays
@@ -185,8 +186,14 @@ Daily_Hist_Data_Save=function(Contract,
       
       # remove redundant data
       # different time zone examples : "GMT", "America/Los_Angeles", "Europe/London"
-      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 15:00:00"), tz="America/Los_Angeles")
-      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles")), " 15:00:00"), tz="America/Los_Angeles")
+      if(Market=="Futures"){
+        Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 15:00:00"), tz="America/Los_Angeles")
+        Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles")), " 15:00:00"), tz="America/Los_Angeles")
+      }else if(Market=="Stock"){
+        Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 17:00:00"), tz="America/Los_Angeles")
+        Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles")), " 17:00:00"), tz="America/Los_Angeles")
+      }
+      
       HistData=HistData[Time>=Time_From &
                           Time<Time_To, ]
       
@@ -393,7 +400,7 @@ Collapse_5SecsBarData=function(`5SecsBarData`,
     
     # dates
     Dates=seq(as.Date(min(`5SecsBarData`$Time)), # minimum Date
-              as.Date(max(`5SecsBarData`$Time)), # maximumLive_Trading_Imitator Date
+              as.Date(max(`5SecsBarData`$Time)), # maximum Date
               by="day")
     
     # time intervals
@@ -2111,7 +2118,7 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
   }
   eW <- list(.Data = .Data, get.Data = get.Data, assign.Data = assign.Data,
              remove.Data = remove.Data, tickPrice = tickPrice, tickSize = tickSize,
-             #tickOptionComputation = tickOptioLive_Trading_ImitatornComputation,
+             #tickOptionComputation = tickOptionComputation,
              tickGeneric = tickGeneric,
              tickString = tickString, tickEFP = tickEFP, orderStatus = orderStatus,
              errorMessage = errorMessage, openOrder = openOrder,
