@@ -3,9 +3,9 @@
 #***************
 # determine stop-price (stop-long)
 #Put_Ask=59.15 # put option ask (long position)
-Bid_Price=0.29 # call option ask (short position)
-Strike=270 # strike
-SP=200.53 # stock price when purchased
+Bid_Price=4.3 # call option ask (short position)
+Strike=330 # strike
+SP=212.76 # stock price when purchased
 #SE=seq(150, 300, by=0.01) # stock price at expiration
 
 Margin_per_Contract=Bid_Price*100+max(0.2*SP*100+abs(Strike-SP)*100, 0.1*SP*100)
@@ -13,11 +13,11 @@ Margin_per_Contract=7669
 
 # calculate the stop price
 # x must be larger than 0
-Capital=100000
+Capital=8450
 Maximum_Contracts_Num=floor(Capital/Margin_per_Contract)
 # Maximum_Contracts_Num=10
 Net_Return=Bid_Price*100*Maximum_Contracts_Num
-p=0.93
+p=0.94
 Commissions=1.04*2*Maximum_Contracts_Num
 x=(Capital*Bid_Price*p-Capital*(1-p)*(Commissions/(100*Maximum_Contracts_Num)))/(100*Bid_Price*Maximum_Contracts_Num+Capital*(1-p))-Bid_Price
 Stop_Price=(Bid_Price+x)
@@ -81,10 +81,43 @@ if(PP>A){ # x > 0 equivalently translantes to Profit_price > Ask price
 #****************
 # option leverage
 #****************
-ask=2.39
-delta=0.484
-spot_price=374.67
+ask=2.71
+delta=0.448
+spot_price=375
 
 delta*spot_price/ask
+
+
+
+#***********
+# conversion
+#***********
+Spot_price=29.01
+
+Put_strike=370
+Put_ask=7.43
+Call_strike=370
+Call_bid=2.53
+
+
+Call_bid-Put_ask
+
+Underlying_price=seq(350, 380, by=0.01)
+
+Commisions=0
+Put_profits=round(sapply(Underlying_price,
+                         function(x) max(-x+Put_strike-Put_ask, -Put_ask)), 2)*100-Commisions*2
+plot(Underlying_price, Put_profits)
+Call_profits=round(sapply(Underlying_price,
+                          function(x) min(Call_bid, -x+Call_strike+Call_bid)), 2)*100-Commisions*2
+plot(Underlying_price, Call_profits)
+
+
+plot(Underlying_price,
+     round((Underlying_price-Spot_price)*100+Put_profits+Call_profits, 2))
+
+
+
+
 
 
