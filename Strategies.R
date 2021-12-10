@@ -128,30 +128,30 @@ Add_Indicator(Strategy="Long_Strategy",
 #********************************************************************************************
 # add model (to run in combination with other included models to decide to transmit an order)
 #********************************************************************************************
-# Add_Model(Strategy="Long_Strategy",
-#           Model="Simple_BBands_1",
-#           ModelParams=list(Long_Consec_Times=1,
-#                            Short_Consec_Times=1,
-#                            Long_PctB=0.25,
-#                            Short_PctB=Inf))
+Add_Model(Strategy="Long_Strategy",
+          Model="Simple_BBands_1",
+          ModelParams=list(Long_Consec_Times=1,
+                           Short_Consec_Times=1,
+                           Long_PctB=Params$Simple_BBands_1_Long_PctB[i],
+                           Short_PctB=Inf))
 Add_Model(Strategy="Long_Strategy",
           Model="Simple_BBands_2",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
                            Long_PctB=-Inf,
-                           Short_PctB=0.7))
-# Add_Model(Strategy="Long_Strategy",
-#           Model="Simple_RSI_1",
-#           ModelParams=list(Long_Consec_Times=1,
-#                            Short_Consec_Times=1,
-#                            Long_RSI=25,
-#                            Short_RSI=Inf))
+                           Short_PctB=Params$Simple_BBands_2_Short_PctB[i]))
+Add_Model(Strategy="Long_Strategy",
+          Model="Simple_RSI_1",
+          ModelParams=list(Long_Consec_Times=1,
+                           Short_Consec_Times=1,
+                           Long_RSI=Params$Simple_BBands_1_Long_PctB[i]*100,
+                           Short_RSI=Inf))
 Add_Model(Strategy="Long_Strategy",
           Model="Simple_RSI_2",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
                            Long_RSI=-Inf,
-                           Short_RSI=70))
+                           Short_RSI=Params$Simple_BBands_2_Short_PctB[i]*100))
 Add_Model(Strategy="Long_Strategy",
           Model="Trend",
           ModelParams=list(Interval=5,
@@ -167,8 +167,8 @@ Add_OrderRule(Strategy="Long_Strategy",
               OrderRule="General",
               OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
-                                   Stop_Order=10,
-                                   Profit_Order=100,
+                                   Stop_Order=Params$Stop_Order[i],
+                                   Profit_Order=Params$Profit_Order[i],
                                    Trend=TRUE))
 Add_OrderRule(Strategy="Long_Strategy",
               OrderRule="Long",
@@ -177,7 +177,7 @@ Add_OrderRule(Strategy="Long_Strategy",
                                                   Min_Sig_N=3),
                                    SellToClose=list(OrderType="MKT",
                                                     Quantity=1,
-                                                    Min_Sig_N=3)))
+                                                    Min_Sig_N=5)))
 # Add_OrderRule(Strategy="Long_Strategy",
 #               OrderRule="Short",
 #               OrderRuleParams=list(SellToOpen=list(OrderType="MKT",
@@ -185,7 +185,7 @@ Add_OrderRule(Strategy="Long_Strategy",
 #                                                    Min_Sig_N=3), # minimum number of positive signals from models to transmit
 #                                    BuyToClose=list(OrderType="MKT",
 #                                                    Quantity=1,
-#                                                    Min_Sig_N=3))) # minimum number of positive signals from models to transmit
+#                                                    Min_Sig_N=5))) # minimum number of positive signals from models to transmit
 
 
 
@@ -224,26 +224,26 @@ Add_Model(Strategy="Short_Strategy",
           Model="Simple_BBands_1",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
-                           Long_PctB=0.25,
+                           Long_PctB=Params$Simple_BBands_1_Long_PctB[i],
                            Short_PctB=Inf))
-# Add_Model(Strategy="Short_Strategy",
-#           Model="Simple_BBands_2",
-#           ModelParams=list(Long_Consec_Times=1,
-#                            Short_Consec_Times=1,
-#                            Long_PctB=-Inf,
-#                            Short_PctB=0.7))
+Add_Model(Strategy="Short_Strategy",
+          Model="Simple_BBands_2",
+          ModelParams=list(Long_Consec_Times=1,
+                           Short_Consec_Times=1,
+                           Long_PctB=-Inf,
+                           Short_PctB=Params$Simple_BBands_2_Short_PctB[i]))
 Add_Model(Strategy="Short_Strategy",
           Model="Simple_RSI_1",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
-                           Long_RSI=25,
+                           Long_RSI=Params$Simple_BBands_1_Long_PctB[i]*100,
                            Short_RSI=Inf))
-# Add_Model(Strategy="Short_Strategy",
-#           Model="Simple_RSI_2",
-#           ModelParams=list(Long_Consec_Times=1,
-#                            Short_Consec_Times=1,
-#                            Long_RSI=-Inf,
-#                            Short_RSI=70))
+Add_Model(Strategy="Short_Strategy",
+          Model="Simple_RSI_2",
+          ModelParams=list(Long_Consec_Times=1,
+                           Short_Consec_Times=1,
+                           Long_RSI=-Inf,
+                           Short_RSI=Params$Simple_BBands_2_Short_PctB[i]*100))
 Add_Model(Strategy="Short_Strategy",
           Model="Trend",
           ModelParams=list(Interval=5,
@@ -259,8 +259,8 @@ Add_OrderRule(Strategy="Short_Strategy",
               OrderRule="General",
               OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
-                                   Stop_Order=10,
-                                   Profit_Order=100,
+                                   Stop_Order=Params$Stop_Order[i],
+                                   Profit_Order=Params$Profit_Order[i],
                                    Trend=TRUE))
 # Add_OrderRule(Strategy="Short_Strategy",
 #               OrderRule="Long",
@@ -269,101 +269,8 @@ Add_OrderRule(Strategy="Short_Strategy",
 #                                                   Min_Sig_N=3),
 #                                    SellToClose=list(OrderType="MKT",
 #                                                     Quantity=1,
-#                                                     Min_Sig_N=3)))
+#                                                     Min_Sig_N=5)))
 Add_OrderRule(Strategy="Short_Strategy",
-              OrderRule="Short",
-              OrderRuleParams=list(SellToOpen=list(OrderType="MKT",
-                                                   Quantity=1,
-                                                   Min_Sig_N=3), # minimum number of positive signals from models to transmit
-                                   BuyToClose=list(OrderType="MKT",
-                                                   Quantity=1,
-                                                   Min_Sig_N=3))) # minimum number of positive signals from models to transmit
-
-
-
-
-
-
-#*******************
-#
-# Best_Strategy ---- 
-#
-#*******************
-# initiate a strategy called "Best_Strategy"
-Init_Strategy(Name="Best_Strategy",
-              Max_Rows=50) # the maximum number of rows in a temp dataset to parse
-
-
-#**************
-# add indicator
-#**************
-Add_Indicator(Strategy="Best_Strategy",
-              Indicator="BBands",
-              IndicatorParams=list(n=20,
-                                   sd=2)) # default n=20, sd=2
-
-Add_Indicator(Strategy="Best_Strategy",
-              Indicator="RSI",
-              IndicatorParams=list(n=9))
-
-Add_Indicator(Strategy="Best_Strategy",
-              Indicator="Close")
-
-
-#********************************************************************************************
-# add model (to run in combination with other included models to decide to transmit an order)
-#********************************************************************************************
-Add_Model(Strategy="Best_Strategy",
-          Model="Simple_BBands_1",
-          ModelParams=list(Long_Consec_Times=1,
-                           Short_Consec_Times=1,
-                           Long_PctB=0.25,
-                           Short_PctB=Inf))
-Add_Model(Strategy="Best_Strategy",
-          Model="Simple_BBands_2",
-          ModelParams=list(Long_Consec_Times=1,
-                           Short_Consec_Times=1,
-                           Long_PctB=-Inf,
-                           Short_PctB=0.7))
-Add_Model(Strategy="Best_Strategy",
-          Model="Simple_RSI_1",
-          ModelParams=list(Long_Consec_Times=1,
-                           Short_Consec_Times=1,
-                           Long_RSI=25,
-                           Short_RSI=Inf))
-Add_Model(Strategy="Best_Strategy",
-          Model="Simple_RSI_2",
-          ModelParams=list(Long_Consec_Times=1,
-                           Short_Consec_Times=1,
-                           Long_RSI=-Inf,
-                           Short_RSI=70))
-Add_Model(Strategy="Best_Strategy",
-          Model="Trend",
-          ModelParams=list(Interval=5,
-                           Extent=5))
-
-# Best_Strategy$Indicators$BBands
-# Best_Strategy$Models$Simple_BBands
-# Best_Strategy$Order_Rules$SellToClose
-#***************
-# add order rule
-#***************
-Add_OrderRule(Strategy="Best_Strategy",
-              OrderRule="General",
-              OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
-                                   Scenario="Negative", # Positive : early profit is prioritized over loss cut
-                                   Stop_Order=10,
-                                   Profit_Order=100,
-                                   Trend=TRUE))
-Add_OrderRule(Strategy="Best_Strategy",
-              OrderRule="Long",
-              OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
-                                                  Quantity=1,
-                                                  Min_Sig_N=3),
-                                   SellToClose=list(OrderType="MKT",
-                                                    Quantity=1,
-                                                    Min_Sig_N=5)))
-Add_OrderRule(Strategy="Best_Strategy",
               OrderRule="Short",
               OrderRuleParams=list(SellToOpen=list(OrderType="MKT",
                                                    Quantity=1,
