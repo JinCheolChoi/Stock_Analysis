@@ -85,16 +85,17 @@ Params=data.table(
               Profit_Order)
 )
 Optimal_Params=data.table(
-  c(0.15, 0.15, 0.2, 0.15, 0.15, 0.15),
-  c(0.6, 0.65, 0.6, 0.65, 0.55, 0.6),
-  c(100, 100, 100, 100, 200, 200),
-  c(50, 15, 50, 20, 90, 50)
+  c(0.15, 0.15, 0.2, 0.15, 0.15, 0.15, 0.15, 0.1, 0.15, 0.15, 0.15, 0.15, 0.15),
+  c(0.6, 0.65, 0.6, 0.65, 0.55, 0.6, 0.6, 0.6, 0.55, 0.55, 0.55, 0.65, 0.55),
+  c(100, 100, 100, 100, 200, 200, 200, 100, 160, 200, 160, 200, 200),
+  c(50, 15, 50, 20, 90, 50, 30, 50, 70, 90, 100, 100, 90)
 )
 colnames(Params)=colnames(Optimal_Params)=c("Simple_BBands_1_Long_PctB",
                                             "Simple_BBands_2_Short_PctB",
                                             "Stop_Order",
                                             "Profit_Order")
 Params=rbind(Params, Optimal_Params)
+Params=Optimal_Params
 
 for(i in 1:nrow(Params)){
   if(Params[i, Simple_BBands_1_Long_PctB]==0 &
@@ -165,9 +166,9 @@ for(i in 1:nrow(Params)){
   # progress
   print(paste0(i, " / ", nrow(Params), " (", round(i/nrow(Params)*100, 2), "%)"))
   
-  if(i%%50==0){
-    save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-12-05.Rdata")
-  }
+  # if(i%%50==0){
+  #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-12-05.Rdata")
+  # }
 }
 
 
@@ -177,53 +178,119 @@ for(i in 1:nrow(Params)){
 # row index
 Params[, Row:=.I]
 
-# elapsed time
+
 Elapsed_Time=0
 for(i in 1:nrow(Params)){
-  Elapsed_Time=Elapsed_Time+get(paste0("Training_", "Setting_", i))[[1]][3]
+  for(Strategy in Strategies){
+    # elapsed time
+    Elapsed_Time=Elapsed_Time+get(paste0(Strategy, "_Training_", "Setting_", i))[[1]][3]
+    Elapsed_Time=Elapsed_Time+get(paste0(Strategy, "_Test_", "Setting_", i))[[1]][3]
+    
+    # standard deviation
+    Params[i, paste0(Strategy, "_Training_Standard_Deviation"):=sd(get(paste0(Strategy, "_Training_", "Setting_", i))[[2]]$Ind_Profit$Daily_Profit)]
+    Params[i, paste0(Strategy, "_Test_Standard_Deviation"):=sd(get(paste0(Strategy, "_Test_", "Setting_", i))[[2]]$Ind_Profit$Daily_Profit)]
+    
+    # Max_Loss (same as MDD, but just not percentage)
+    Data_Temp=get(paste0(Strategy, "_Training_", "Setting_", i))[[2]]$Ind_Profit
+    Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
+                                            function(x) Data_Temp[, min(Cum_Profit[.I>=x])])]
+    Params[i, paste0(Strategy, "_Training_", "Max_Loss"):=-max(Data_Temp$Max_Loss)]
+    
+    Data_Temp=get(paste0(Strategy, "_Test_", "Setting_", i))[[2]]$Ind_Profit
+    Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
+                                            function(x) Data_Temp[, min(Cum_Profit[.I>=x])])]
+    Params[i, paste0(Strategy, "_Test_", "Max_Loss"):=-max(Data_Temp$Max_Loss)]
+    
+    # minimum Cum_Profit
+    Data_Temp=get(paste0(Strategy, "_Training_", "Setting_", i))[[2]]$Ind_Profit
+    Params[i, paste0(Strategy, "_Training_", "Min_Cum_Profit"):=min(Data_Temp$Cum_Profit)]
+    
+    Data_Temp=get(paste0(Strategy, "_Test_", "Setting_", i))[[2]]$Ind_Profit
+    Params[i, paste0(Strategy, "_Test_", "Min_Cum_Profit"):=min(Data_Temp$Cum_Profit)]
+  }
 }
 
-# standard deviation
-for(i in 1:nrow(Params)){
-  Params$Training_Standard_Deviation[i]=sd(get(paste0("Training_", "Setting_", i))[[2]]$Ind_Profit$Daily_Profit)
-  Params$Test_Standard_Deviation[i]=sd(get(paste0("Test_", "Setting_", i))[[2]]$Ind_Profit$Daily_Profit)
-}
-
-# Max_Loss (same as MDD, but just not percentage)
-for(i in 1:nrow(Params)){
-  Data_Temp=get(paste0("Training_", "Setting_", i))[[2]]$Ind_Profit
-  Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
-                                          function(x) Data_Temp[, min(Cum_Profit[.I>=x])])]
-  Params$Training_Max_Loss[i]=-max(Data_Temp$Max_Loss)
-  
-  Data_Temp=get(paste0("Test_", "Setting_", i))[[2]]$Ind_Profit
-  Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
-                                          function(x) Data_Temp[, min(Cum_Profit[.I>=x])])]
-  Params$Test_Max_Loss[i]=-max(Data_Temp$Max_Loss)
-}
-
-# minimum Cum_Profit
-for(i in 1:nrow(Params)){
-  Data_Temp=get(paste0("Training_", "Setting_", i))[[2]]$Ind_Profit
-  Params$Training_Min_Cum_Profit[i]=min(Data_Temp$Cum_Profit)
-  
-  Data_Temp=get(paste0("Test_", "Setting_", i))[[2]]$Ind_Profit
-  Params$Test_Min_Cum_Profit[i]=min(Data_Temp$Cum_Profit)
-}
 
 #
 Params[Stop_Order!=1000&
-       Net_Profit_on_Training>4000&
-         Net_Profit_on_Test>4000&
-         Training_Max_Loss!=0&
-         Test_Max_Loss!=0, ]
+         Test_Strategy_NP_on_Training>3500&
+         Test_Strategy_NP_on_Test>3500&
+         Long_Strategy_NP_on_Training>0&
+         Long_Strategy_NP_on_Test>0&
+         Short_Strategy_NP_on_Training>0&
+         Short_Strategy_NP_on_Test>0&
+         
+         Test_Strategy_Test_Min_Cum_Profit>-1000
+         ,
+       .SD,
+       .SDcols=c("Simple_BBands_1_Long_PctB", "Simple_BBands_2_Short_PctB", "Stop_Order", "Profit_Order",
+                 "Test_Strategy_NP_on_Training",
+                 "Test_Strategy_Training_Standard_Deviation",
+                 "Test_Strategy_Training_Max_Loss",
+                 "Test_Strategy_Training_Min_Cum_Profit",
+                 
+                 
+                 "Test_Strategy_NP_on_Test",
+                 "Test_Strategy_Test_Standard_Deviation",
+                 "Test_Strategy_Test_Max_Loss",
+                 "Test_Strategy_Test_Min_Cum_Profit",
+                 
+                 
+                 "Long_Strategy_NP_on_Training",
+                 "Long_Strategy_Training_Standard_Deviation",
+                 "Long_Strategy_Training_Max_Loss",
+                 "Long_Strategy_Training_Min_Cum_Profit",
+                 
+                 
+                 "Long_Strategy_NP_on_Test",
+                 "Long_Strategy_Test_Standard_Deviation",
+                 "Long_Strategy_Test_Max_Loss",
+                 "Long_Strategy_Test_Min_Cum_Profit",
+                 
+                 
+                 "Short_Strategy_NP_on_Training",
+                 "Short_Strategy_Training_Standard_Deviation",
+                 "Short_Strategy_Training_Max_Loss",
+                 "Short_Strategy_Training_Min_Cum_Profit",
+                 
+                 "Short_Strategy_NP_on_Test",
+                 "Short_Strategy_Test_Standard_Deviation",
+                 "Short_Strategy_Test_Max_Loss",
+                 "Short_Strategy_Test_Min_Cum_Profit",
+                 
+                 "Row")]
 
-Params[Stop_Order!=1000, .SD, .SDcols=c("Net_Profit_on_Training", "Net_Profit_on_Test")] %>% plot
+Params$Short_Strategy_Test_Min_Cum_Profit %>% summary
+Params[Stop_Order!=1000&
+         Test_Strategy_Training_Min_Cum_Profit>0,
+       .SD,
+       .SDcols=c("Test_Strategy_NP_on_Training", "Test_Strategy_NP_on_Test")] %>% plot
 
-i=247
+
+Params[Stop_Order!=1000&
+         Test_Strategy_NP_on_Training>2000&
+         Test_Strategy_NP_on_Test>2000,
+       .SD,
+       .SDcols=c("Simple_BBands_1_Long_PctB", "Simple_BBands_2_Short_PctB", "Stop_Order", "Profit_Order",
+                 "Test_Strategy_NP_on_Training",
+                 "Test_Strategy_NP_on_Test",
+                 "Long_Strategy_NP_on_Training",
+                 "Long_Strategy_NP_on_Test",
+                 "Short_Strategy_NP_on_Training",
+                 "Short_Strategy_NP_on_Test")] %>% cor
+
+Params[Stop_Order!=1000&
+         Test_Strategy_Test_Min_Cum_Profit>0,Row]
+
+i=12
 par(mfrow=c(2,1))
-get(paste0("Training_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Training")
-get(paste0("Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
+get(paste0("Test_Strategy_Training_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Training")
+get(paste0("Test_Strategy_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
+
+
+
+Params[, .SD, .SDcols=c(colnames(Params)[grepl("NP_on_", colnames(Params))], "Row")]
+
 
 
 Params[Net_Profit_on_Training>0, ]
