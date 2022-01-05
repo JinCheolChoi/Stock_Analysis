@@ -85,10 +85,10 @@ Params=data.table(
               Profit_Order)
 )
 Optimal_Params=data.table(
-  c(0.15, 0.15, 0.2, 0.15, 0.15, 0.15, 0.15, 0.1, 0.15, 0.15, 0.15, 0.15, 0.15),
-  c(0.6, 0.65, 0.6, 0.65, 0.55, 0.6, 0.6, 0.6, 0.55, 0.55, 0.55, 0.65, 0.55),
-  c(100, 100, 100, 100, 200, 200, 200, 100, 160, 200, 160, 200, 200),
-  c(50, 15, 50, 20, 90, 50, 30, 50, 70, 90, 100, 100, 90)
+  c(0.15, 0.15, 0.2, 0.15, 0.15, 0.15, 0.1, 0.15, 0.15, 0.15, 0.15),
+  c(0.6, 0.65, 0.6, 0.65, 0.6, 0.6, 0.6, 0.55, 0.55, 0.55, 0.65),
+  c(100, 100, 100, 100, 200, 200, 100, 160, 200, 160, 200),
+  c(50, 15, 50, 20, 50, 30, 50, 70, 90, 100, 100)
 )
 colnames(Params)=colnames(Optimal_Params)=c("Simple_BBands_1_Long_PctB",
                                             "Simple_BBands_2_Short_PctB",
@@ -96,7 +96,6 @@ colnames(Params)=colnames(Optimal_Params)=c("Simple_BBands_1_Long_PctB",
                                             "Profit_Order")
 Params=rbind(Params, Optimal_Params)
 Params=Optimal_Params
-
 for(i in 1:nrow(Params)){
   if(Params[i, Simple_BBands_1_Long_PctB]==0 &
      Params[i, Simple_BBands_2_Short_PctB]==1){
@@ -177,7 +176,6 @@ for(i in 1:nrow(Params)){
 #****************************
 # row index
 Params[, Row:=.I]
-
 
 Elapsed_Time=0
 for(i in 1:nrow(Params)){
@@ -281,12 +279,13 @@ Params[Stop_Order!=1000&
 
 Params[Stop_Order!=1000&
          Test_Strategy_Test_Min_Cum_Profit>0,Row]
-
-i=12
+Params[i, ]
+i=13
 par(mfrow=c(2,1))
 get(paste0("Test_Strategy_Training_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Training")
 get(paste0("Test_Strategy_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
-
+get(paste0("Long_Strategy_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
+get(paste0("Short_Strategy_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
 
 
 Params[, .SD, .SDcols=c(colnames(Params)[grepl("NP_on_", colnames(Params))], "Row")]
