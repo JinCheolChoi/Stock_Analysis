@@ -46,7 +46,7 @@ for(pack in c("IBrokers",
 # import data
 Get_Data(Symbols=list("MNQ"),
          Data_Dir=data.dir,
-         BarSize=60*15,
+         BarSize=60*1,
          Convert_Tz=T,
          Filter=T)
 
@@ -73,29 +73,37 @@ Test_BarData=MNQ[Time>="2021-07-22 15:00:00", ]
 # Profit_Order=c(120)
 # 
 
+# Simple_BBands_1_Long_PctB=seq(0.1, 0.2, by=0.05)
+# Simple_BBands_2_Short_PctB=seq(0.55, 0.65, by=0.05)
+# Profit_Order=c(seq(30, 100, by=10))
+# Stop_Order=c(2*Profit_Order, 1000)
 Simple_BBands_1_Long_PctB=seq(0.1, 0.2, by=0.05)
-Simple_BBands_2_Short_PctB=seq(0.55, 0.65, by=0.05)
-Profit_Order=c(seq(30, 100, by=10))
-Stop_Order=c(2*Profit_Order, 1000)
+Simple_BBands_1_Short_PctB=seq(0.55, 0.65, by=0.05)
+Simple_BBands_2_Long_PctB=seq(0.25, 0.45, by=0.05)
+Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
 
 Params=data.table(
   expand.grid(Simple_BBands_1_Long_PctB,
-              Simple_BBands_2_Short_PctB,
-              Stop_Order,
-              Profit_Order)
+              Simple_BBands_1_Short_PctB,
+              Simple_BBands_2_Long_PctB,
+              Simple_BBands_2_Short_PctB)
 )
-Optimal_Params=data.table(
-  c(0.15, 0.15, 0.2, 0.15, 0.15, 0.15, 0.1, 0.15, 0.15, 0.15, 0.15),
-  c(0.6, 0.65, 0.6, 0.65, 0.6, 0.6, 0.6, 0.55, 0.55, 0.55, 0.65),
-  c(100, 100, 100, 100, 200, 200, 100, 160, 200, 160, 200),
-  c(50, 15, 50, 20, 50, 30, 50, 70, 90, 100, 100)
-)
-colnames(Params)=colnames(Optimal_Params)=c("Simple_BBands_1_Long_PctB",
-                                            "Simple_BBands_2_Short_PctB",
-                                            "Stop_Order",
-                                            "Profit_Order")
-Params=rbind(Params, Optimal_Params)
-Params=Optimal_Params
+colnames(Params)=c("Simple_BBands_1_Long_PctB",
+                   "Simple_BBands_1_Short_PctB",
+                   "Simple_BBands_2_Long_PctB",
+                   "Simple_BBands_2_Short_PctB")
+# Optimal_Params=data.table(
+#   c(0.15, 0.15, 0.2, 0.15, 0.15, 0.15, 0.1, 0.15, 0.15, 0.15, 0.15),
+#   c(0.6, 0.65, 0.6, 0.65, 0.6, 0.6, 0.6, 0.55, 0.55, 0.55, 0.65),
+#   c(100, 100, 100, 100, 200, 200, 100, 160, 200, 160, 200),
+#   c(50, 15, 50, 20, 50, 30, 50, 70, 90, 100, 100)
+# )
+# colnames(Params)=colnames(Optimal_Params)=c("Simple_BBands_1_Long_PctB",
+#                                             "Simple_BBands_2_Short_PctB",
+#                                             "Stop_Order",
+#                                             "Profit_Order")
+# Params=rbind(Params, Optimal_Params)
+# Params=Optimal_Params
 for(i in 1:nrow(Params)){
   if(Params[i, Simple_BBands_1_Long_PctB]==0 &
      Params[i, Simple_BBands_2_Short_PctB]==1){
@@ -114,7 +122,7 @@ for(i in 1:nrow(Params)){
   #***********************************************
   # all strategies saved in the global environment
   Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
-  
+  Strategies="Test_Strategy_2"
   # create profit variables for strategies
   if(i==1){
     Additional_Cols=apply(expand.grid(Strategies, c("_NP_on_Training", "_NP_on_Test")), 1, paste, collapse="")

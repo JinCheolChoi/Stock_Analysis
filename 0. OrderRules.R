@@ -76,7 +76,7 @@ OrderRules_Env$Long_Function=function(Live_Data,
     OrderType=Params[["SellToClose"]][["OrderType"]]
   }
   
-  #
+  # transmit orders for live trading
   if(exists("Action")){
     if(Live_Trading==TRUE){
       # order
@@ -91,58 +91,62 @@ OrderRules_Env$Long_Function=function(Live_Data,
                  Main_Order_Info)
       
       # profit order
-      if(Action=="Buy"){
-        Stop_Action="Sell"
-        Profit_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
-                                     orderType="LMT",
-                                     lmtPrice=tail(Live_Data, 1)[, Close]+Profit_Order,
-                                     action=Stop_Action,
-                                     totalQuantity=TotalQuantity,
-                                     transmit=T)
-        placeOrder(tws,
-                   contract,
-                   Profit_Order_Info)
-        
-      }else if(Action=="Sell"){
-        Stop_Action="Buy"
-        Profit_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
-                                     orderType="LMT",
-                                     lmtPrice=tail(Live_Data, 1)[, Close]-Profit_Order,
-                                     action=Stop_Action,
-                                     totalQuantity=TotalQuantity,
-                                     transmit=T)
-        placeOrder(tws,
-                   contract,
-                   Profit_Order_Info)
+      if(Profit_Order<=5000){
+        if(Action=="Buy"){
+          Stop_Action="Sell"
+          Profit_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
+                                       orderType="LMT",
+                                       lmtPrice=tail(Live_Data, 1)[, Close]+Profit_Order,
+                                       action=Stop_Action,
+                                       totalQuantity=TotalQuantity,
+                                       transmit=T)
+          placeOrder(tws,
+                     contract,
+                     Profit_Order_Info)
+          
+        }else if(Action=="Sell"){
+          Stop_Action="Buy"
+          Profit_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
+                                       orderType="LMT",
+                                       lmtPrice=tail(Live_Data, 1)[, Close]-Profit_Order,
+                                       action=Stop_Action,
+                                       totalQuantity=TotalQuantity,
+                                       transmit=T)
+          placeOrder(tws,
+                     contract,
+                     Profit_Order_Info)
+        }
       }
       
       # stop loss order
-      if(Action=="Buy"){
-        Stop_Action="Sell"
-        Stop_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
-                                   orderType="STP",
-                                   #lmtPrice=tail(Live_Data, 1)[, Close]-Stop_Order,
-                                   auxPrice=tail(Live_Data, 1)[, Close]-Stop_Order,
-                                   action=Stop_Action,
-                                   totalQuantity=TotalQuantity,
-                                   transmit=T)
-        
-        placeOrder(tws,
-                   contract,
-                   Stop_Order_Info)
-        
-      }else if(Action=="Sell"){
-        Stop_Action="Buy"
-        Stop_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
-                                   orderType="STP",
-                                   #lmtPrice=tail(Live_Data, 1)[, Close]+Stop_Order,
-                                   auxPrice=tail(Live_Data, 1)[, Close]+Stop_Order,
-                                   action=Stop_Action,
-                                   totalQuantity=TotalQuantity,
-                                   transmit=T)
-        placeOrder(tws,
-                   contract,
-                   Stop_Order_Info)
+      if(Stop_Order<=5000){
+        if(Action=="Buy"){
+          Stop_Action="Sell"
+          Stop_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
+                                     orderType="STP",
+                                     #lmtPrice=tail(Live_Data, 1)[, Close]-Stop_Order,
+                                     auxPrice=tail(Live_Data, 1)[, Close]-Stop_Order,
+                                     action=Stop_Action,
+                                     totalQuantity=TotalQuantity,
+                                     transmit=T)
+          
+          placeOrder(tws,
+                     contract,
+                     Stop_Order_Info)
+          
+        }else if(Action=="Sell"){
+          Stop_Action="Buy"
+          Stop_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
+                                     orderType="STP",
+                                     #lmtPrice=tail(Live_Data, 1)[, Close]+Stop_Order,
+                                     auxPrice=tail(Live_Data, 1)[, Close]+Stop_Order,
+                                     action=Stop_Action,
+                                     totalQuantity=TotalQuantity,
+                                     transmit=T)
+          placeOrder(tws,
+                     contract,
+                     Stop_Order_Info)
+        }
       }
     }
     
@@ -221,8 +225,7 @@ OrderRules_Env$Short_Function=function(Live_Data,
     OrderType=Params[["BuyToClose"]][["OrderType"]]
   }
   
-  #
-  
+  # transmit orders for live trading
   if(exists("Action")){
     if(Live_Trading==TRUE){
       # order
@@ -238,58 +241,62 @@ OrderRules_Env$Short_Function=function(Live_Data,
                  Main_Order_Info)
       
       # profit order
-      if(Action=="Buy"){
-        Stop_Action="Sell"
-        Profit_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
-                                     orderType="LMT",
-                                     lmtPrice=tail(Live_Data, 1)[, Close]+Profit_Order,
-                                     action=Stop_Action,
-                                     totalQuantity=TotalQuantity,
-                                     transmit=T)
-        placeOrder(tws,
-                   contract,
-                   Profit_Order_Info)
-        
-      }else if(Action=="Sell"){
-        Stop_Action="Buy"
-        Profit_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
-                                     orderType="LMT",
-                                     lmtPrice=tail(Live_Data, 1)[, Close]-Profit_Order,
-                                     action=Stop_Action,
-                                     totalQuantity=TotalQuantity,
-                                     transmit=T)
-        
-        placeOrder(tws,
-                   contract,
-                   Profit_Order_Info)
+      if(Profit_Order<=5000){
+        if(Action=="Buy"){
+          Stop_Action="Sell"
+          Profit_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
+                                       orderType="LMT",
+                                       lmtPrice=tail(Live_Data, 1)[, Close]+Profit_Order,
+                                       action=Stop_Action,
+                                       totalQuantity=TotalQuantity,
+                                       transmit=T)
+          placeOrder(tws,
+                     contract,
+                     Profit_Order_Info)
+          
+        }else if(Action=="Sell"){
+          Stop_Action="Buy"
+          Profit_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
+                                       orderType="LMT",
+                                       lmtPrice=tail(Live_Data, 1)[, Close]-Profit_Order,
+                                       action=Stop_Action,
+                                       totalQuantity=TotalQuantity,
+                                       transmit=T)
+          
+          placeOrder(tws,
+                     contract,
+                     Profit_Order_Info)
+        }
       }
       
       # stop loss order
-      if(Action=="Buy"){
-        Stop_Action="Sell"
-        Stop_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
-                                   orderType="STP",
-                                   #lmtPrice=tail(Live_Data, 1)[, Close]-Stop_Order,
-                                   auxPrice=tail(Live_Data, 1)[, Close]-Stop_Order,
-                                   action=Stop_Action,
-                                   totalQuantity=TotalQuantity,
-                                   transmit=T)
-        placeOrder(tws,
-                   contract,
-                   Stop_Order_Info)
-        
-      }else if(Action=="Sell"){
-        Stop_Action="Buy"
-        Stop_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
-                                   orderType="STP",
-                                   #lmtPrice=tail(Live_Data, 1)[, Close]+Stop_Order,
-                                   auxPrice=tail(Live_Data, 1)[, Close]+Stop_Order,
-                                   action=Stop_Action,
-                                   totalQuantity=TotalQuantity,
-                                   transmit=T)
-        placeOrder(tws,
-                   contract,
-                   Stop_Order_Info)
+      if(Stop_Order<=5000){
+        if(Action=="Buy"){
+          Stop_Action="Sell"
+          Stop_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
+                                     orderType="STP",
+                                     #lmtPrice=tail(Live_Data, 1)[, Close]-Stop_Order,
+                                     auxPrice=tail(Live_Data, 1)[, Close]-Stop_Order,
+                                     action=Stop_Action,
+                                     totalQuantity=TotalQuantity,
+                                     transmit=T)
+          placeOrder(tws,
+                     contract,
+                     Stop_Order_Info)
+          
+        }else if(Action=="Sell"){
+          Stop_Action="Buy"
+          Stop_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
+                                     orderType="STP",
+                                     #lmtPrice=tail(Live_Data, 1)[, Close]+Stop_Order,
+                                     auxPrice=tail(Live_Data, 1)[, Close]+Stop_Order,
+                                     action=Stop_Action,
+                                     totalQuantity=TotalQuantity,
+                                     transmit=T)
+          placeOrder(tws,
+                     contract,
+                     Stop_Order_Info)
+        }
       }
     }
     
