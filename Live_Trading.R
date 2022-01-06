@@ -24,7 +24,7 @@ Account_Code="DU2656942"
 Port=7497 # tws : 7497, IB gateway : 4002
 
 # BarSize
-BarSize=5
+BarSize=10
 
 
 #*****************
@@ -39,7 +39,9 @@ source(paste0(working.dir, "Additional_Functions.R"))
 source(paste0(working.dir, "Echos/Echo_Live_Trading.R"))
 source(paste0(working.dir, "0. Models.R"))
 
+#****************
 # import packages
+#****************
 for(Package in
     c("IBrokers",
       "TTR",
@@ -50,8 +52,7 @@ for(Package in
 }
 
 # import strategies
-source(paste0(working.dir, "/Strategy.R"))
-
+source(paste0(working.dir, "/Live_Trading_Strategy.R"))
 
 
 #***********************
@@ -67,6 +68,33 @@ tws=twsConnect(port=Port)
 # reqCurrentTime(tws)
 # serverVersion(tws)
 
+
+#************************
+# assign local parameters
+#************************
+Max_Rows=Live_Strategy[["Max_Rows"]]
+Order_Rules=Live_Strategy[["Order_Rules"]]
+Indicators=Live_Strategy[["Indicators"]]
+Models=Live_Strategy[["Models"]]
+
+Max_Orders=as.numeric(Order_Rules[["General"]][["Max_Orders"]])
+Scenario=Order_Rules[["General"]][["Scenario"]]
+Trend=Order_Rules[["General"]][["Trend"]]
+Stop_Order=as.numeric(Order_Rules[["General"]][["Stop_Order"]])
+Profit_Order=as.numeric(Order_Rules[["General"]][["Profit_Order"]])
+Strategy_Indicators=names(Indicators)
+Strategy_Models=names(Models)
+General_Strategy="General"
+Strategy_Rules=names(Order_Rules)[names(Order_Rules)!="General"]
+
+Transmitted_Orders=0
+Positions=0
+Orders_Transmitted=c()
+N_Orders_held=0
+
+#***************
+# main algorithm
+#***************
 BarData=c()
 # BarData5Secs=c()
 while(TRUE){
@@ -82,25 +110,8 @@ while(TRUE){
   #**************************
   # output : BarData
   if(!ReqRealTimeBars(BarSize, Log=F)){ # skip to the next iteration if the new data is not derived (New_Data==0)
-    ############################################################
-    # Positions=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
-    # if(Old_Positions<Positions){
-    #   N_Filled_Orders=Positions-Old_Positions
-    #   Old_Positions=Positions
-    #   Transmitted=Old_Positions*2
-    #   
-    #   print(Positions)
-    #   print(Transmitted)
-    # }else if(Old_Positions>Positions){
-    #   if(Positions==0){
-    #     
-    #   }
-    # }
     
-    ################################################################################
-    # work on this part to cancel remaining orders in case that profit or loss is reached or that main order is not filled for longer than 1 hours,
-    # for which e_execDetails seems useful to modifiy to export relevant info
-    ############################################################
+    # move to the next iteration
     next
   }
   
@@ -113,14 +124,13 @@ while(TRUE){
   # determine an action
   #********************
   Live_Data_Temp=tail(BarData, Max_Rows)
-  Positions=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
   
-  if(abs(Transmitted)<Max_Orders & 
-     abs(Positions)<Max_Orders){
+  # algorithm determine to take a position
+  if(Transmitted_Orders<110){ # run the algorithm only when there is no transmitted order
     #*********************
     # calculate indicators
     #*********************
-    Calculated_Indicators=sapply(Strategy_Indicators,
+    Calculated_Indicators=lapply(Strategy_Indicators,
                                  function(x)
                                    if(x=="Close"){
                                      Live_Data_Temp[["Close"]]
@@ -132,6 +142,7 @@ while(TRUE){
                                      }
                                    }
     )
+    names(Calculated_Indicators)=Strategy_Indicators
     # Calculated_Indicators=Calculated_Indicators[-which(sapply(Calculated_Indicators, is.null))]
     
     #***********
@@ -168,7 +179,7 @@ while(TRUE){
       Sigs_N=apply(Signals, 1, sum)
       
       # number of orders held (+:more long, -:more short)
-      N_Orders_held=Positions
+      N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
       
       # Order_to_Transmit
       Order_to_Transmit=lapply(Strategy_Rules,
@@ -187,10 +198,10 @@ while(TRUE){
                                })
       
       if(!is.null(Order_to_Transmit[[1]])){
-        Transmitted=3
+        Transmitted_Orders=3
         #print(Order_to_Transmit[[1]])
       }else if(!is.null(Order_to_Transmit[[2]])){
-        Transmitted=-3
+        Transmitted_Orders=-3
         #print(Order_to_Transmit[[2]])
       }
       
@@ -199,18 +210,18 @@ while(TRUE){
     }
   }
   
-  
-  # if(exists("Order_to_Transmit")){
-  #   if(!is.null(do.call(rbind, Order_to_Transmit))){
-  #     # add Order_to_Transmit to Orders_Transmitted
-  #     Orders_Transmitted=rbind(Orders_Transmitted,
-  #                              do.call(rbind, Order_to_Transmit),
-  #                              fill=T)
-  #     # remove Orders_Transmitted
-  #     rm(Order_to_Transmit)
-  #     #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
-  #   }
-  # }
+  # record open and closed orders
+  if(exists("Order_to_Transmit")){
+    if(!is.null(do.call(rbind, Order_to_Transmit))){
+      # add Order_to_Transmit to Orders_Transmitted
+      Orders_Transmitted=rbind(Orders_Transmitted,
+                               do.call(rbind, Order_to_Transmit),
+                               fill=T)
+      # remove Orders_Transmitted
+      rm(Order_to_Transmit)
+      #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+    }
+  }
   
 }
 

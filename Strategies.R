@@ -81,18 +81,18 @@ Add_OrderRule(Strategy="Test_Strategy",
                                    Trend=TRUE))
 Add_OrderRule(Strategy="Test_Strategy",
               OrderRule="Long",
-              OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
+              OrderRuleParams=list(BuyToOpen=list(OrderType="LMT",
                                                   Quantity=1,
                                                   Min_Sig_N=3),
-                                   SellToClose=list(OrderType="MKT",
+                                   SellToClose=list(OrderType="LMT",
                                                     Quantity=1,
                                                     Min_Sig_N=5)))
 Add_OrderRule(Strategy="Test_Strategy",
               OrderRule="Short",
-              OrderRuleParams=list(SellToOpen=list(OrderType="MKT",
+              OrderRuleParams=list(SellToOpen=list(OrderType="LMT",
                                                    Quantity=1,
                                                    Min_Sig_N=3), # minimum number of positive signals from models to transmit
-                                   BuyToClose=list(OrderType="MKT",
+                                   BuyToClose=list(OrderType="LMT",
                                                    Quantity=1,
                                                    Min_Sig_N=5))) # minimum number of positive signals from models to transmit
 
@@ -172,18 +172,18 @@ Add_OrderRule(Strategy="Long_Strategy",
                                    Trend=TRUE))
 Add_OrderRule(Strategy="Long_Strategy",
               OrderRule="Long",
-              OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
+              OrderRuleParams=list(BuyToOpen=list(OrderType="LMT",
                                                   Quantity=1,
                                                   Min_Sig_N=3),
-                                   SellToClose=list(OrderType="MKT",
+                                   SellToClose=list(OrderType="LMT",
                                                     Quantity=1,
                                                     Min_Sig_N=5)))
 # Add_OrderRule(Strategy="Long_Strategy",
 #               OrderRule="Short",
-#               OrderRuleParams=list(SellToOpen=list(OrderType="MKT",
+#               OrderRuleParams=list(SellToOpen=list(OrderType="LMT",
 #                                                    Quantity=1,
 #                                                    Min_Sig_N=3), # minimum number of positive signals from models to transmit
-#                                    BuyToClose=list(OrderType="MKT",
+#                                    BuyToClose=list(OrderType="LMT",
 #                                                    Quantity=1,
 #                                                    Min_Sig_N=5))) # minimum number of positive signals from models to transmit
 
@@ -264,20 +264,109 @@ Add_OrderRule(Strategy="Short_Strategy",
                                    Trend=TRUE))
 # Add_OrderRule(Strategy="Short_Strategy",
 #               OrderRule="Long",
-#               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
+#               OrderRuleParams=list(BuyToOpen=list(OrderType="LMT",
 #                                                   Quantity=1,
 #                                                   Min_Sig_N=3),
-#                                    SellToClose=list(OrderType="MKT",
+#                                    SellToClose=list(OrderType="LMT",
 #                                                     Quantity=1,
 #                                                     Min_Sig_N=5)))
 Add_OrderRule(Strategy="Short_Strategy",
               OrderRule="Short",
-              OrderRuleParams=list(SellToOpen=list(OrderType="MKT",
+              OrderRuleParams=list(SellToOpen=list(OrderType="LMT",
                                                    Quantity=1,
                                                    Min_Sig_N=3), # minimum number of positive signals from models to transmit
-                                   BuyToClose=list(OrderType="MKT",
+                                   BuyToClose=list(OrderType="LMT",
                                                    Quantity=1,
                                                    Min_Sig_N=5))) # minimum number of positive signals from models to transmit
 
 
 
+
+
+#*******************
+#
+# Test_Strategy_2 ---- 
+#
+#*******************
+# initiate a strategy called "Test_Strategy_2"
+Init_Strategy(Name="Test_Strategy_2",
+              Max_Rows=50) # the maximum number of rows in a temp dataset to parse
+
+
+#**************
+# add indicator
+#**************
+Add_Indicator(Strategy="Test_Strategy_2",
+              Indicator="BBands",
+              IndicatorParams=list(n=20,
+                                   sd=2)) # default n=20, sd=2
+
+Add_Indicator(Strategy="Test_Strategy_2",
+              Indicator="RSI",
+              IndicatorParams=list(n=9))
+
+Add_Indicator(Strategy="Test_Strategy_2",
+              Indicator="Close")
+
+
+#********************************************************************************************
+# add model (to run in combination with other included models to decide to transmit an order)
+#********************************************************************************************
+Add_Model(Strategy="Test_Strategy_2",
+          Model="Simple_BBands_1",
+          ModelParams=list(Long_Consec_Times=2,
+                           Short_Consec_Times=2,
+                           Long_PctB=Params$Simple_BBands_1_Long_PctB[i],
+                           Short_PctB=Params$Simple_BBands_1_Short_PctB[i]))
+Add_Model(Strategy="Test_Strategy_2",
+          Model="Simple_BBands_2",
+          ModelParams=list(Long_Consec_Times=2,
+                           Short_Consec_Times=2,
+                           Long_PctB=-Params$Simple_BBands_2_Long_PctB[i],
+                           Short_PctB=Params$Simple_BBands_2_Short_PctB[i]))
+# Add_Model(Strategy="Test_Strategy_2",
+#           Model="Simple_RSI_1",
+#           ModelParams=list(Long_Consec_Times=2,
+#                            Short_Consec_Times=2,
+#                            Long_RSI=Params$Simple_BBands_1_Long_PctB[i]*100,
+#                            Short_RSI=Params$Simple_BBands_1_Short_PctB[i]*100))
+# Add_Model(Strategy="Test_Strategy_2",
+#           Model="Simple_RSI_2",
+#           ModelParams=list(Long_Consec_Times=2,
+#                            Short_Consec_Times=2,
+#                            Long_RSI=Params$Simple_BBands_2_Long_PctB[i]*100,
+#                            Short_RSI=Params$Simple_BBands_2_Short_PctB[i]*100))
+# Add_Model(Strategy="Test_Strategy_2",
+#           Model="Trend",
+#           ModelParams=list(Interval=5,
+#                            Extent=5))
+
+# Test_Strategy_2$Indicators$BBands
+# Test_Strategy_2$Models$Simple_BBands
+# Test_Strategy_2$Order_Rules$SellToClose
+#***************
+# add order rule
+#***************
+Add_OrderRule(Strategy="Test_Strategy_2",
+              OrderRule="General",
+              OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
+                                   Scenario="Negative", # Positive : early profit is prioritized over loss cut
+                                   Stop_Order=10000000,
+                                   Profit_Order=10000000,
+                                   Trend=FALSE))
+Add_OrderRule(Strategy="Test_Strategy_2",
+              OrderRule="Long",
+              OrderRuleParams=list(BuyToOpen=list(OrderType="LMT",
+                                                  Quantity=1,
+                                                  Min_Sig_N=1),
+                                   SellToClose=list(OrderType="LMT",
+                                                    Quantity=1,
+                                                    Min_Sig_N=2)))
+Add_OrderRule(Strategy="Test_Strategy_2",
+              OrderRule="Short",
+              OrderRuleParams=list(SellToOpen=list(OrderType="LMT",
+                                                   Quantity=1,
+                                                   Min_Sig_N=1), # minimum number of positive signals from models to transmit
+                                   BuyToClose=list(OrderType="LMT",
+                                                   Quantity=1,
+                                                   Min_Sig_N=2))) # minimum number of positive signals from models to transmit
