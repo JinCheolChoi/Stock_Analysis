@@ -173,9 +173,9 @@ for(i in 1:nrow(Params)){
   # progress
   print(paste0(i, " / ", nrow(Params), " (", round(i/nrow(Params)*100, 2), "%)"))
   
-  # if(i%%50==0){
-  #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-12-05.Rdata")
-  # }
+  if(i%%20==0){
+    save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-06.Rdata")
+  }
 }
 
 

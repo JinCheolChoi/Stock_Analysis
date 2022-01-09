@@ -1635,7 +1635,7 @@ ReqRealTimeBars=function(BarSize=5,
   
   # if it fails to create RealTimeBarData
   if(!exists("RealTimeBarData")){
-    Sys.sleep(0.1) # suspend execution for a while to prevent the system from breaking
+    Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
     return(New_Data) # terminate the algorithm by retunning New_Data
   }
   
