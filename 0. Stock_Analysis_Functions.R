@@ -1645,7 +1645,7 @@ ReqRealTimeBars=function(BarSize=5,
     print("Recent_RealTimeBarData doesn't exist")
     if(!exists("Archiv")){
       print("Data has not been archived yet")
-      print(paste0("waiting for the initial time of the current Barsize : ", BarSize, " second(s)"))
+      print(paste0("waiting for the starting time of next bar"))
     }
     Recent_RealTimeBarData=RealTimeBarData
   }
