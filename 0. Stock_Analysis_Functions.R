@@ -653,7 +653,7 @@ Live_Trading_Imitator=function(BarData,
     if(sum(Orders_Transmitted[["Filled"]]==0)<Max_Orders
        # abs(nrow(Orders_Transmitted[Filled==1 & Action=="Buy", ])-
        #     nrow(Orders_Transmitted[Filled==1 & Action=="Sell", ]))<Max_Orders
-       ){
+    ){
       #*********************
       # calculate indicators
       #*********************
@@ -1635,12 +1635,14 @@ ReqRealTimeBars=function(BarSize=5,
   
   # if it fails to create RealTimeBarData
   if(!exists("RealTimeBarData")){
+    print("RealTimeBarData doesn't exist")
     Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
     return(New_Data) # terminate the algorithm by retunning New_Data
   }
   
   # initial Recent_RealTimeBarData
   if(!exists("Recent_RealTimeBarData")){
+    print("Recent_RealTimeBarData doesn't exist")
     Recent_RealTimeBarData=RealTimeBarData
   }
   
@@ -1654,6 +1656,7 @@ ReqRealTimeBars=function(BarSize=5,
       return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
     }
     
+    # update BarData
     BarData<<-rbind(BarData, RealTimeBarData)
     
     New_Data=1
@@ -1662,19 +1665,18 @@ ReqRealTimeBars=function(BarSize=5,
   # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
   if(BarSize>5){
     # if RealTimeBarData is not the new data
-    if(exists("Archiv") & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
+    if(exists("Archiv") & sum(Recent_RealTimeBarData[, -"Symbol"]==RealTimeBarData[, -"Symbol"])==ncol(Recent_RealTimeBarData[, -"Symbol"])){
       # remove RealTimeBarData at the end of everytime iteration
       rm(RealTimeBarData, envir=.GlobalEnv)
-      
+      print("Recent_RealTimeBarData == RealTimeBarData")
       return(New_Data) # if the new data is not derived, terminate the algorithm by returning New_Data=0
     }
     
-    # archive RealTimeBarData
-    # initiate archiving RealTimeBarData info once the remainder of time/BarSize is 0
     # open info
     if(as.numeric(RealTimeBarData$Time)%%BarSize==0){
       # define the Archive indicator
       Archiv<<-1
+      # print("open info ; Archiv==1")
       
       Symbol<<-RealTimeBarData$Symbol
       Time<<-RealTimeBarData$Time
@@ -1682,6 +1684,7 @@ ReqRealTimeBars=function(BarSize=5,
       High<<-RealTimeBarData$High
       Low<<-RealTimeBarData$Low
       Volume<<-RealTimeBarData$Volume
+      Wap<<-RealTimeBarData$Wap # Wap is useless for BarSize>5
       Count<<-RealTimeBarData$Count
     }
     
@@ -1692,6 +1695,8 @@ ReqRealTimeBars=function(BarSize=5,
     
     # interim info (update High, Low, Volum, and Count)
     if(as.numeric(RealTimeBarData$Time)%%BarSize>0){
+      # print("interim info")
+      
       High<<-max(High, RealTimeBarData$High)
       Low<<-min(Low, RealTimeBarData$Low)
       Volume<<-Volume+RealTimeBarData$Volume
@@ -1702,6 +1707,7 @@ ReqRealTimeBars=function(BarSize=5,
     if(as.numeric(RealTimeBarData$Time)%%BarSize==(BarSize-5)){
       # remove the Archive indicator
       rm(Archiv, envir=.GlobalEnv)
+      # print("close info ; rm(Archiv)")
       
       Close<<-RealTimeBarData$Close
       
@@ -1714,6 +1720,7 @@ ReqRealTimeBars=function(BarSize=5,
                                Low=Low,
                                Close=Close,
                                Volume=Volume,
+                               Wap=Wap,
                                Count=Count
                              )))
       
@@ -2039,7 +2046,7 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
     realtimeBars <- function(curMsg, msg, timestamp, file,
                              ...) {
       symbols <- get.Data("symbols")
-
+      
       `e_real_time_bars_dup` <- function(curMsg, msg, symbols, file, ...) {
         # msg[1] is VERSION
         columns <- c("Symbol","Time","Open","High","Low","Close","Volume",
@@ -2048,28 +2055,28 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
         file <- file[[id]]
         msg[2] <- symbols[as.numeric(msg[2])]
         msg[3] <- strftime(structure(as.numeric(msg[3]), class=c("POSIXt","POSIXct")))
-
+        
         #************
         # edited part
         #***************************
         Data=matrix(msg[-1], nrow=1)
         colnames(Data)=columns
         Data=as.data.table(Data)
-
+        
         #Corrected timezone
         Adj_Time=as.POSIXct(format(as.POSIXct(Data$Time),
                                    tz="America/Los_Angeles"),
                             tz="America/Los_Angeles") # fix the timezone to PDT
-
+        
         Data[, Time:=NULL]
         Data[, Time:=Adj_Time]
         Data[, (columns[!columns%in%c("Symbol", "Time")]):=lapply(.SD, as.numeric), .SDcols=columns[!columns%in%c("Symbol", "Time")]]
-
+        
         setcolorder(Data, columns)
-
+        
         RealTimeBarData<<-as.data.table(Data) # generate RealTimeBarData in the global environment
         #************************************
-
+        
       }
       #**************
       # original code
@@ -2084,8 +2091,8 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
       #   msg[3] <- strftime(structure(as.numeric(msg[3]), class=c("POSIXt","POSIXct")))
       #   cat(paste(columns,"=",msg[-1],sep=""),'\n',file=file,append=TRUE)
       # }
-
-
+      
+      
       e_real_time_bars_dup(curMsg, msg, symbols, file, ...) # # # #
     }
     currentTime <- function(curMsg, msg, timestamp, file,
@@ -2116,7 +2123,7 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
       cat(as.character(timestamp), curMsg, msg, "\n",
           file = file[[1]], append = TRUE, ...)
     }
-
+    
   }
   eW <- list(.Data = .Data, get.Data = get.Data, assign.Data = assign.Data,
              remove.Data = remove.Data, tickPrice = tickPrice, tickSize = tickSize,
