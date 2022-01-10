@@ -51,8 +51,8 @@ Add_Indicator(Strategy="Live_Strategy",
 #                            Short_PctB=0.6))
 Add_Model(Strategy="Live_Strategy",
           Model="Simple_RSI_1",
-          ModelParams=list(Long_Consec_Times=3,
-                           Short_Consec_Times=3,
+          ModelParams=list(Long_Consec_Times=1,
+                           Short_Consec_Times=1,
                            Long_RSI=0.30*100,
                            Short_RSI=0.70*100))
 Add_Model(Strategy="Live_Strategy",

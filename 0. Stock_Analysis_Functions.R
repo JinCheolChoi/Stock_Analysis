@@ -2405,8 +2405,8 @@ reqopenorders_cb=function(twsconn) {
 #*****************
 # generate BarData for barsize of 30 seconds or larger in an attempt to reduce the preparation time
 Initiate_BarData=function(BarSize=60,
-                          Ignore_Prep=FALSE, # if FALSE, request historical bar data of the given bar size immediately
-                          Prep_Seconds=10){  # if Ignore_Prep==TRUE, request historical bar data Prep_Seconds before the commencing time given BarSize
+                          Ignore_Prep=FALSE, # if FALSE, immediately request historical bar data of the given bar size
+                          Prep_Seconds=10){  # if Ignore_Prep==TRUE, request historical bar data of the given bar size 'Prep_Seconds' before the starting time of the next bar
   if(BarSize>=30){
     # Legal barSize settings are technically '1 secs', '5 secs', '15 secs', '30 mins', '1 min', '2 mins', 
     # '3 mins','5 mins', '15 mins', '30 mins', '1 hour', '1 day', '1 week', '1 month' ,'3 months', and '1 year'.
@@ -2429,7 +2429,7 @@ Initiate_BarData=function(BarSize=60,
     if(Ignore_Prep==FALSE){
       # wait for the initial time of the current Barsize
       if((BarSize-round(as.numeric(Sys.time())%%BarSize))-Prep_Seconds>0){
-        print(paste0("wait for the initial time of the current Barsize"))
+        print(paste0("wait for the initial time to request historical data of the given Barsize"))
         while((BarSize-round(as.numeric(Sys.time())%%BarSize))-Prep_Seconds>0){
           print(paste0("remaining time : ", (BarSize-round(as.numeric(Sys.time())%%BarSize))-10, " second(s)"))
           Sys.sleep(1) # suspend execution for a while to prevent the system from breaking
