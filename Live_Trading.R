@@ -24,7 +24,7 @@ Account_Code="DU2656942"
 Port=7497 # tws : 7497, IB gateway : 4002
 
 # BarSize
-BarSize=60
+BarSize=60*5
 
 
 #*****************
@@ -68,7 +68,6 @@ tws=twsConnect(port=Port)
 # reqCurrentTime(tws)
 # serverVersion(tws)
 
-
 #************************
 # assign local parameters
 #************************
@@ -92,10 +91,55 @@ Positions=0
 Orders_Transmitted=c()
 N_Orders_held=0
 
+#**************************************************************************************************
+# generate BarData for barsize of 30 seconds or larger in an attempt to reduce the preparation time
+if(!exists("BarData") & BarSize>=30){
+  # Legal barSize settings are technically '1 secs', '5 secs', '15 secs', '30 mins', '1 min', '2 mins', 
+  # '3 mins','5 mins', '15 mins', '30 mins', '1 hour', '1 day', '1 week', '1 month' ,'3 months', and '1 year'.
+  # They must be specified exactly and there is no guarantee from the API that all will work for all
+  # securities or durations
+  if(BarSize==30){
+    BarSize_txt="30 secs"
+  }else if(BarSize==60){
+    BarSize_txt="1 min"
+  }else if(BarSize==60*5){
+    BarSize_txt="5 mins"
+  }else if(BarSize==60*15){
+    BarSize_txt="15 mins"
+  }else if(BarSize==60*30){
+    BarSize_txt="30 mins"
+  }else if(BarSize==60*60){
+    BarSize_txt="1 hour"
+  }
+  
+  reqHistoricalData_Temp=reqHistoricalData(conn=tws,
+                                           Contract=contract,
+                                           barSize=BarSize_txt,
+                                           duration="1 D",
+                                           useRTH="1") %>% tail(Max_Rows)
+  
+  reqHistoricalData_Temp_Colnames=colnames(reqHistoricalData_Temp)
+  
+  BarData=data.table(
+    Symbol=contract$symbol,
+    Time=index(reqHistoricalData_Temp),
+    Open=reqHistoricalData_Temp[, grep("Open", reqHistoricalData_Temp_Colnames)],
+    High=reqHistoricalData_Temp[, grep("High", reqHistoricalData_Temp_Colnames)],
+    Low=reqHistoricalData_Temp[, grep("Low", reqHistoricalData_Temp_Colnames)],
+    Close=reqHistoricalData_Temp[, grep("Close", reqHistoricalData_Temp_Colnames)],
+    Volume=reqHistoricalData_Temp[, grep("Volume", reqHistoricalData_Temp_Colnames)],
+    Wap=reqHistoricalData_Temp[, grep("WAP", reqHistoricalData_Temp_Colnames)],
+    Count=reqHistoricalData_Temp[, grep("Count", reqHistoricalData_Temp_Colnames)]
+  )
+  
+  colnames(BarData)=c("Symbol", "Time", "Open", "High", "Low", "Close", "Volume", "Wap", "Count")
+}else{
+  BarData=c()
+}
+
 #***************
 # main algorithm
 #***************
-BarData=c()
 # BarData5Secs=c()
 while(TRUE){
   #***************
@@ -227,6 +271,11 @@ while(TRUE){
       # - N of models <= Sigs_N <= N of models
       Sigs_N=apply(Signals, 1, sum)
       
+      # message if both long and short signals are maximal
+      if(sum(Sigs_N==ncol(Signals))==2){
+        print("both long and short signals are maximal")
+      }
+      
       # number of orders held (+:more long, -:more short)
       if(abs(N_Orders_held)>1){
         break
@@ -266,17 +315,20 @@ while(TRUE){
       
       # udpate N_Orders_held
       if(!is.null(Order_to_Transmit[[1]])){
-        Transmitted_Orders=3
-        while(Old_N_Orders_held==N_Orders_held){
-          N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
-          Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
-        }
-      }else if(!is.null(Order_to_Transmit[[2]])){
-        Transmitted_Orders=-3
-        while(Old_N_Orders_held==N_Orders_held){
-          N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
-          Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
-        }
+        Transmitted_Orders=3*(Order_to_Transmit[[1]]$Action=="Sell")
+        N_Orders_held=N_Orders_held+(Order_to_Transmit[[1]]$Action=="Buy")-(Order_to_Transmit[[1]]$Action=="Sell")
+        # while(Old_N_Orders_held==N_Orders_held){
+        #   N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
+        #   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
+        # }
+      }
+      if(!is.null(Order_to_Transmit[[2]])){
+        Transmitted_Orders=-3*(Order_to_Transmit[[2]]$Action=="Sell")
+        N_Orders_held=N_Orders_held+(Order_to_Transmit[[2]]$Action=="Buy")-(Order_to_Transmit[[2]]$Action=="Sell")
+        # while(Old_N_Orders_held==N_Orders_held){
+        #   N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
+        #   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
+        # }
       }
       
       # print the number of positions
@@ -289,6 +341,7 @@ while(TRUE){
   }
   
 }
+
 
 #*********************************************************
 # 1. work on importing real time bar data in the beginning
