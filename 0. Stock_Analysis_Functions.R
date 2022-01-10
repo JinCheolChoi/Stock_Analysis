@@ -1643,6 +1643,10 @@ ReqRealTimeBars=function(BarSize=5,
   # initial Recent_RealTimeBarData
   if(!exists("Recent_RealTimeBarData")){
     print("Recent_RealTimeBarData doesn't exist")
+    if(!exists("Archiv")){
+      print("Data has not been archived yet")
+      print(paste0("waiting for the initial time of the current Barsize : ", BarSize, " second(s)"))
+    }
     Recent_RealTimeBarData=RealTimeBarData
   }
   
@@ -2396,6 +2400,71 @@ reqopenorders_cb=function(twsconn) {
   return(open_orders)
 }
 
-
-
-
+#*****************
+# Initiate_BarData
+#*****************
+# generate BarData for barsize of 30 seconds or larger in an attempt to reduce the preparation time
+Initiate_BarData=function(BarSize=60,
+                          Ignore_Prep=FALSE, # if FALSE, request historical bar data of the given bar size immediately
+                          Prep_Seconds=10){  # if Ignore_Prep==TRUE, request historical bar data Prep_Seconds before the commencing time given BarSize
+  if(BarSize>=30){
+    # Legal barSize settings are technically '1 secs', '5 secs', '15 secs', '30 mins', '1 min', '2 mins', 
+    # '3 mins','5 mins', '15 mins', '30 mins', '1 hour', '1 day', '1 week', '1 month' ,'3 months', and '1 year'.
+    # They must be specified exactly and there is no guarantee from the API that all will work for all
+    # securities or durations
+    if(BarSize==30){
+      BarSize_txt="30 secs"
+    }else if(BarSize==60){
+      BarSize_txt="1 min"
+    }else if(BarSize==60*5){
+      BarSize_txt="5 mins"
+    }else if(BarSize==60*15){
+      BarSize_txt="15 mins"
+    }else if(BarSize==60*30){
+      BarSize_txt="30 mins"
+    }else if(BarSize==60*60){
+      BarSize_txt="1 hour"
+    }
+    
+    if(Ignore_Prep==FALSE){
+      # wait for the initial time of the current Barsize
+      if((BarSize-round(as.numeric(Sys.time())%%BarSize))-Prep_Seconds>0){
+        print(paste0("wait for the initial time of the current Barsize"))
+        while((BarSize-round(as.numeric(Sys.time())%%BarSize))-Prep_Seconds>0){
+          print(paste0("remaining time : ", (BarSize-round(as.numeric(Sys.time())%%BarSize))-10, " second(s)"))
+          Sys.sleep(1) # suspend execution for a while to prevent the system from breaking
+        }
+      }
+    }
+    
+    # reqHistoricalData_Temp
+    print("request historical data from TWS")
+    reqHistoricalData_Temp=reqHistoricalData(conn=tws,
+                                             Contract=contract,
+                                             barSize=BarSize_txt,
+                                             duration="1 D",
+                                             useRTH="1") %>% tail(Max_Rows)
+    
+    # reqHistoricalData_Temp_Colnames
+    reqHistoricalData_Temp_Colnames=colnames(reqHistoricalData_Temp)
+    
+    # BarData
+    BarData=data.table(
+      Symbol=contract$symbol,
+      Time=index(reqHistoricalData_Temp),
+      Open=reqHistoricalData_Temp[, grep("Open", reqHistoricalData_Temp_Colnames)],
+      High=reqHistoricalData_Temp[, grep("High", reqHistoricalData_Temp_Colnames)],
+      Low=reqHistoricalData_Temp[, grep("Low", reqHistoricalData_Temp_Colnames)],
+      Close=reqHistoricalData_Temp[, grep("Close", reqHistoricalData_Temp_Colnames)],
+      Volume=reqHistoricalData_Temp[, grep("Volume", reqHistoricalData_Temp_Colnames)],
+      Wap=reqHistoricalData_Temp[, grep("WAP", reqHistoricalData_Temp_Colnames)],
+      Count=reqHistoricalData_Temp[, grep("Count", reqHistoricalData_Temp_Colnames)]
+    )
+    
+    colnames(BarData)=c("Symbol", "Time", "Open", "High", "Low", "Close", "Volume", "Wap", "Count")
+  }else{
+    BarData=c()
+  }
+  
+  return(BarData)
+}
