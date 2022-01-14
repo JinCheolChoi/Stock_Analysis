@@ -1629,10 +1629,12 @@ ReqRealTimeBars=function(BarSize=5,
   # -> nope... sometimes data is extracted faster than every 5 seconds
   # -> so, the code is modified to echo out the new data only when it is added
   #***************************************************************************
+  print("pre-IBrokers::reqRealTimeBars")
   IBrokers::reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
                             eventWrapper=eWrapper_cust(),
                             CALLBACK=twsCALLBACK_cust)
-  
+  # .twsIncomingMSG
+  print("Post-IBrokers::reqRealTimeBars")
   # if it fails to create RealTimeBarData
   if(!exists("RealTimeBarData")){
     print("RealTimeBarData doesn't exist")
@@ -1647,7 +1649,8 @@ ReqRealTimeBars=function(BarSize=5,
       print("Data has not been archived yet")
       print(paste0("waiting for the starting time of the next bar"))
     }
-    Recent_RealTimeBarData=RealTimeBarData
+    Recent_RealTimeBarData<<-RealTimeBarData
+    Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
   }
   
   # if BarSize=5, no additional process is required
@@ -1673,6 +1676,7 @@ ReqRealTimeBars=function(BarSize=5,
       # remove RealTimeBarData at the end of everytime iteration
       rm(RealTimeBarData, envir=.GlobalEnv)
       print("Recent_RealTimeBarData == RealTimeBarData")
+      Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
       return(New_Data) # if the new data is not derived, terminate the algorithm by returning New_Data=0
     }
     
@@ -1824,6 +1828,11 @@ snapShot = function(twsCon,
 #*************************
 # customized twsCALLBACK()
 # revised lines are highlighted with # # # #
+#*****************
+# twsCALLBACK_cust
+#*************************
+# customized twsCALLBACK()
+# revised lines are highlighted with # # # #
 twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...) 
 {
   if (missing(eWrapper)) 
@@ -1865,6 +1874,15 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
         next
       }
       curMsg <- readBin(con, "character", 1L)
+      # curMsg=NULL # # # #
+      print(paste0("con : ", con, " / curMsg : ", curMsg, " / timestamp : ", timestamp)) # # # #
+      if(is.null(curMsg) # # # # sometime curMsg is not derived
+      ){
+        curMsg=50
+      }else if(curMsg!=50){
+        Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
+      }
+      
       if (!is.null(timestamp)) {
         processMsg(curMsg, con, eWrapper, format(Sys.time(), 
                                                  timestamp), file, twsCon, ...)
@@ -1882,6 +1900,8 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
     })
   }
 }
+
+
 
 
 #**************
@@ -2439,11 +2459,22 @@ Initiate_BarData=function(BarSize=60,
     
     # reqHistoricalData_Temp
     print("request historical data from TWS")
+    
+    #
+    ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
+    CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
+    if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")&
+       (CurrentTime>=(as.ITime("06:30:00"))&
+        CurrentTime<=(as.ITime("14:00:00")))){
+      useRTH_temp="1"
+    }else{
+      useRTH_temp="0"
+    }
     reqHistoricalData_Temp=reqHistoricalData(conn=tws,
                                              Contract=contract,
                                              barSize=BarSize_txt,
                                              duration="1 D",
-                                             useRTH="1") %>% tail(Max_Rows)
+                                             useRTH=useRTH_temp) %>% tail(Max_Rows)
     
     # reqHistoricalData_Temp_Colnames
     reqHistoricalData_Temp_Colnames=colnames(reqHistoricalData_Temp)

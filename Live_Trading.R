@@ -68,6 +68,7 @@ tws=twsConnect(port=Port)
 # reqCurrentTime(tws)
 # serverVersion(tws)
 
+
 #************************
 # assign local parameters
 #************************
@@ -87,14 +88,15 @@ General_Strategy="General"
 Strategy_Rules=names(Order_Rules)[names(Order_Rules)!="General"]
 
 Transmitted_Orders=0
-Positions=0
+# Positions=0
 Orders_Transmitted=c()
 N_Orders_held=0
 
 #********
 # BarData
 BarData=Initiate_BarData(BarSize=BarSize,
-                         Ignore_Prep=FALSE)
+                         Ignore_Prep=TRUE)
+
 
 #***************
 # main algorithm
@@ -163,10 +165,11 @@ while(TRUE){
     # move to the next iteration
     next
   }
-  while(!isConnected(tws)){
-    tws=twsConnect(port=Port)
-  }
-  print("---------------------------------")
+  # while(!isConnected(tws)){
+  #   tws=twsConnect(port=Port)
+  # }
+  # print("---------------------------------")
+  # 
   #*************
   # candle chart
   #*************
@@ -268,6 +271,7 @@ while(TRUE){
   # record open and closed orders
   if(exists("Order_to_Transmit")){
     if(!is.null(do.call(rbind, Order_to_Transmit))){
+      print(Calculated_Indicators)
       # add Order_to_Transmit to Orders_Transmitted
       Orders_Transmitted=rbind(Orders_Transmitted,
                                do.call(rbind, Order_to_Transmit),
@@ -283,6 +287,7 @@ while(TRUE){
         # }
       }
       if(!is.null(Order_to_Transmit[[2]])){
+        print(Calculated_Indicators)
         Transmitted_Orders=-3*(Order_to_Transmit[[2]]$Action=="Sell")
         N_Orders_held=N_Orders_held+(Order_to_Transmit[[2]]$Action=="Buy")-(Order_to_Transmit[[2]]$Action=="Sell")
         # while(Old_N_Orders_held==N_Orders_held){
@@ -304,5 +309,9 @@ while(TRUE){
 
 
 #*********************************************************
-# 1. work on importing real time bar data in the beginning
+# 1. work on importing real time bar data in the beginning (done)
 # 2. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
+# 3. change the label from Trend to Reverse
+# 4. option to switch positions
+
+
