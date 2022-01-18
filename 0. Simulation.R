@@ -173,9 +173,9 @@ for(i in 1:nrow(Params)){
   # progress
   print(paste0(i, " / ", nrow(Params), " (", round(i/nrow(Params)*100, 2), "%)"))
   
-  # if(i%%50==0){
-  #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-12-05.Rdata")
-  # }
+  if(i%%20==0){
+    save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-06.Rdata")
+  }
 }
 
 
@@ -343,7 +343,7 @@ Contingency_Table_Generator_Conti_X(Data=Params,
 # # save and load
 # #**************
 # #save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-09-25_Trend.Rdata")
-# #load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-11-18_Trend.Rdata")
+# #load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-06_Trend.Rdata")
 # 
 # #***********************
 # # visualize in bar chart

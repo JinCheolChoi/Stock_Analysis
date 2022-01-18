@@ -653,7 +653,7 @@ Live_Trading_Imitator=function(BarData,
     if(sum(Orders_Transmitted[["Filled"]]==0)<Max_Orders
        # abs(nrow(Orders_Transmitted[Filled==1 & Action=="Buy", ])-
        #     nrow(Orders_Transmitted[Filled==1 & Action=="Sell", ]))<Max_Orders
-       ){
+    ){
       #*********************
       # calculate indicators
       #*********************
@@ -1629,19 +1629,28 @@ ReqRealTimeBars=function(BarSize=5,
   # -> nope... sometimes data is extracted faster than every 5 seconds
   # -> so, the code is modified to echo out the new data only when it is added
   #***************************************************************************
+  print("pre-IBrokers::reqRealTimeBars")
   IBrokers::reqRealTimeBars(tws, contract, barSize="5", useRTH=F,
                             eventWrapper=eWrapper_cust(),
                             CALLBACK=twsCALLBACK_cust)
-  
+  # .twsIncomingMSG
+  print("Post-IBrokers::reqRealTimeBars")
   # if it fails to create RealTimeBarData
   if(!exists("RealTimeBarData")){
-    Sys.sleep(0.1) # suspend execution for a while to prevent the system from breaking
+    print("RealTimeBarData doesn't exist")
+    Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
     return(New_Data) # terminate the algorithm by retunning New_Data
   }
   
   # initial Recent_RealTimeBarData
   if(!exists("Recent_RealTimeBarData")){
-    Recent_RealTimeBarData=RealTimeBarData
+    print("Recent_RealTimeBarData doesn't exist")
+    if(!exists("Archiv")){
+      print("Data has not been archived yet")
+      print(paste0("waiting for the starting time of the next bar"))
+    }
+    Recent_RealTimeBarData<<-RealTimeBarData
+    Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
   }
   
   # if BarSize=5, no additional process is required
@@ -1654,6 +1663,7 @@ ReqRealTimeBars=function(BarSize=5,
       return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
     }
     
+    # update BarData
     BarData<<-rbind(BarData, RealTimeBarData)
     
     New_Data=1
@@ -1662,19 +1672,19 @@ ReqRealTimeBars=function(BarSize=5,
   # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
   if(BarSize>5){
     # if RealTimeBarData is not the new data
-    if(exists("Archiv") & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
+    if(exists("Archiv") & sum(Recent_RealTimeBarData[, -"Symbol"]==RealTimeBarData[, -"Symbol"])==ncol(Recent_RealTimeBarData[, -"Symbol"])){
       # remove RealTimeBarData at the end of everytime iteration
       rm(RealTimeBarData, envir=.GlobalEnv)
-      
+      print("Recent_RealTimeBarData == RealTimeBarData")
+      Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
       return(New_Data) # if the new data is not derived, terminate the algorithm by returning New_Data=0
     }
     
-    # archive RealTimeBarData
-    # initiate archiving RealTimeBarData info once the remainder of time/BarSize is 0
     # open info
     if(as.numeric(RealTimeBarData$Time)%%BarSize==0){
       # define the Archive indicator
       Archiv<<-1
+      # print("open info ; Archiv==1")
       
       Symbol<<-RealTimeBarData$Symbol
       Time<<-RealTimeBarData$Time
@@ -1682,6 +1692,7 @@ ReqRealTimeBars=function(BarSize=5,
       High<<-RealTimeBarData$High
       Low<<-RealTimeBarData$Low
       Volume<<-RealTimeBarData$Volume
+      Wap<<-RealTimeBarData$Wap # Wap is useless for BarSize>5
       Count<<-RealTimeBarData$Count
     }
     
@@ -1692,6 +1703,8 @@ ReqRealTimeBars=function(BarSize=5,
     
     # interim info (update High, Low, Volum, and Count)
     if(as.numeric(RealTimeBarData$Time)%%BarSize>0){
+      # print("interim info")
+      
       High<<-max(High, RealTimeBarData$High)
       Low<<-min(Low, RealTimeBarData$Low)
       Volume<<-Volume+RealTimeBarData$Volume
@@ -1702,6 +1715,7 @@ ReqRealTimeBars=function(BarSize=5,
     if(as.numeric(RealTimeBarData$Time)%%BarSize==(BarSize-5)){
       # remove the Archive indicator
       rm(Archiv, envir=.GlobalEnv)
+      # print("close info ; rm(Archiv)")
       
       Close<<-RealTimeBarData$Close
       
@@ -1714,6 +1728,7 @@ ReqRealTimeBars=function(BarSize=5,
                                Low=Low,
                                Close=Close,
                                Volume=Volume,
+                               Wap=Wap,
                                Count=Count
                              )))
       
@@ -1813,6 +1828,11 @@ snapShot = function(twsCon,
 #*************************
 # customized twsCALLBACK()
 # revised lines are highlighted with # # # #
+#*****************
+# twsCALLBACK_cust
+#*************************
+# customized twsCALLBACK()
+# revised lines are highlighted with # # # #
 twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...) 
 {
   if (missing(eWrapper)) 
@@ -1854,6 +1874,15 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
         next
       }
       curMsg <- readBin(con, "character", 1L)
+      # curMsg=NULL # # # #
+      print(paste0("con : ", con, " / curMsg : ", curMsg, " / timestamp : ", timestamp)) # # # #
+      if(is.null(curMsg) # # # # sometime curMsg is not derived
+      ){
+        curMsg=50
+      }else if(curMsg!=50){
+        Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
+      }
+      
       if (!is.null(timestamp)) {
         processMsg(curMsg, con, eWrapper, format(Sys.time(), 
                                                  timestamp), file, twsCon, ...)
@@ -1871,6 +1900,8 @@ twsCALLBACK_cust=function (twsCon, eWrapper, timestamp, file, playback = 1, ...)
     })
   }
 }
+
+
 
 
 #**************
@@ -2039,7 +2070,7 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
     realtimeBars <- function(curMsg, msg, timestamp, file,
                              ...) {
       symbols <- get.Data("symbols")
-
+      
       `e_real_time_bars_dup` <- function(curMsg, msg, symbols, file, ...) {
         # msg[1] is VERSION
         columns <- c("Symbol","Time","Open","High","Low","Close","Volume",
@@ -2048,28 +2079,28 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
         file <- file[[id]]
         msg[2] <- symbols[as.numeric(msg[2])]
         msg[3] <- strftime(structure(as.numeric(msg[3]), class=c("POSIXt","POSIXct")))
-
+        
         #************
         # edited part
         #***************************
         Data=matrix(msg[-1], nrow=1)
         colnames(Data)=columns
         Data=as.data.table(Data)
-
+        
         #Corrected timezone
         Adj_Time=as.POSIXct(format(as.POSIXct(Data$Time),
                                    tz="America/Los_Angeles"),
                             tz="America/Los_Angeles") # fix the timezone to PDT
-
+        
         Data[, Time:=NULL]
         Data[, Time:=Adj_Time]
         Data[, (columns[!columns%in%c("Symbol", "Time")]):=lapply(.SD, as.numeric), .SDcols=columns[!columns%in%c("Symbol", "Time")]]
-
+        
         setcolorder(Data, columns)
-
+        
         RealTimeBarData<<-as.data.table(Data) # generate RealTimeBarData in the global environment
         #************************************
-
+        
       }
       #**************
       # original code
@@ -2084,8 +2115,8 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
       #   msg[3] <- strftime(structure(as.numeric(msg[3]), class=c("POSIXt","POSIXct")))
       #   cat(paste(columns,"=",msg[-1],sep=""),'\n',file=file,append=TRUE)
       # }
-
-
+      
+      
       e_real_time_bars_dup(curMsg, msg, symbols, file, ...) # # # #
     }
     currentTime <- function(curMsg, msg, timestamp, file,
@@ -2116,7 +2147,7 @@ eWrapper_cust=function (debug = FALSE, errfile = stderr())
       cat(as.character(timestamp), curMsg, msg, "\n",
           file = file[[1]], append = TRUE, ...)
     }
-
+    
   }
   eW <- list(.Data = .Data, get.Data = get.Data, assign.Data = assign.Data,
              remove.Data = remove.Data, tickPrice = tickPrice, tickSize = tickSize,
@@ -2389,6 +2420,82 @@ reqopenorders_cb=function(twsconn) {
   return(open_orders)
 }
 
-
-
-
+#*****************
+# Initiate_BarData
+#*****************
+# generate BarData for barsize of 30 seconds or larger in an attempt to reduce the preparation time
+Initiate_BarData=function(BarSize=60,
+                          Ignore_Prep=FALSE, # if FALSE, immediately request historical bar data of the given bar size
+                          Prep_Seconds=10){  # if Ignore_Prep==TRUE, request historical bar data of the given bar size 'Prep_Seconds' before the starting time of the next bar
+  if(BarSize>=30){
+    # Legal barSize settings are technically '1 secs', '5 secs', '15 secs', '30 mins', '1 min', '2 mins', 
+    # '3 mins','5 mins', '15 mins', '30 mins', '1 hour', '1 day', '1 week', '1 month' ,'3 months', and '1 year'.
+    # They must be specified exactly and there is no guarantee from the API that all will work for all
+    # securities or durations
+    if(BarSize==30){
+      BarSize_txt="30 secs"
+    }else if(BarSize==60){
+      BarSize_txt="1 min"
+    }else if(BarSize==60*5){
+      BarSize_txt="5 mins"
+    }else if(BarSize==60*15){
+      BarSize_txt="15 mins"
+    }else if(BarSize==60*30){
+      BarSize_txt="30 mins"
+    }else if(BarSize==60*60){
+      BarSize_txt="1 hour"
+    }
+    
+    if(Ignore_Prep==FALSE){
+      # wait for the initial time of the current Barsize
+      if((BarSize-round(as.numeric(Sys.time())%%BarSize))-Prep_Seconds>0){
+        print(paste0("wait for the initial time to request historical data of the given Barsize"))
+        while((BarSize-round(as.numeric(Sys.time())%%BarSize))-Prep_Seconds>0){
+          print(paste0("remaining time : ", (BarSize-round(as.numeric(Sys.time())%%BarSize))-10, " second(s)"))
+          Sys.sleep(1) # suspend execution for a while to prevent the system from breaking
+        }
+      }
+    }
+    
+    # reqHistoricalData_Temp
+    print("request historical data from TWS")
+    
+    #
+    ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
+    CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
+    if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")&
+       (CurrentTime>=(as.ITime("06:30:00"))&
+        CurrentTime<=(as.ITime("14:00:00")))){
+      useRTH_temp="1"
+    }else{
+      useRTH_temp="0"
+    }
+    reqHistoricalData_Temp=reqHistoricalData(conn=tws,
+                                             Contract=contract,
+                                             barSize=BarSize_txt,
+                                             duration="1 D",
+                                             useRTH=useRTH_temp) %>% tail(Max_Rows)
+    
+    # reqHistoricalData_Temp_Colnames
+    reqHistoricalData_Temp_Colnames=colnames(reqHistoricalData_Temp)
+    
+    # BarData
+    BarData=data.table(
+      Symbol=contract$symbol,
+      Time=index(reqHistoricalData_Temp),
+      Open=reqHistoricalData_Temp[, grep("Open", reqHistoricalData_Temp_Colnames)],
+      High=reqHistoricalData_Temp[, grep("High", reqHistoricalData_Temp_Colnames)],
+      Low=reqHistoricalData_Temp[, grep("Low", reqHistoricalData_Temp_Colnames)],
+      Close=reqHistoricalData_Temp[, grep("Close", reqHistoricalData_Temp_Colnames)],
+      Volume=reqHistoricalData_Temp[, grep("Volume", reqHistoricalData_Temp_Colnames)],
+      Wap=reqHistoricalData_Temp[, grep("WAP", reqHistoricalData_Temp_Colnames)],
+      Count=reqHistoricalData_Temp[, grep("Count", reqHistoricalData_Temp_Colnames)]
+    )
+    
+    colnames(BarData)=c("Symbol", "Time", "Open", "High", "Low", "Close", "Volume", "Wap", "Count")
+  }else{
+    BarData=c()
+  }
+  
+  return(BarData)
+}

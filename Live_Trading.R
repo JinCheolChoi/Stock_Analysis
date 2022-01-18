@@ -24,7 +24,7 @@ Account_Code="DU2656942"
 Port=7497 # tws : 7497, IB gateway : 4002
 
 # BarSize
-BarSize=10
+BarSize=60*5
 
 
 #*****************
@@ -88,15 +88,21 @@ General_Strategy="General"
 Strategy_Rules=names(Order_Rules)[names(Order_Rules)!="General"]
 
 Transmitted_Orders=0
-Positions=0
+# Positions=0
 Orders_Transmitted=c()
 N_Orders_held=0
+
+#********
+# BarData
+BarData=Initiate_BarData(BarSize=BarSize,
+                         Ignore_Prep=TRUE)
+
 
 #***************
 # main algorithm
 #***************
-BarData=c()
 # BarData5Secs=c()
+print("the main algorithm initiated")
 while(TRUE){
   #***************
   # connect to tws
@@ -110,11 +116,60 @@ while(TRUE){
   #**************************
   # output : BarData
   if(!ReqRealTimeBars(BarSize, Log=F)){ # skip to the next iteration if the new data is not derived (New_Data==0)
+    # #****************************
+    # # see how many positions held
+    # if(!is.null(Orders_Transmitted)){
+    #   # number of open orders
+    #   Open_Orders=unique(do.call(rbind, reqopenorders_cb(tws))[, 3])
+    #   
+    #   # check if transmitted order is filled
+    #   # Positions=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
+    #   if(length(Open_Orders)==2>0){
+    #     Orders_Transmitted[Filled==0, Filled:=1]
+    #   }
+    #   
+    #   #*******************
+    #   # cancel open orders
+    #   if(length(Open_Orders)==3|
+    #      length(Open_Orders)==1){
+    #     
+    #     # (1) if main order is not filled for longer than 1 hours, cancel orders
+    #     if(Sys.time()-Orders_Transmitted[Filled==0, Submit_Time]>60*60){
+    #       Transmitted_Orders=0 # reset Transmitted_Orders to 0
+    #       
+    #       Open_Orders=unique(do.call(rbind, reqopenorders_cb(tws))[, 3])
+    #       if(!is.null(Open_Orders)){
+    #         for(Open_Order in Open_Orders){ # 
+    #           cancelOrder(tws, Open_Order)
+    #         }
+    #         rm(Open_Orders)
+    #       }
+    #     }
+    #     
+    #     # (2) if there is no position and there are some remaining open orders, cancel all of the remaining open orders
+    #     if(abs(Transmitted_Orders)>0){
+    #       Transmitted_Orders=0 # reset Transmitted_Orders to 0
+    #       
+    #       Open_Orders=unique(do.call(rbind, reqopenorders_cb(tws))[, 3])
+    #       if(!is.null(Open_Orders)){
+    #         for(Open_Order in Open_Orders){ # 
+    #           cancelOrder(tws, Open_Order)
+    #         }
+    #         rm(Open_Orders)
+    #       }
+    #     }
+    #     
+    #   }
+    # }
     
     # move to the next iteration
     next
   }
-  
+  # while(!isConnected(tws)){
+  #   tws=twsConnect(port=Port)
+  # }
+  # print("---------------------------------")
+  # 
   #*************
   # candle chart
   #*************
@@ -126,7 +181,8 @@ while(TRUE){
   Live_Data_Temp=tail(BarData, Max_Rows)
   
   # algorithm determine to take a position
-  if(Transmitted_Orders<110){ # run the algorithm only when there is no transmitted order
+  if(!is.null(Live_Data_Temp) &
+     Transmitted_Orders<Inf){ # run the algorithm only when there is no transmitted order
     #*********************
     # calculate indicators
     #*********************
@@ -178,8 +234,18 @@ while(TRUE){
       # - N of models <= Sigs_N <= N of models
       Sigs_N=apply(Signals, 1, sum)
       
+      # message if both long and short signals are maximal
+      if(sum(Sigs_N==ncol(Signals))==2){
+        print("both long and short signals are maximal")
+      }
+      
       # number of orders held (+:more long, -:more short)
-      N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
+      if(abs(N_Orders_held)>1){
+        break
+      }
+      
+      # save Old_N_Orders_held
+      Old_N_Orders_held=N_Orders_held
       
       # Order_to_Transmit
       Order_to_Transmit=lapply(Strategy_Rules,
@@ -197,14 +263,6 @@ while(TRUE){
                                  )
                                })
       
-      if(!is.null(Order_to_Transmit[[1]])){
-        Transmitted_Orders=3
-        #print(Order_to_Transmit[[1]])
-      }else if(!is.null(Order_to_Transmit[[2]])){
-        Transmitted_Orders=-3
-        #print(Order_to_Transmit[[2]])
-      }
-      
       # remove Signals
       rm(Signals)
     }
@@ -213,10 +271,34 @@ while(TRUE){
   # record open and closed orders
   if(exists("Order_to_Transmit")){
     if(!is.null(do.call(rbind, Order_to_Transmit))){
+      print(Calculated_Indicators)
       # add Order_to_Transmit to Orders_Transmitted
       Orders_Transmitted=rbind(Orders_Transmitted,
                                do.call(rbind, Order_to_Transmit),
                                fill=T)
+      
+      # udpate N_Orders_held
+      if(!is.null(Order_to_Transmit[[1]])){
+        Transmitted_Orders=3*(Order_to_Transmit[[1]]$Action=="Sell")
+        N_Orders_held=N_Orders_held+(Order_to_Transmit[[1]]$Action=="Buy")-(Order_to_Transmit[[1]]$Action=="Sell")
+        # while(Old_N_Orders_held==N_Orders_held){
+        #   N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
+        #   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
+        # }
+      }
+      if(!is.null(Order_to_Transmit[[2]])){
+        print(Calculated_Indicators)
+        Transmitted_Orders=-3*(Order_to_Transmit[[2]]$Action=="Sell")
+        N_Orders_held=N_Orders_held+(Order_to_Transmit[[2]]$Action=="Buy")-(Order_to_Transmit[[2]]$Action=="Sell")
+        # while(Old_N_Orders_held==N_Orders_held){
+        #   N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
+        #   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
+        # }
+      }
+      
+      # print the number of positions
+      print(paste0("N of Positions : ", N_Orders_held))
+      
       # remove Orders_Transmitted
       rm(Order_to_Transmit)
       #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
@@ -224,5 +306,12 @@ while(TRUE){
   }
   
 }
+
+
+#*********************************************************
+# 1. work on importing real time bar data in the beginning (done)
+# 2. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
+# 3. change the label from Trend to Reverse
+# 4. option to switch positions
 
 
