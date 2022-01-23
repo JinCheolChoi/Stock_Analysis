@@ -24,7 +24,6 @@ data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
 #****************
 Symbols=c("MNQ")
 
-
 #*****************
 #
 # preliminary step
@@ -52,10 +51,10 @@ Get_Data(Symbols=list("MNQ"),
 
 # bar data
 # SPY
-Training_BarData=MNQ[Time<"2021-07-22 15:00:00", ]
-Test_BarData=MNQ[Time>="2021-07-22 15:00:00", ]
-# Training_BarData=MNQ
-# Test_BarData=MNQ
+# Training_BarData=MNQ[Time<"2021-07-22 15:00:00", ]
+# Test_BarData=MNQ[Time>="2021-07-22 15:00:00", ]
+Training_BarData=MNQ
+Test_BarData=MNQ
 
 
 #************
@@ -105,6 +104,7 @@ colnames(Params)=c("Simple_BBands_1_Long_PctB",
 # Params=rbind(Params, Optimal_Params)
 # Params=Optimal_Params
 for(i in 1:nrow(Params)){
+  # i=1
   if(Params[i, Simple_BBands_1_Long_PctB]==0 &
      Params[i, Simple_BBands_2_Short_PctB]==1){
     Params$Net_Profit_on_Training[i]=0
@@ -135,37 +135,73 @@ for(i in 1:nrow(Params)){
   #****************
   # run Backtesting
   #****************
+  # for(Strategy in Strategies){
+  #   # Strategy=Strategies
+  #   # on training data sets
+  #   T1=system.time({
+  #     Training_Results_Temp=Live_Trading_Imitator(BarData=Training_BarData,
+  #                                                 Strategy=get(Strategies[which(Strategies==Strategy)]))
+  #   })
+  # 
+  #   # save results
+  #   assign(paste0(Strategy, "_Training_", "Setting_", i),
+  #          list(T1,
+  #               Training_Results_Temp))
+  # 
+  #   # save net profits
+  #   Params[i, paste0(Strategy, "_NP_on_Training"):=get(paste0(Strategy, "_Training_", "Setting_", i))[[2]]$Net_Profit]
+  # 
+  #   #******************
+  #   # on test data sets
+  #   T2=system.time({
+  #     Test_Results_Temp=Live_Trading_Imitator(BarData=Test_BarData,
+  #                                             Strategy=get(Strategies[which(Strategies==Strategy)]))
+  #   })
+  # 
+  #   # save results
+  #   assign(paste0(Strategy, "_Test_", "Setting_", i),
+  #          list(T2,
+  #               Test_Results_Temp))
+  # 
+  #   # save net profits
+  #   Params[i, paste0(Strategy, "_NP_on_Test"):=get(paste0(Strategy, "_Test_", "Setting_", i))[[2]]$Net_Profit]
+  # }
+  
+  ############################################
+  
+  
+  
   for(Strategy in Strategies){
+    # Strategy=Strategies
     # on training data sets
     T1=system.time({
-      Training_Results_Temp=Live_Trading_Imitator(BarData=Training_BarData,
-                                                  Strategy=get(Strategies[which(Strategies==Strategy)]))
+      Training_Results_Temp=Backtesting(BarData=Training_BarData,
+                                        Strategy=get(Strategies[which(Strategies==Strategy)]))
     })
-    
+
     # save results
     assign(paste0(Strategy, "_Training_", "Setting_", i),
            list(T1,
                 Training_Results_Temp))
-    
+
     # save net profits
     Params[i, paste0(Strategy, "_NP_on_Training"):=get(paste0(Strategy, "_Training_", "Setting_", i))[[2]]$Net_Profit]
-    
+
     #******************
     # on test data sets
     T2=system.time({
-      Test_Results_Temp=Live_Trading_Imitator(BarData=Test_BarData,
-                                              Strategy=get(Strategies[which(Strategies==Strategy)]))
+      Test_Results_Temp=Backtesting(BarData=Test_BarData,
+                                    Strategy=get(Strategies[which(Strategies==Strategy)]))
     })
-    
+
     # save results
     assign(paste0(Strategy, "_Test_", "Setting_", i),
            list(T2,
                 Test_Results_Temp))
-    
+
     # save net profits
     Params[i, paste0(Strategy, "_NP_on_Test"):=get(paste0(Strategy, "_Test_", "Setting_", i))[[2]]$Net_Profit]
   }
-  
   
   #***************
   # print messages
@@ -173,9 +209,9 @@ for(i in 1:nrow(Params)){
   # progress
   print(paste0(i, " / ", nrow(Params), " (", round(i/nrow(Params)*100, 2), "%)"))
   
-  if(i%%20==0){
-    save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-06.Rdata")
-  }
+  # if(i%%20==0){
+  #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-06.Rdata")
+  # }
 }
 
 
@@ -227,7 +263,7 @@ Params[Stop_Order!=1000&
          Short_Strategy_NP_on_Test>0&
          
          Test_Strategy_Test_Min_Cum_Profit>-1000
-         ,
+       ,
        .SD,
        .SDcols=c("Simple_BBands_1_Long_PctB", "Simple_BBands_2_Short_PctB", "Stop_Order", "Profit_Order",
                  "Test_Strategy_NP_on_Training",

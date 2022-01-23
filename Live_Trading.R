@@ -78,7 +78,7 @@ Models=Live_Strategy[["Models"]]
 
 Max_Orders=as.numeric(Order_Rules[["General"]][["Max_Orders"]])
 Scenario=Order_Rules[["General"]][["Scenario"]]
-Trend=Order_Rules[["General"]][["Trend"]]
+Reverse=Order_Rules[["General"]][["Reverse"]]
 Stop_Order=as.numeric(Order_Rules[["General"]][["Stop_Order"]])
 Profit_Order=as.numeric(Order_Rules[["General"]][["Profit_Order"]])
 Strategy_Indicators=names(Indicators)
@@ -213,17 +213,17 @@ while(TRUE){
                                                Models[[x]]))}
                                  }))
     
-    if(nrow(Signals)==2){
-      # Signals are assigned opposite if Trend=TRUE & Trend is TRUE for either direction
-      if(Trend==TRUE){
-        if(sum(Signals$Trend)>0){
-          Signals[, which(sapply(Signals, function(x) sum(x==T)==1)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)==1))]
-        }else{
-          Signals[1, ]=FALSE
-          Signals[2, ]=FALSE
-        }
-      }
-    }
+    # if(nrow(Signals)==2){
+    #   # Signals are assigned opposite if Reverse=TRUE & Reverse is TRUE for either direction
+    #   if(Reverse==TRUE){
+    #     if(sum(Signals$Trend)>0){
+    #       Signals[, which(sapply(Signals, function(x) sum(x==T)==1)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)==1))]
+    #     }else{
+    #       Signals[1, ]=FALSE
+    #       Signals[2, ]=FALSE
+    #     }
+    #   }
+    # }
     
     #***************
     # transmit order
@@ -307,9 +307,7 @@ while(TRUE){
 
 
 #*********************************************************
-# 1. work on importing real time bar data in the beginning (done)
-# 2. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
-# 3. change the label from Trend to Reverse
-# 4. option to switch positions
+# 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
+# 2. option to switch positions
 
 

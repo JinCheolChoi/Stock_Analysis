@@ -21,7 +21,7 @@ OrderRules_Env$General=list(
   # Negative : loss cut is prioritized over early profit
   Stop_Order=10,
   Profit_Order=10,
-  Trend=FALSE          # Signals are assigned opposite if Trend=TRUE
+  Reverse=FALSE          # Opposite actions are made if Reverse=TRUE
 )
 
 
@@ -161,7 +161,7 @@ OrderRules_Env$Long_Function=function(Live_Data,
                         Detail=Detail,
                         TotalQuantity=as.numeric(TotalQuantity),
                         OrderType=OrderType,
-                        LmtPrice=tail(Live_Data, 1)[, Close],
+                        Price=tail(Live_Data, 1)[, Close],
                         Filled=0,
                         Sigs_N=Sigs_N[1]))
     }
@@ -173,7 +173,7 @@ OrderRules_Env$Long_Function=function(Live_Data,
                         Detail=Detail,
                         TotalQuantity=as.numeric(TotalQuantity),
                         OrderType=OrderType,
-                        LmtPrice=tail(Live_Data, 1)[, Close],
+                        Price=tail(Live_Data, 1)[, Close],
                         Filled=0,
                         Sigs_N=Sigs_N[2]))
     }
@@ -314,7 +314,7 @@ OrderRules_Env$Short_Function=function(Live_Data,
                         Detail=Detail,
                         TotalQuantity=as.numeric(TotalQuantity),
                         OrderType=OrderType,
-                        LmtPrice=tail(Live_Data, 1)[, Close],
+                        Price=tail(Live_Data, 1)[, Close],
                         Filled=0,
                         Sigs_N=Sigs_N[2]))
     }
@@ -326,7 +326,7 @@ OrderRules_Env$Short_Function=function(Live_Data,
                         Detail=Detail,
                         TotalQuantity=as.numeric(TotalQuantity),
                         OrderType=OrderType,
-                        LmtPrice=tail(Live_Data, 1)[, Close],
+                        Price=tail(Live_Data, 1)[, Close],
                         Filled=0,
                         Sigs_N=Sigs_N[1]))
     }
