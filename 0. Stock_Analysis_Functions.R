@@ -2459,21 +2459,12 @@ Initiate_BarData=function(BarSize=60,
     
     # reqHistoricalData_Temp
     print("request historical data from TWS")
-    
-    #
-    ToDay=weekdays(as.Date(format(Sys.time(), tz="America/Los_Angeles")))
-    CurrentTime=as.ITime(format(Sys.time(), tz="America/Los_Angeles")) # time zone : PDT
-    if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")&
-       (CurrentTime>=(as.ITime("06:30:00"))&
-        CurrentTime<=(as.ITime("14:00:00")))){
-      useRTH_temp="1"
-    }else{
-      useRTH_temp="0"
-    }
+    useRTH_temp="0"
+    Duration_D=1+ceiling(Max_Rows/((22.5*60*60)/BarSize)) # the market is open 22.5 hours on a regular day
     reqHistoricalData_Temp=reqHistoricalData(conn=tws,
                                              Contract=contract,
                                              barSize=BarSize_txt,
-                                             duration="1 D",
+                                             duration=paste0(Duration_D, " D"),
                                              useRTH=useRTH_temp) %>% tail(Max_Rows)
     
     # reqHistoricalData_Temp_Colnames

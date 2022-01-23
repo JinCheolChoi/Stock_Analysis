@@ -26,7 +26,6 @@ Port=7497 # tws : 7497, IB gateway : 4002
 # BarSize
 BarSize=60*5
 
-
 #*****************
 #
 # preliminary step
@@ -95,8 +94,7 @@ N_Orders_held=0
 #********
 # BarData
 BarData=Initiate_BarData(BarSize=BarSize,
-                         Ignore_Prep=TRUE)
-
+                         Ignore_Prep=FALSE)
 
 #***************
 # main algorithm
