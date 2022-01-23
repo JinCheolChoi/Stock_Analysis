@@ -94,7 +94,7 @@ N_Orders_held=0
 #********
 # BarData
 BarData=Initiate_BarData(BarSize=BarSize,
-                         Ignore_Prep=TRUE)
+                         Ignore_Prep=FALSE)
 
 #***************
 # main algorithm
