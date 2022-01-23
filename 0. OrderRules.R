@@ -80,6 +80,9 @@ OrderRules_Env$Long_Function=function(Live_Data,
   if(exists("Action")){
     if(Live_Trading==TRUE){
       # order
+      while(!isConnected(tws)){
+        tws=twsConnect(port=Port)
+      }
       Main_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
                                  orderType=OrderType,
                                  lmtPrice=tail(Live_Data, 1)[, Close],
@@ -229,6 +232,9 @@ OrderRules_Env$Short_Function=function(Live_Data,
   if(exists("Action")){
     if(Live_Trading==TRUE){
       # order
+      while(!isConnected(tws)){
+        tws=twsConnect(port=Port)
+      }
       Main_Order_Info<<-twsOrder(as.numeric(reqIds(tws)),
                                  orderType=OrderType,
                                  lmtPrice=tail(Live_Data, 1)[, Close],
