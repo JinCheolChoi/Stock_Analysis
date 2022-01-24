@@ -94,7 +94,7 @@ N_Orders_held=0
 #********
 # BarData
 BarData=Initiate_BarData(BarSize=BarSize,
-                         Ignore_Prep=FALSE)
+                         Ignore_Prep=T)
 
 #***************
 # main algorithm
@@ -184,7 +184,7 @@ while(TRUE){
     #*********************
     # calculate indicators
     #*********************
-    Calculated_Indicators=lapply(Strategy_Indicators,
+    Calculated_Indicators=lapply(Strategy_Indicators, # lapply is used here unlike simulation functions where sapply is used
                                  function(x)
                                    if(x=="Close"){
                                      Live_Data_Temp[["Close"]]

@@ -318,28 +318,28 @@ Add_Model(Strategy="Test_Strategy_2",
                            Short_Consec_Times=2,
                            Long_PctB=Params$Simple_BBands_1_Long_PctB[i],
                            Short_PctB=Params$Simple_BBands_1_Short_PctB[i],
-                           Simulation_Trading=F))
+                           Simulation_Trading=TRUE))
 Add_Model(Strategy="Test_Strategy_2",
           Model="Simple_BBands_2",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
                            Long_PctB=Params$Simple_BBands_2_Long_PctB[i],
                            Short_PctB=Params$Simple_BBands_2_Short_PctB[i],
-                           Simulation_Trading=F))
+                           Simulation_Trading=TRUE))
 Add_Model(Strategy="Test_Strategy_2",
           Model="Simple_RSI_1",
           ModelParams=list(Long_Consec_Times=2,
                            Short_Consec_Times=2,
                            Long_RSI=Params$Simple_BBands_1_Long_PctB[i]*100,
                            Short_RSI=Params$Simple_BBands_1_Short_PctB[i]*100,
-                           Simulation_Trading=F))
+                           Simulation_Trading=TRUE))
 Add_Model(Strategy="Test_Strategy_2",
           Model="Simple_RSI_2",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
                            Long_RSI=Params$Simple_BBands_2_Long_PctB[i]*100,
                            Short_RSI=Params$Simple_BBands_2_Short_PctB[i]*100,
-                           Simulation_Trading=F))
+                           Simulation_Trading=TRUE))
 # Add_Model(Strategy="Test_Strategy_2",
 #           Model="Trend",
 #           ModelParams=list(Interval=5,
