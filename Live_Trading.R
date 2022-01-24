@@ -24,7 +24,7 @@ Account_Code="DU2656942"
 Port=7497 # tws : 7497, IB gateway : 4002
 
 # BarSize
-BarSize=60*5
+BarSize=60*1
 
 #*****************
 #
@@ -184,7 +184,7 @@ while(TRUE){
     #*********************
     # calculate indicators
     #*********************
-    Calculated_Indicators=sapply(Strategy_Indicators,
+    Calculated_Indicators=lapply(Strategy_Indicators,
                                  function(x)
                                    if(x=="Close"){
                                      Live_Data_Temp[["Close"]]
