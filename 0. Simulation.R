@@ -45,7 +45,7 @@ for(pack in c("IBrokers",
 # import data
 Get_Data(Symbols=list("MNQ"),
          Data_Dir=data.dir,
-         BarSize=60*1,
+         BarSize=60*5,
          Convert_Tz=T,
          Filter=T)
 
@@ -76,10 +76,10 @@ Test_BarData=MNQ
 # Simple_BBands_2_Short_PctB=seq(0.55, 0.65, by=0.05)
 # Profit_Order=c(seq(30, 100, by=10))
 # Stop_Order=c(2*Profit_Order, 1000)
-Simple_BBands_1_Long_PctB=seq(0.1, 0.2, by=0.05)
-Simple_BBands_1_Short_PctB=seq(0.55, 0.65, by=0.05)
+Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
+Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
 Simple_BBands_2_Long_PctB=seq(0.25, 0.45, by=0.05)
-Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
+Simple_BBands_2_Short_PctB=seq(0.55, 0.75, by=0.05)
 
 Params=data.table(
   expand.grid(Simple_BBands_1_Long_PctB,
@@ -169,8 +169,6 @@ for(i in 1:nrow(Params)){
   
   ############################################
   
-  
-  
   for(Strategy in Strategies){
     # Strategy=Strategies
     # on training data sets
@@ -178,27 +176,27 @@ for(i in 1:nrow(Params)){
       Training_Results_Temp=Backtesting(BarData=Training_BarData,
                                         Strategy=get(Strategies[which(Strategies==Strategy)]))
     })
-
+    
     # save results
     assign(paste0(Strategy, "_Training_", "Setting_", i),
            list(T1,
                 Training_Results_Temp))
-
+    
     # save net profits
     Params[i, paste0(Strategy, "_NP_on_Training"):=get(paste0(Strategy, "_Training_", "Setting_", i))[[2]]$Net_Profit]
-
+    
     #******************
     # on test data sets
     T2=system.time({
       Test_Results_Temp=Backtesting(BarData=Test_BarData,
                                     Strategy=get(Strategies[which(Strategies==Strategy)]))
     })
-
+    
     # save results
     assign(paste0(Strategy, "_Test_", "Setting_", i),
            list(T2,
                 Test_Results_Temp))
-
+    
     # save net profits
     Params[i, paste0(Strategy, "_NP_on_Test"):=get(paste0(Strategy, "_Test_", "Setting_", i))[[2]]$Net_Profit]
   }
@@ -210,7 +208,7 @@ for(i in 1:nrow(Params)){
   print(paste0(i, " / ", nrow(Params), " (", round(i/nrow(Params)*100, 2), "%)"))
   
   # if(i%%20==0){
-  #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-06.Rdata")
+  #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-23.Rdata")
   # }
 }
 
@@ -254,53 +252,28 @@ for(i in 1:nrow(Params)){
 
 
 #
-Params[Stop_Order!=1000&
-         Test_Strategy_NP_on_Training>3500&
-         Test_Strategy_NP_on_Test>3500&
-         Long_Strategy_NP_on_Training>0&
-         Long_Strategy_NP_on_Test>0&
-         Short_Strategy_NP_on_Training>0&
-         Short_Strategy_NP_on_Test>0&
-         
-         Test_Strategy_Test_Min_Cum_Profit>-1000
-       ,
-       .SD,
-       .SDcols=c("Simple_BBands_1_Long_PctB", "Simple_BBands_2_Short_PctB", "Stop_Order", "Profit_Order",
-                 "Test_Strategy_NP_on_Training",
-                 "Test_Strategy_Training_Standard_Deviation",
-                 "Test_Strategy_Training_Max_Loss",
-                 "Test_Strategy_Training_Min_Cum_Profit",
-                 
-                 
-                 "Test_Strategy_NP_on_Test",
-                 "Test_Strategy_Test_Standard_Deviation",
-                 "Test_Strategy_Test_Max_Loss",
-                 "Test_Strategy_Test_Min_Cum_Profit",
-                 
-                 
-                 "Long_Strategy_NP_on_Training",
-                 "Long_Strategy_Training_Standard_Deviation",
-                 "Long_Strategy_Training_Max_Loss",
-                 "Long_Strategy_Training_Min_Cum_Profit",
-                 
-                 
-                 "Long_Strategy_NP_on_Test",
-                 "Long_Strategy_Test_Standard_Deviation",
-                 "Long_Strategy_Test_Max_Loss",
-                 "Long_Strategy_Test_Min_Cum_Profit",
-                 
-                 
-                 "Short_Strategy_NP_on_Training",
-                 "Short_Strategy_Training_Standard_Deviation",
-                 "Short_Strategy_Training_Max_Loss",
-                 "Short_Strategy_Training_Min_Cum_Profit",
-                 
-                 "Short_Strategy_NP_on_Test",
-                 "Short_Strategy_Test_Standard_Deviation",
-                 "Short_Strategy_Test_Max_Loss",
-                 "Short_Strategy_Test_Min_Cum_Profit",
-                 
-                 "Row")]
+Params[
+  # Stop_Order!=1000&
+  Test_Strategy_2_NP_on_Training>500&
+    Test_Strategy_2_NP_on_Test>500&
+    
+    Test_Strategy_2_Test_Min_Cum_Profit>-1000
+  ,
+  .SD,
+  .SDcols=c("Simple_BBands_1_Long_PctB", "Simple_BBands_2_Short_PctB",
+            # "Stop_Order", "Profit_Order",
+            "Test_Strategy_2_NP_on_Training",
+            "Test_Strategy_2_Training_Standard_Deviation",
+            "Test_Strategy_2_Training_Max_Loss",
+            "Test_Strategy_2_Training_Min_Cum_Profit",
+            
+            
+            "Test_Strategy_2_NP_on_Test",
+            "Test_Strategy_2_Test_Standard_Deviation",
+            "Test_Strategy_2_Test_Max_Loss",
+            "Test_Strategy_2_Test_Min_Cum_Profit",
+            
+            "Row")]
 
 Params$Short_Strategy_Test_Min_Cum_Profit %>% summary
 Params[Stop_Order!=1000&
@@ -444,4 +417,12 @@ Contingency_Table_Generator_Conti_X(Data=Params,
 
 
 
+
+
+#*********************************************************
+# 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
+# 2. apply Stop_Order & Profit_Order to Backtesting()
+# 3. work on "remove redundant long & short signals that are not supposed to be filled" in Backtesting()
+# 4. calculate indicators only once prior to fitting models for different parameter settings
+# 5. output expense for commissions in Orders_Transmitted
 

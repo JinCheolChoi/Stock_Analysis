@@ -1008,6 +1008,10 @@ Backtesting=function(BarData,
                                                             Which_SellToClose_Signals[min(which(x<Which_SellToClose_Signals))]}))
     
     Non_Dupl_Long_Signals_Data_Table=Long_Signals_Data_Table[!duplicated(SellToClose), ]
+    
+    # remove missing in BuyToOpen or SellToClose
+    Non_Dupl_Long_Signals_Data_Table=Non_Dupl_Long_Signals_Data_Table[!is.na(BuyToOpen) &
+                                                                        !is.na(SellToClose),]
   }
   
   # Non_Dupl_Short_Signals_Data_Table
@@ -1028,6 +1032,10 @@ Backtesting=function(BarData,
                                                             Which_BuyToClose_Signals[min(which(x<Which_BuyToClose_Signals))]}))
     
     Non_Dupl_Short_Signals_Data_Table=Short_Signals_Data_Table[!duplicated(BuyToClose), ]
+    
+    # remove missing in SellToOpen or BuyToClose
+    Non_Dupl_Short_Signals_Data_Table=Non_Dupl_Short_Signals_Data_Table[!is.na(SellToOpen) &
+                                                                          !is.na(BuyToClose),]
   }
   
   # T2=system.time({
