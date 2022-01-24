@@ -184,12 +184,16 @@ while(TRUE){
     #*********************
     # calculate indicators
     #*********************
-    Calculated_Indicators=lapply(Strategy_Indicators,
+    Calculated_Indicators=sapply(Strategy_Indicators,
                                  function(x)
                                    if(x=="Close"){
                                      Live_Data_Temp[["Close"]]
                                    }else{
-                                     if(nrow(Live_Data_Temp)>Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
+                                     if(x=="BBands" & nrow(Live_Data_Temp)>=Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
+                                       do.call(x, 
+                                               c(list(Live_Data_Temp[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
+                                                 Indicators[[x]]))
+                                     }else if(x!="BBands" & nrow(Live_Data_Temp)>Indicators[[x]][['n']]+1){
                                        do.call(x, 
                                                c(list(Live_Data_Temp[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
                                                  Indicators[[x]]))
@@ -305,9 +309,5 @@ while(TRUE){
   
 }
 
-
 #*********************************************************
-# 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
-# 2. option to switch positions
-
-
+# 1. option to switch positions
