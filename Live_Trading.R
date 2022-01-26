@@ -24,7 +24,7 @@ Account_Code="DU2656942"
 Port=7497 # tws : 7497, IB gateway : 4002
 
 # BarSize
-BarSize=60*1
+BarSize=60*5
 
 #*****************
 #
@@ -247,7 +247,7 @@ while(TRUE){
       }
       
       # number of orders held (+:more long, -:more short)
-      if(abs(N_Orders_held)>1){
+      if(abs(N_Orders_held)>Max_Orders){
         break
       }
       
@@ -287,7 +287,7 @@ while(TRUE){
       # udpate N_Orders_held
       if(!is.null(Order_to_Transmit[[1]])){
         Transmitted_Orders=3*(Order_to_Transmit[[1]]$Action=="Sell")
-        N_Orders_held=N_Orders_held+(Order_to_Transmit[[1]]$Action=="Buy")-(Order_to_Transmit[[1]]$Action=="Sell")
+        N_Orders_held=N_Orders_held+(Order_to_Transmit[[1]]$Action=="Buy")*Order_to_Transmit[[1]]$TotalQuantity-(Order_to_Transmit[[1]]$Action=="Sell")*Order_to_Transmit[[1]]$TotalQuantity
         # while(Old_N_Orders_held==N_Orders_held){
         #   N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
         #   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
@@ -296,7 +296,7 @@ while(TRUE){
       if(!is.null(Order_to_Transmit[[2]])){
         print(Calculated_Indicators)
         Transmitted_Orders=-3*(Order_to_Transmit[[2]]$Action=="Sell")
-        N_Orders_held=N_Orders_held+(Order_to_Transmit[[2]]$Action=="Buy")-(Order_to_Transmit[[2]]$Action=="Sell")
+        N_Orders_held=N_Orders_held+(Order_to_Transmit[[2]]$Action=="Buy")*Order_to_Transmit[[2]]$TotalQuantity-(Order_to_Transmit[[2]]$Action=="Sell")*Order_to_Transmit[[2]]$TotalQuantity
         # while(Old_N_Orders_held==N_Orders_held){
         #   N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
         #   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking

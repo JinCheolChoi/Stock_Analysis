@@ -64,7 +64,7 @@ OrderRules_Env$Long_Function=function(Live_Data,
     
     Action="Buy"
     Detail="BTO"
-    TotalQuantity=Params[["BuyToOpen"]][["Quantity"]]
+    TotalQuantity=as.numeric(Params[["BuyToOpen"]][["Quantity"]])
     OrderType=Params[["BuyToOpen"]][["OrderType"]]
   }else if(0<N_Orders_held & # if there's a long position
            N_Orders_held<=Max_Orders &
@@ -72,12 +72,21 @@ OrderRules_Env$Long_Function=function(Live_Data,
     
     Action="Sell"
     Detail="STC"
-    TotalQuantity=Params[["SellToClose"]][["Quantity"]]
+    TotalQuantity=as.numeric(Params[["SellToClose"]][["Quantity"]])
     OrderType=Params[["SellToClose"]][["OrderType"]]
   }
   
   # transmit orders for live trading
   if(exists("Action")){
+    # adjust TotalQuantity in accordance with Max_Orders 
+    if(Action=="Buy" & abs(N_Orders_held+TotalQuantity)>Max_Orders){
+      TotalQuantity=ifelse(Max_Orders-N_Orders_held>0, Max_Orders-N_Orders_held, -Max_Orders-N_Orders_held)
+      print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
+    }else if(Action=="Sell" & abs(N_Orders_held-TotalQuantity)>Max_Orders){
+      TotalQuantity=ifelse(N_Orders_held+Max_Orders>0, N_Orders_held+Max_Orders, N_Orders_held-Max_Orders)
+      print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
+    }
+    
     if(Live_Trading==TRUE){
       # order
       while(!isConnected(tws)){
@@ -159,10 +168,10 @@ OrderRules_Env$Long_Function=function(Live_Data,
                         #Filled_Time=tail(Live_Data, 1)[, Time],
                         Action=Action,
                         Detail=Detail,
-                        TotalQuantity=as.numeric(TotalQuantity),
+                        TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
                         Price=tail(Live_Data, 1)[, Close],
-                        Filled=0,
+                        Filled=1,
                         Sigs_N=Sigs_N[1]))
     }
     if(Action=="Sell"){
@@ -171,10 +180,10 @@ OrderRules_Env$Long_Function=function(Live_Data,
                         #Filled_Time=tail(Live_Data, 1)[, Time],
                         Action=Action,
                         Detail=Detail,
-                        TotalQuantity=as.numeric(TotalQuantity),
+                        TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
                         Price=tail(Live_Data, 1)[, Close],
-                        Filled=0,
+                        Filled=1,
                         Sigs_N=Sigs_N[2]))
     }
   }
@@ -216,7 +225,7 @@ OrderRules_Env$Short_Function=function(Live_Data,
     
     Action="Sell"
     Detail="STO"
-    TotalQuantity=Params[["SellToOpen"]][["Quantity"]]
+    TotalQuantity=as.numeric(Params[["SellToOpen"]][["Quantity"]])
     OrderType=Params[["SellToOpen"]][["OrderType"]]
   }else if(0>N_Orders_held & # if there's a short position
            N_Orders_held>=(-Max_Orders) & 
@@ -224,12 +233,21 @@ OrderRules_Env$Short_Function=function(Live_Data,
     
     Action="Buy"
     Detail="BTC"
-    TotalQuantity=Params[["BuyToClose"]][["Quantity"]]
+    TotalQuantity=as.numeric(Params[["BuyToClose"]][["Quantity"]])
     OrderType=Params[["BuyToClose"]][["OrderType"]]
   }
   
   # transmit orders for live trading
   if(exists("Action")){
+    # adjust TotalQuantity in accordance with Max_Orders
+    if(Action=="Buy" & abs(N_Orders_held+TotalQuantity)>Max_Orders){
+      TotalQuantity=ifelse(Max_Orders-N_Orders_held>0, Max_Orders-N_Orders_held, -Max_Orders-N_Orders_held)
+      print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
+    }else if(Action=="Sell" & abs(N_Orders_held-TotalQuantity)>Max_Orders){
+      TotalQuantity=ifelse(N_Orders_held+Max_Orders>0, N_Orders_held+Max_Orders, N_Orders_held-Max_Orders)
+      print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
+    }
+    
     if(Live_Trading==TRUE){
       # order
       while(!isConnected(tws)){
@@ -312,7 +330,7 @@ OrderRules_Env$Short_Function=function(Live_Data,
                         #Filled_Time=tail(Live_Data, 1)[, Time],
                         Action=Action,
                         Detail=Detail,
-                        TotalQuantity=as.numeric(TotalQuantity),
+                        TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
                         Price=tail(Live_Data, 1)[, Close],
                         Filled=0,
@@ -324,7 +342,7 @@ OrderRules_Env$Short_Function=function(Live_Data,
                         #Filled_Time=tail(Live_Data, 1)[, Time],
                         Action=Action,
                         Detail=Detail,
-                        TotalQuantity=as.numeric(TotalQuantity),
+                        TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
                         Price=tail(Live_Data, 1)[, Close],
                         Filled=0,
