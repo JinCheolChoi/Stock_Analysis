@@ -45,7 +45,7 @@ for(pack in c("IBrokers",
 # import data
 Get_Data(Symbols=list("MNQ"),
          Data_Dir=data.dir,
-         BarSize=60*5,
+         BarSize=60*15,
          Convert_Tz=T,
          Filter=T)
 
@@ -122,6 +122,55 @@ for(i in 1:nrow(Params)){
   #***********************************************
   # all strategies saved in the global environment
   Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
+  
+  #****************
+  # run Backtesting
+  #****************
+  # #############################################################################################################
+  # Strategies="Test_Strategy_1"
+  # # create profit variables for strategies
+  # if(i==1){
+  #   Additional_Cols=apply(expand.grid(Strategies, c("_NP_on_Training", "_NP_on_Test")), 1, paste, collapse="")
+  #   Temp=setNames(data.table(matrix(nrow=0, ncol=length(Additional_Cols))), Additional_Cols)
+  #   Temp[, (Additional_Cols):=lapply(.SD, as.numeric), .SDcols=Additional_Cols]
+  #   Params=cbind(Params,
+  #                Temp)
+  # }
+  # 
+  # for(Strategy in Strategies){
+  #   # Strategy=Strategies
+  #   # on training data sets
+  #   T1=system.time({
+  #     Training_Results_Temp=Live_Trading_Imitator(BarData=Training_BarData,
+  #                                                 Strategy=get(Strategies[which(Strategies==Strategy)]))
+  #   })
+  # 
+  #   # save results
+  #   assign(paste0(Strategy, "_Training_", "Setting_", i),
+  #          list(T1,
+  #               Training_Results_Temp))
+  # 
+  #   # save net profits
+  #   Params[i, paste0(Strategy, "_NP_on_Training"):=get(paste0(Strategy, "_Training_", "Setting_", i))[[2]]$Net_Profit]
+  # 
+  #   #******************
+  #   # on test data sets
+  #   T2=system.time({
+  #     Test_Results_Temp=Live_Trading_Imitator(BarData=Test_BarData,
+  #                                             Strategy=get(Strategies[which(Strategies==Strategy)]))
+  #   })
+  # 
+  #   # save results
+  #   assign(paste0(Strategy, "_Test_", "Setting_", i),
+  #          list(T2,
+  #               Test_Results_Temp))
+  # 
+  #   # save net profits
+  #   Params[i, paste0(Strategy, "_NP_on_Test"):=get(paste0(Strategy, "_Test_", "Setting_", i))[[2]]$Net_Profit]
+  # }
+  # #############################################################################################################
+  
+  #############################################################################################################
   Strategies="Test_Strategy_2"
   # create profit variables for strategies
   if(i==1){
@@ -132,74 +181,39 @@ for(i in 1:nrow(Params)){
                  Temp)
   }
   
-  #****************
-  # run Backtesting
-  #****************
   for(Strategy in Strategies){
     # Strategy=Strategies
     # on training data sets
     T1=system.time({
-      Training_Results_Temp=Live_Trading_Imitator(BarData=Training_BarData,
-                                                  Strategy=get(Strategies[which(Strategies==Strategy)]))
+      Training_Results_Temp=Backtesting(BarData=Training_BarData,
+                                        Strategy=get(Strategies[which(Strategies==Strategy)]))
     })
-
+    
     # save results
     assign(paste0(Strategy, "_Training_", "Setting_", i),
            list(T1,
                 Training_Results_Temp))
-
+    
     # save net profits
     Params[i, paste0(Strategy, "_NP_on_Training"):=get(paste0(Strategy, "_Training_", "Setting_", i))[[2]]$Net_Profit]
-
+    
     #******************
     # on test data sets
     T2=system.time({
-      Test_Results_Temp=Live_Trading_Imitator(BarData=Test_BarData,
-                                              Strategy=get(Strategies[which(Strategies==Strategy)]))
+      Test_Results_Temp=Backtesting(BarData=Test_BarData,
+                                    Strategy=get(Strategies[which(Strategies==Strategy)]))
     })
-
+    
     # save results
     assign(paste0(Strategy, "_Test_", "Setting_", i),
            list(T2,
                 Test_Results_Temp))
-
+    
     # save net profits
     Params[i, paste0(Strategy, "_NP_on_Test"):=get(paste0(Strategy, "_Test_", "Setting_", i))[[2]]$Net_Profit]
   }
+  #############################################################################################################
   
-  ############################################
-  
-  # for(Strategy in Strategies){
-  #   # Strategy=Strategies
-  #   # on training data sets
-  #   T1=system.time({
-  #     Training_Results_Temp=Backtesting(BarData=Training_BarData,
-  #                                       Strategy=get(Strategies[which(Strategies==Strategy)]))
-  #   })
-  #   
-  #   # save results
-  #   assign(paste0(Strategy, "_Training_", "Setting_", i),
-  #          list(T1,
-  #               Training_Results_Temp))
-  #   
-  #   # save net profits
-  #   Params[i, paste0(Strategy, "_NP_on_Training"):=get(paste0(Strategy, "_Training_", "Setting_", i))[[2]]$Net_Profit]
-  #   
-  #   #******************
-  #   # on test data sets
-  #   T2=system.time({
-  #     Test_Results_Temp=Backtesting(BarData=Test_BarData,
-  #                                   Strategy=get(Strategies[which(Strategies==Strategy)]))
-  #   })
-  #   
-  #   # save results
-  #   assign(paste0(Strategy, "_Test_", "Setting_", i),
-  #          list(T2,
-  #               Test_Results_Temp))
-  #   
-  #   # save net profits
-  #   Params[i, paste0(Strategy, "_NP_on_Test"):=get(paste0(Strategy, "_Test_", "Setting_", i))[[2]]$Net_Profit]
-  # }
   
   #***************
   # print messages

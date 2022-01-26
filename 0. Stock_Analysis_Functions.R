@@ -605,7 +605,7 @@ Live_Trading_Imitator=function(BarData,
   #   Max_Long_Orders=-1
   #   Max_Short_Orders=Max_Orders-1
   # }
-  Strategy_Rules=names(Order_Rules)[names(Order_Rules)!=General_Strategy]
+  Position_Names=names(Order_Rules)[names(Order_Rules)!=General_Strategy]
   
   #*********************
   # simulation algorithm
@@ -714,7 +714,7 @@ Live_Trading_Imitator=function(BarData,
           sum(Orders_Transmitted[["Action"]]=="Sell")
         
         # Order_to_Transmit
-        Order_to_Transmit=lapply(Strategy_Rules,
+        Order_to_Transmit=lapply(Position_Names,
                                  function(x){
                                    do.call(OrderRules_Env[[paste0(x, "_Function")]],
                                            c(list(Live_Data=Live_Data,
@@ -929,7 +929,7 @@ Backtesting=function(BarData,
   #   Max_Long_Orders=-1
   #   Max_Short_Orders=Max_Orders-1
   # }
-  Strategy_Rules=names(Order_Rules)[names(Order_Rules)!=General_Strategy]
+  Position_Names=names(Order_Rules)[names(Order_Rules)!=General_Strategy]
   
   #*********************
   # simulation algorithm
@@ -996,7 +996,7 @@ Backtesting=function(BarData,
   Short_Signals_Sums=apply(Short_Signals, 1, function(x) sum(x, na.rm=T))
   
   # Non_Dupl_Long_Signals_Data_Table
-  if("Long"%in%Strategy_Rules){
+  if("Long"%in%Position_Names){
     BuyToOpen_Min_Sig_N=as.numeric(Order_Rules["Long"][["Long"]][["BuyToOpen"]][["Min_Sig_N"]])
     SellToClose_Min_Sig_N=as.numeric(Order_Rules["Long"][["Long"]][["SellToClose"]][["Min_Sig_N"]])
     
@@ -1020,7 +1020,7 @@ Backtesting=function(BarData,
   }
   
   # Non_Dupl_Short_Signals_Data_Table
-  if("Short"%in%Strategy_Rules){
+  if("Short"%in%Position_Names){
     SellToOpen_Min_Sig_N=as.numeric(Order_Rules["Short"][["Short"]][["SellToOpen"]][["Min_Sig_N"]])
     BuyToClose_Min_Sig_N=as.numeric(Order_Rules["Short"][["Short"]][["BuyToClose"]][["Min_Sig_N"]])
     
@@ -1070,7 +1070,7 @@ Backtesting=function(BarData,
   #***************
   # transmit order
   #***************
-  if(sum(c("Long", "Short")%in%Strategy_Rules)==2){
+  if(sum(c("Long", "Short")%in%Position_Names)==2){
     # remove redundant long & short signals that are not supposed to be filled
     To_Remove_Short_Signals=do.call(rbind,
                                     apply(Non_Dupl_Long_Signals_Data_Table,
@@ -1154,8 +1154,8 @@ Backtesting=function(BarData,
         Row_N=1:nrow(Non_Dupl_Short_Signals_Data_Table)
       )
     )
-  }else if(sum(c("Long", "Short")%in%Strategy_Rules)==1 &
-           "Long"%in%Strategy_Rules){
+  }else if(sum(c("Long", "Short")%in%Position_Names)==1 &
+           "Long"%in%Position_Names){
     
     # Orders_Transmitted
     Orders_Transmitted=rbind(
@@ -1189,8 +1189,8 @@ Backtesting=function(BarData,
         Row_N=1:nrow(Non_Dupl_Long_Signals_Data_Table)
       )
     )
-  }else if(sum(c("Long", "Short")%in%Strategy_Rules)==1 &
-           "Short"%in%Strategy_Rules){
+  }else if(sum(c("Long", "Short")%in%Position_Names)==1 &
+           "Short"%in%Position_Names){
     
     # Orders_Transmitted
     Orders_Transmitted=rbind(

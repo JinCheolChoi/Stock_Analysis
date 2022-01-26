@@ -84,12 +84,17 @@ Profit_Order=as.numeric(Order_Rules[["General"]][["Profit_Order"]])
 Strategy_Indicators=names(Indicators)
 Strategy_Models=names(Models)
 General_Strategy="General"
-Strategy_Rules=names(Order_Rules)[names(Order_Rules)!="General"]
+Position_Names=names(Order_Rules)[names(Order_Rules)!="General"]
 
 Transmitted_Orders=0
 # Positions=0
 Orders_Transmitted=c()
-N_Orders_held=0
+
+# N_Orders_held
+while(!exists("N_Orders_held")){
+  N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
+  Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
+}
 
 #********
 # BarData
@@ -166,8 +171,8 @@ while(TRUE){
   # while(!isConnected(tws)){
   #   tws=twsConnect(port=Port)
   # }
-  # print("---------------------------------")
-  # 
+  print("---------------------------------")
+  
   #*************
   # candle chart
   #*************
@@ -247,10 +252,10 @@ while(TRUE){
       }
       
       # save Old_N_Orders_held
-      Old_N_Orders_held=N_Orders_held
+      # Old_N_Orders_held=N_Orders_held
       
       # Order_to_Transmit
-      Order_to_Transmit=lapply(Strategy_Rules,
+      Order_to_Transmit=lapply(Position_Names,
                                function(x){
                                  do.call(OrderRules_Env[[paste0(x, "_Function")]],
                                          c(list(Live_Data=Live_Data_Temp,
