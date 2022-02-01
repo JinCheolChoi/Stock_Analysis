@@ -24,7 +24,7 @@ Account_Code="DU2656942"
 Port=7497 # tws : 7497, IB gateway : 4002
 
 # BarSize
-BarSize=60*1
+BarSize=5*60
 
 #*****************
 #
@@ -251,11 +251,15 @@ while(TRUE){
         break
       }
       
-      # save Old_N_Orders_held
-      # Old_N_Orders_held=N_Orders_held
+      # Position_Names_Temp
+      if(N_Orders_held<0){
+        Position_Names_Temp=Position_Names[order(Position_Names, decreasing=T)]
+      }else{
+        Position_Names_Temp=Position_Names
+      }
       
       # Order_to_Transmit
-      Order_to_Transmit=lapply(Position_Names,
+      Order_to_Transmit=lapply(Position_Names_Temp,
                                function(x){
                                  do.call(OrderRules_Env[[paste0(x, "_Function")]],
                                          c(list(Live_Data=Live_Data_Temp,
@@ -270,45 +274,23 @@ while(TRUE){
                                  )
                                })
       
+      # record open and closed orders
+      if(exists("Order_to_Transmit")){
+        if(!is.null(do.call(rbind, Order_to_Transmit))){
+          print(Calculated_Indicators)
+          # add Order_to_Transmit to Orders_Transmitted
+          Orders_Transmitted=rbind(Orders_Transmitted,
+                                   do.call(rbind, Order_to_Transmit),
+                                   fill=T)
+          #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+        }
+        
+        # remove Orders_Transmitted
+        rm(Order_to_Transmit)
+      }
+
       # remove Signals
       rm(Signals)
-    }
-  }
-  
-  # record open and closed orders
-  if(exists("Order_to_Transmit")){
-    if(!is.null(do.call(rbind, Order_to_Transmit))){
-      print(Calculated_Indicators)
-      # add Order_to_Transmit to Orders_Transmitted
-      Orders_Transmitted=rbind(Orders_Transmitted,
-                               do.call(rbind, Order_to_Transmit),
-                               fill=T)
-      
-      # udpate N_Orders_held
-      if(!is.null(Order_to_Transmit[[1]])){
-        Transmitted_Orders=3*(Order_to_Transmit[[1]]$Action=="Sell")
-        N_Orders_held=N_Orders_held+(Order_to_Transmit[[1]]$Action=="Buy")*Order_to_Transmit[[1]]$TotalQuantity-(Order_to_Transmit[[1]]$Action=="Sell")*Order_to_Transmit[[1]]$TotalQuantity
-        # while(Old_N_Orders_held==N_Orders_held){
-        #   N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
-        #   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
-        # }
-      }
-      if(!is.null(Order_to_Transmit[[2]])){
-        print(Calculated_Indicators)
-        Transmitted_Orders=-3*(Order_to_Transmit[[2]]$Action=="Sell")
-        N_Orders_held=N_Orders_held+(Order_to_Transmit[[2]]$Action=="Buy")*Order_to_Transmit[[2]]$TotalQuantity-(Order_to_Transmit[[2]]$Action=="Sell")*Order_to_Transmit[[2]]$TotalQuantity
-        # while(Old_N_Orders_held==N_Orders_held){
-        #   N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
-        #   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
-        # }
-      }
-      
-      # print the number of positions
-      print(paste0("N of Positions : ", N_Orders_held))
-      
-      # remove Orders_Transmitted
-      rm(Order_to_Transmit)
-      #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
     }
   }
   

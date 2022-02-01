@@ -79,11 +79,18 @@ OrderRules_Env$Long_Function=function(Live_Data,
   # transmit orders for live trading
   if(exists("Action")){
     # adjust TotalQuantity in accordance with Max_Orders 
-    if(Action=="Buy" & abs(N_Orders_held+TotalQuantity)>Max_Orders){
+    # if(Action=="Buy" & abs(N_Orders_held+TotalQuantity)>Max_Orders){
+    #   TotalQuantity=ifelse(Max_Orders-N_Orders_held>0, Max_Orders-N_Orders_held, -Max_Orders-N_Orders_held)
+    #   print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
+    # }else if(Action=="Sell" & abs(N_Orders_held-TotalQuantity)>Max_Orders){
+    #   TotalQuantity=ifelse(N_Orders_held+Max_Orders>0, N_Orders_held+Max_Orders, N_Orders_held-Max_Orders)
+    #   print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
+    # }
+    if(Action=="Buy" & N_Orders_held+TotalQuantity>Max_Orders){
       TotalQuantity=ifelse(Max_Orders-N_Orders_held>0, Max_Orders-N_Orders_held, -Max_Orders-N_Orders_held)
       print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
-    }else if(Action=="Sell" & abs(N_Orders_held-TotalQuantity)>Max_Orders){
-      TotalQuantity=ifelse(N_Orders_held+Max_Orders>0, N_Orders_held+Max_Orders, N_Orders_held-Max_Orders)
+    }else if(Action=="Sell" & N_Orders_held-TotalQuantity<0){
+      TotalQuantity=N_Orders_held
       print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
     }
     
@@ -162,6 +169,20 @@ OrderRules_Env$Long_Function=function(Live_Data,
       }
     }
     
+    # save Old_N_Orders_held
+    # Old_N_Orders_held=N_Orders_held
+    
+    # update N_Orders_held
+    # while(Old_N_Orders_held==N_Orders_held){
+    #   N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
+    #   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
+    # }
+    N_Orders_held<<-N_Orders_held+(Action=="Buy")*TotalQuantity-(Action=="Sell")*TotalQuantity
+    
+    # print the number of positions
+    print(paste0("after : N of Positions : ", get("N_Orders_held", envir=.GlobalEnv)))
+    
+    #
     if(Action=="Buy"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
                         Submit_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
@@ -188,7 +209,6 @@ OrderRules_Env$Long_Function=function(Live_Data,
     }
   }
 }
-
 
 
 #***********
@@ -240,11 +260,18 @@ OrderRules_Env$Short_Function=function(Live_Data,
   # transmit orders for live trading
   if(exists("Action")){
     # adjust TotalQuantity in accordance with Max_Orders
-    if(Action=="Buy" & abs(N_Orders_held+TotalQuantity)>Max_Orders){
-      TotalQuantity=ifelse(Max_Orders-N_Orders_held>0, Max_Orders-N_Orders_held, -Max_Orders-N_Orders_held)
-      print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
-    }else if(Action=="Sell" & abs(N_Orders_held-TotalQuantity)>Max_Orders){
+    # if(Action=="Buy" & abs(N_Orders_held+TotalQuantity)>Max_Orders){
+    #   TotalQuantity=ifelse(Max_Orders-N_Orders_held>0, Max_Orders-N_Orders_held, -Max_Orders-N_Orders_held)
+    #   print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
+    # }else if(Action=="Sell" & abs(N_Orders_held-TotalQuantity)>Max_Orders){
+    #   TotalQuantity=ifelse(N_Orders_held+Max_Orders>0, N_Orders_held+Max_Orders, N_Orders_held-Max_Orders)
+    #   print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
+    # }
+    if(Action=="Sell" & N_Orders_held-TotalQuantity < -Max_Orders){
       TotalQuantity=ifelse(N_Orders_held+Max_Orders>0, N_Orders_held+Max_Orders, N_Orders_held-Max_Orders)
+      print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
+    }else if(Action=="Buy" & N_Orders_held+TotalQuantity>0){
+      TotalQuantity=-N_Orders_held
       print(paste0("Action : ", Action, "/ TotalQuantity : ", TotalQuantity))
     }
     
@@ -324,6 +351,20 @@ OrderRules_Env$Short_Function=function(Live_Data,
       }
     }
     
+    # save Old_N_Orders_held
+    # Old_N_Orders_held=N_Orders_held
+    
+    # update N_Orders_held
+    # while(Old_N_Orders_held==N_Orders_held){
+    #   N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
+    #   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
+    # }
+    N_Orders_held<<-N_Orders_held+(Action=="Buy")*TotalQuantity-(Action=="Sell")*TotalQuantity
+    
+    # print the number of positions
+    print(paste0("after : N of Positions : ", get("N_Orders_held", envir=.GlobalEnv)))
+    
+    #
     if(Action=="Sell"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
                         Submit_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
