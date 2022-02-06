@@ -24,7 +24,7 @@ Account_Code="DU2656942"
 Port=7497 # tws : 7497, IB gateway : 4002
 
 # BarSize
-BarSize=5*60
+BarSize=60*1
 
 #*****************
 #
@@ -99,7 +99,7 @@ while(!exists("N_Orders_held")){
 #********
 # BarData
 BarData=Initiate_BarData(BarSize=BarSize,
-                         Ignore_Prep=T)
+                         Ignore_Prep=FALSE)
 
 #***************
 # main algorithm
@@ -296,5 +296,4 @@ while(TRUE){
   
 }
 
-#*********************************************************
-# 1. option to switch positions
+
