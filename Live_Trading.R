@@ -92,9 +92,15 @@ Orders_Transmitted=c()
 
 # N_Orders_held
 while(!exists("N_Orders_held")){
-  N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
+  if(length(reqAccountUpdates(tws)[[2]])>0){
+    N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
+  }else if(length(reqAccountUpdates(tws)[[2]])==0){
+    N_Orders_held=0
+  }
   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
 }
+
+
 
 #********
 # BarData

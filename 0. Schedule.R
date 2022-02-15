@@ -20,7 +20,6 @@ working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 daily.data.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/" # desktop
 
 
-
 #*****************
 #
 # preliminary step
@@ -44,10 +43,19 @@ lapply(
 #***********************
 # !!! important note !!!
 #***********************
+# -- 1
 # manually remove a quote string that creates a log text file in Actions in Task Scheduler as belows
 # before removal : /c C:/PROGRA~1/R/R-4.0.5/bin/Rscript.exe "C:/Users/jchoi02/Desktop/R/Stock_Analysis/Stop_Live_Trading.R"  >> "C:/Users/jchoi02/Desktop/R/Stock_Analysis/Stop_Live_Trading.log" 2>&1
 # after removal : /c C:/PROGRA~1/R/R-4.0.5/bin/Rscript.exe "C:/Users/jchoi02/Desktop/R/Stock_Analysis/Stop_Live_Trading.R"
 #*************************************************************************************************************************
+# -- 2
+# check out the version of R
+#
+# As an example, change from
+#    from C:/PROGRA~1/R/R-4.0.5/bin/Rscript.exe "C:/Users/jchoi02/Desktop/R/Stock_Analysis/Stop_Live_Trading.R"
+#    to C:/PROGRA~1/R/R-41.1.2/bin/Rscript.exe "C:/Users/jchoi02/Desktop/R/Stock_Analysis/Stop_Live_Trading.R"
+# The numbers following R-*** appears to be the version of R
+#***********************************************************
 # taskscheduler_create(taskname="Run_Live_Trading",
 #                      rscript=paste0(working.dir, "Live_Trading.R"),
 #                      schedule="ONCE"
@@ -78,7 +86,6 @@ lapply(
 #                      days=c("MON", "TUE", "WED", "THU", "FRI"))
 
 
-
 #
 taskscheduler_runnow("Run_Live_Trading")
 taskscheduler_runnow("Stop_Live_Trading")
@@ -89,8 +96,4 @@ taskscheduler_runnow("Daily_Hist_Data_Save")
 # taskscheduler_delete("Stop_Live_Trading_3")
 # lapply(c("Run_Live_Trading",
 #          "Stop_Live_Trading"), taskscheduler_delete)
-
-
-
-
 
