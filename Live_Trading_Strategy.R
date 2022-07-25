@@ -78,7 +78,7 @@ Add_OrderRule(Strategy="Live_Strategy",
                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
                                    Stop_Order=Inf,
                                    Profit_Order=Inf,
-                                   Trend=FALSE))
+                                   Reverse=FALSE)) # Opposite actions are made if Reverse=TRUE (haven't been applied yet)
 Add_OrderRule(Strategy="Live_Strategy",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
@@ -95,6 +95,7 @@ Add_OrderRule(Strategy="Live_Strategy",
                                    BuyToClose=list(OrderType="MKT",
                                                    Quantity=1,
                                                    Min_Sig_N=1))) # minimum number of positive signals from models to transmit
+
 
 
 
