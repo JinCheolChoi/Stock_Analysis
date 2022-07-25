@@ -52,7 +52,6 @@ taskscheduler_stop("Run_Live_Trading")
 # a break during periods of market close time
 Rerun_Live_Trading=System_Break(Log=T)
 
-
 #*****************
 #
 # re-run schedules

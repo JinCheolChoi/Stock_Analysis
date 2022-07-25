@@ -24,7 +24,7 @@ Account_Code="DU2656942"
 Port=7497 # tws : 7497, IB gateway : 4002
 
 # BarSize
-BarSize=60*5
+BarSize=60*1
 
 #*****************
 #
@@ -60,7 +60,7 @@ source(paste0(working.dir, "/Live_Trading_Strategy.R"))
 #
 #***********************
 # contract info
-contract=twsFuture("MNQ", "GLOBEX", "202203")
+contract=twsFuture("MNQ", "GLOBEX", "202209")
 # connect to TWS
 tws=twsConnect(port=Port)
 # twsDisconnect(tws) # disconnect from TWS
@@ -78,18 +78,29 @@ Models=Live_Strategy[["Models"]]
 
 Max_Orders=as.numeric(Order_Rules[["General"]][["Max_Orders"]])
 Scenario=Order_Rules[["General"]][["Scenario"]]
-Trend=Order_Rules[["General"]][["Trend"]]
+Reverse=Order_Rules[["General"]][["Reverse"]]
 Stop_Order=as.numeric(Order_Rules[["General"]][["Stop_Order"]])
 Profit_Order=as.numeric(Order_Rules[["General"]][["Profit_Order"]])
 Strategy_Indicators=names(Indicators)
 Strategy_Models=names(Models)
 General_Strategy="General"
-Strategy_Rules=names(Order_Rules)[names(Order_Rules)!="General"]
+Position_Names=names(Order_Rules)[names(Order_Rules)!="General"]
 
 Transmitted_Orders=0
 # Positions=0
 Orders_Transmitted=c()
-N_Orders_held=0
+
+# N_Orders_held
+while(!exists("N_Orders_held")){
+  if(length(reqAccountUpdates(tws)[[2]])>0){
+    N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
+  }else if(length(reqAccountUpdates(tws)[[2]])==0){
+    N_Orders_held=0
+  }
+  Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
+}
+
+
 
 #********
 # BarData
@@ -166,8 +177,8 @@ while(TRUE){
   # while(!isConnected(tws)){
   #   tws=twsConnect(port=Port)
   # }
-  # print("---------------------------------")
-  # 
+  print("---------------------------------")
+  
   #*************
   # candle chart
   #*************
@@ -184,12 +195,16 @@ while(TRUE){
     #*********************
     # calculate indicators
     #*********************
-    Calculated_Indicators=lapply(Strategy_Indicators,
+    Calculated_Indicators=lapply(Strategy_Indicators, # lapply is used here unlike simulation functions where sapply is used
                                  function(x)
                                    if(x=="Close"){
                                      Live_Data_Temp[["Close"]]
                                    }else{
-                                     if(nrow(Live_Data_Temp)>Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
+                                     if(x=="BBands" & nrow(Live_Data_Temp)>=Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
+                                       do.call(x, 
+                                               c(list(Live_Data_Temp[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
+                                                 Indicators[[x]]))
+                                     }else if(x!="BBands" & nrow(Live_Data_Temp)>Indicators[[x]][['n']]+1){
                                        do.call(x, 
                                                c(list(Live_Data_Temp[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
                                                  Indicators[[x]]))
@@ -213,17 +228,17 @@ while(TRUE){
                                                Models[[x]]))}
                                  }))
     
-    if(nrow(Signals)==2){
-      # Signals are assigned opposite if Trend=TRUE & Trend is TRUE for either direction
-      if(Trend==TRUE){
-        if(sum(Signals$Trend)>0){
-          Signals[, which(sapply(Signals, function(x) sum(x==T)==1)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)==1))]
-        }else{
-          Signals[1, ]=FALSE
-          Signals[2, ]=FALSE
-        }
-      }
-    }
+    # if(nrow(Signals)==2){
+    #   # Signals are assigned opposite if Reverse=TRUE & Reverse is TRUE for either direction
+    #   if(Reverse==TRUE){
+    #     if(sum(Signals$Trend)>0){
+    #       Signals[, which(sapply(Signals, function(x) sum(x==T)==1)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)==1))]
+    #     }else{
+    #       Signals[1, ]=FALSE
+    #       Signals[2, ]=FALSE
+    #     }
+    #   }
+    # }
     
     #***************
     # transmit order
@@ -238,15 +253,19 @@ while(TRUE){
       }
       
       # number of orders held (+:more long, -:more short)
-      if(abs(N_Orders_held)>1){
+      if(abs(N_Orders_held)>Max_Orders){
         break
       }
       
-      # save Old_N_Orders_held
-      Old_N_Orders_held=N_Orders_held
+      # Position_Names_Temp
+      if(N_Orders_held<0){
+        Position_Names_Temp=Position_Names[order(Position_Names, decreasing=T)]
+      }else{
+        Position_Names_Temp=Position_Names
+      }
       
       # Order_to_Transmit
-      Order_to_Transmit=lapply(Strategy_Rules,
+      Order_to_Transmit=lapply(Position_Names_Temp,
                                function(x){
                                  do.call(OrderRules_Env[[paste0(x, "_Function")]],
                                          c(list(Live_Data=Live_Data_Temp,
@@ -261,55 +280,26 @@ while(TRUE){
                                  )
                                })
       
+      # record open and closed orders
+      if(exists("Order_to_Transmit")){
+        if(!is.null(do.call(rbind, Order_to_Transmit))){
+          print(Calculated_Indicators)
+          # add Order_to_Transmit to Orders_Transmitted
+          Orders_Transmitted=rbind(Orders_Transmitted,
+                                   do.call(rbind, Order_to_Transmit),
+                                   fill=T)
+          #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+        }
+        
+        # remove Orders_Transmitted
+        rm(Order_to_Transmit)
+      }
+
       # remove Signals
       rm(Signals)
     }
   }
   
-  # record open and closed orders
-  if(exists("Order_to_Transmit")){
-    if(!is.null(do.call(rbind, Order_to_Transmit))){
-      print(Calculated_Indicators)
-      # add Order_to_Transmit to Orders_Transmitted
-      Orders_Transmitted=rbind(Orders_Transmitted,
-                               do.call(rbind, Order_to_Transmit),
-                               fill=T)
-      
-      # udpate N_Orders_held
-      if(!is.null(Order_to_Transmit[[1]])){
-        Transmitted_Orders=3*(Order_to_Transmit[[1]]$Action=="Sell")
-        N_Orders_held=N_Orders_held+(Order_to_Transmit[[1]]$Action=="Buy")-(Order_to_Transmit[[1]]$Action=="Sell")
-        # while(Old_N_Orders_held==N_Orders_held){
-        #   N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
-        #   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
-        # }
-      }
-      if(!is.null(Order_to_Transmit[[2]])){
-        print(Calculated_Indicators)
-        Transmitted_Orders=-3*(Order_to_Transmit[[2]]$Action=="Sell")
-        N_Orders_held=N_Orders_held+(Order_to_Transmit[[2]]$Action=="Buy")-(Order_to_Transmit[[2]]$Action=="Sell")
-        # while(Old_N_Orders_held==N_Orders_held){
-        #   N_Orders_held=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$position
-        #   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
-        # }
-      }
-      
-      # print the number of positions
-      print(paste0("N of Positions : ", N_Orders_held))
-      
-      # remove Orders_Transmitted
-      rm(Order_to_Transmit)
-      #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
-    }
-  }
-  
 }
-
-
-#*********************************************************
-# 1. work on importing real time bar data in the beginning (done)
-# 2. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
-# 3. change the label from Trend to Reverse
-# 4. option to switch positions
 
 
