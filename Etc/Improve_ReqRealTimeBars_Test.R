@@ -12,8 +12,9 @@ rm(list=ls())
 #
 #***********
 working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
-Symbol="MNQ"
+#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+Symbols="MNQ"
 First_Date="2021-01-20"
 Last_Date=as.Date(format(Sys.time(), tz="PST8PDT"))
 BarSize=60*30 # secs (30 mins bar size seems to need a touch up in the code)
@@ -47,8 +48,6 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
     # round off BarSize to an integer
     BarSize<<-round(BarSize, -1)
     message(paste0("So, it is rounded off ", get("BarSize", envir=.GlobalEnv), "."))
-    
-    return(New_Data)
   }
   
   #****************************************************************
@@ -59,7 +58,7 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
   # -> nope... sometimes data is extracted faster than every 5 seconds
   # -> so, the code is modified to echo out the new data only when it is added
   #***************************************************************************
-  RealTimeBarData<<-`5SecsBarHistData`[i, ]
+  RealTimeBarData<<-MNQ[i, ]
   
   # if it fails to create RealTimeBarData
   if(!exists("RealTimeBarData")){
@@ -71,9 +70,6 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
   if(!exists("Recent_RealTimeBarData")){
     Recent_RealTimeBarData=RealTimeBarData
   }
-  
-  # remove Wap (redundant variable)
-  #RealTimeBarData[, Wap:=NULL]
   
   # if BarSize=5, no additional process is required
   if(BarSize==5){
@@ -90,8 +86,8 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
     New_Data=1
   }
   
-  # if BarSize>5 and it is a multiple of 5
-  if(BarSize>5 & BarSize%%5==0){
+  # if BarSize>5 and it is a multiple of 5 (BarSize%%5==0 is already taken into account in advance)
+  if(BarSize>5){
     # if RealTimeBarData is not the new data
     if(exists("Archiv") & sum(Recent_RealTimeBarData!=RealTimeBarData)==0){
       # remove RealTimeBarData at the end of everytime iteration
@@ -100,19 +96,13 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
       return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
     }
     
-    # initiate archiving RealTimeBarData info once the remainder of time/BarSize is 0
-    if(as.numeric(RealTimeBarData$Time)%%BarSize==0){
-      Archiv<<-1
-    }
-    
-    # if no need to archive RealTimeBarData
-    if(!exists("Archiv", envir=.GlobalEnv)){
-      return(New_Data)
-    }
-    
     # archive RealTimeBarData
+    # initiate archiving RealTimeBarData info once the remainder of time/BarSize is 0
     # open info
     if(as.numeric(RealTimeBarData$Time)%%BarSize==0){
+      # define the Archive indicator
+      Archiv<<-1
+      
       Symbol<<-RealTimeBarData$Symbol
       Time<<-RealTimeBarData$Time
       Open<<-RealTimeBarData$Open
@@ -122,7 +112,12 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
       Count<<-RealTimeBarData$Count
     }
     
-    # interim into
+    # if Archiv hasn't been defined yet, no need to proceed further
+    if(!exists("Archiv", envir=.GlobalEnv)){
+      return(New_Data)
+    }
+    
+    # interim info (update High, Low, Volum, and Count)
     if(as.numeric(RealTimeBarData$Time)%%BarSize>0){
       High<<-max(High, RealTimeBarData$High)
       Low<<-min(Low, RealTimeBarData$Low)
@@ -172,14 +167,14 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
     
     # write log everytime new data is added
     if(Log==T){
-      if(file.exists(paste0(working.dir, "/Log/Live_Trading_Log.csv"))){
+      if(file.exists(paste0(working.dir, "Log/Live_Trading_Log.csv"))){
         Log=data.table(Time=Sys.time())
         Log=rbind(Log,
-                  fread(paste0(working.dir, "/Log/Live_Trading_Log.csv")))
-        fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
+                  fread(paste0(working.dir, "Log/Live_Trading_Log.csv")))
+        fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
       }else{
         Log=data.table(Time=Sys.time())
-        fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
+        fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
       }
     }
   }
@@ -199,11 +194,6 @@ ReqRealTimeBars_After=function(BarSize=5, i, Log=F){
 
 
 
-
-
-
-
-
 #
 ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
   # RealTimeBarData is stored temporarily in the global environment
@@ -213,7 +203,7 @@ ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
   # -> nope... sometimes data is extracted faster than every 5 seconds
   # -> so, the code is modified to echo out the new data only when it is added
   #***************************************************************************
-  RealTimeBarData<<-`5SecsBarHistData`[i, ]
+  RealTimeBarData<<-MNQ[i, ]
   
   
   # New_Data : 1 if RealTimeBarData is the new data; and 0 if not
@@ -226,7 +216,7 @@ ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
     
   }else if(exists("RealTimeBarData")){
     # remove Wap (redundant variable)
-    RealTimeBarData[, Wap:=NULL]
+    #RealTimeBarData[, Wap:=NULL]
     
     # generate BarData
     if(BarSize==5){ # if BarSize=5, no additional process is required
@@ -269,7 +259,7 @@ ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
             return(New_Data) # if the new data is not derived, terminate the algorithm by retunning New_Data
             
           }else{ # if RealTimeBarData is the new data
-            BarData<<-unique(rbind(BarData, RealTimeBarData))
+            #BarData<<-unique(rbind(BarData, RealTimeBarData))
             
             Close<<-RealTimeBarData$Close
             
@@ -319,14 +309,14 @@ ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
       
       # write log everytime new data is added
       if(Log==T){
-        if(file.exists(paste0(working.dir, "/Log/Live_Trading_Log.csv"))){
+        if(file.exists(paste0(working.dir, "Log/Live_Trading_Log.csv"))){
           Log=data.table(Time=Sys.time())
           Log=rbind(Log,
-                    fread(paste0(working.dir, "/Log/Live_Trading_Log.csv")))
-          fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
+                    fread(paste0(working.dir, "Log/Live_Trading_Log.csv")))
+          fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
         }else{
           Log=data.table(Time=Sys.time())
-          fwrite(Log, paste0(working.dir, "/Log/Live_Trading_Log.csv"))
+          fwrite(Log, paste0(working.dir, "Log/Live_Trading_Log.csv"))
         }
       }
     }
@@ -344,16 +334,12 @@ ReqRealTimeBars_Before=function(BarSize=5, i, Log=F){
 #************
 # import data
 #************
-# output : `5SecsBarHistData`
-Import_HistData(Location=paste0(working.dir, "Data/"),
-                Symbol=Symbol,
-                First_Date=First_Date,
-                Last_Date=Last_Date)
-
 # collapse data to the chosen-sized bar data
-Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
-                                        BarSize=BarSize,
-                                        Convert_Tz=T)
+Get_Data(Symbols,
+         Data_Dir=data.dir,
+         BarSize,
+         First_Date, 
+         Last_Date)
 
 #*************************
 #
@@ -363,7 +349,7 @@ Collapsed_BarData=Collapse_5SecsBarData(`5SecsBarHistData`,
 # BarData5Secs=c()
 T1=system.time({
   BarData=c()
-  for(i in 1:nrow(`5SecsBarHistData`)){
+  for(i in 1:nrow(MNQ)){
     # connect to tws
     
     # request realtime bar data
@@ -384,7 +370,7 @@ T1=system.time({
 
 T2=system.time({
   BarData=c()
-  for(i in 1:nrow(`5SecsBarHistData`)){
+  for(i in 1:nrow(MNQ)){
     # connect to tws
     
     # request realtime bar data
@@ -403,4 +389,5 @@ T2=system.time({
 })
 
 
-
+T1
+T2

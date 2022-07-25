@@ -13,9 +13,10 @@ rm(list=ls())
 #***********
 working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
 #working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/", # laptop
+data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
 Symbol="MNQ"
 First_Date="2021-01-20"
-Last_Date=as.Date(format(Sys.time(), tz="PST8PDT"))
+Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles"))
 BarSize=60*30 # secs (30 mins bar size seems to need a touch up in the code)
 
 # account
@@ -33,7 +34,6 @@ Port=7497 # tws : 7497, IB gateway : 4002
 #
 # required functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-source(paste0(working.dir, "/Echos/Echo_Daily_Hist_Data_Save.R"))
 
 # import packages
 for(Package in
@@ -50,17 +50,12 @@ for(Package in
 #************
 # import data
 #************
-# output : `5SecsBarHistData`
-Import_HistData(Location=paste0(working.dir, "Data/"),
-                Symbol=Symbol,
-                First_Date=First_Date,
-                Last_Date=Last_Date,
-                Convert_Tz=T)
-
 # collapse data to the chosen-sized bar data
-Collapsed_BarData.Original=Collapse_5SecsBarData(`5SecsBarHistData`,
-                                                 BarSize=60*30,
-                                                 Convert_Tz=T)
+Get_Data(Symbol,
+         Data_Dir=data.dir,
+         BarSize,
+         First_Date, 
+         Last_Date)
 
 
 
@@ -84,22 +79,22 @@ tws=twsConnect(port=Port)
 HistData.Original=as.data.table(reqHistoricalData(tws, contract, barSize="30 mins", duration="2 M", useRTH="0")) # useRTH="0" : not limited to regular trading hours
 colnames(HistData.Original)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
 HistData.Original[, `:=`(Wap=NULL, hasGaps=NULL)]
-Time_From=Collapsed_BarData.Original$Time[1]
-Time_To=tail(Collapsed_BarData.Original$Time, 1)
+Time_From=MNQ$Time[1]
+Time_To=tail(MNQ$Time, 1)
 # Time_From=as.POSIXct(
-#   format(as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT"))-2, " 15:00:00"), tz="PST8PDT"),
-#          tz=attr(Collapsed_BarData.Original$Time, "tzone")),
-#   tz=attr(Collapsed_BarData.Original$Time, "tzone")
+#   format(as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-2, " 15:00:00"), tz="America/Los_Angeles"),
+#          tz=attr(MNQ$Time, "tzone")),
+#   tz=attr(MNQ$Time, "tzone")
 # )
 # Time_To=as.POSIXct(
-#   format(as.POSIXct(paste0(as.Date(format(Sys.time(), tz="PST8PDT"))-1, " 15:00:00"), tz="PST8PDT"),
-#          tz=attr(Collapsed_BarData.Original$Time, "tzone")),
-#   tz=attr(Collapsed_BarData.Original$Time, "tzone")
+#   format(as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 15:00:00"), tz="America/Los_Angeles"),
+#          tz=attr(MNQ$Time, "tzone")),
+#   tz=attr(MNQ$Time, "tzone")
 # )
 
 # 
-Collapsed_BarData=Collapsed_BarData.Original[Time>=Time_From &
-                                               Time<Time_To, ] %>% as.data.frame() %>% as.data.table()
+Collapsed_BarData=MNQ[Time>=Time_From &
+                        Time<Time_To, ] %>% as.data.frame() %>% as.data.table()
 
 HistData=data.table(Symbol="MNQ",
                     HistData.Original[Time>=Time_From &
