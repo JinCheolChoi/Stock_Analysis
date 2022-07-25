@@ -271,7 +271,7 @@ Params[
   Test_Strategy_2_NP_on_Training>500&
     Test_Strategy_2_NP_on_Test>500&
     
-    Test_Strategy_2_Test_Min_Cum_Profit>-1000
+    Test_Strategy_2_Test_Min_Cum_Profit>-5000
   ,
   .SD,
   .SDcols=c("Simple_BBands_1_Long_PctB", "Simple_BBands_2_Short_PctB",
@@ -311,12 +311,12 @@ Params[Stop_Order!=1000&
 Params[Stop_Order!=1000&
          Test_Strategy_Test_Min_Cum_Profit>0,Row]
 Params[i, ]
-i=13
+i=11
 par(mfrow=c(2,1))
-get(paste0("Test_Strategy_Training_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Training")
-get(paste0("Test_Strategy_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
-get(paste0("Long_Strategy_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
-get(paste0("Short_Strategy_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
+get(paste0("Test_Strategy_2_Training_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Training")
+get(paste0("Test_Strategy_2_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
+get(paste0("Long_Strategy_2_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
+get(paste0("Short_Strategy_2_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
 
 
 Params[, .SD, .SDcols=c(colnames(Params)[grepl("NP_on_", colnames(Params))], "Row")]
@@ -365,7 +365,7 @@ Contingency_Table_Generator_Conti_X(Data=Params,
 # #**************
 # # save and load
 # #**************
-# #save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2021-09-25_Trend.Rdata")
+# #save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-07-20.Rdata")
 # #load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-06_Trend.Rdata")
 # 
 # #***********************

@@ -96,4 +96,3 @@ taskscheduler_runnow("Daily_Hist_Data_Save")
 # taskscheduler_delete("Stop_Live_Trading_3")
 # lapply(c("Run_Live_Trading",
 #          "Stop_Live_Trading"), taskscheduler_delete)
-
