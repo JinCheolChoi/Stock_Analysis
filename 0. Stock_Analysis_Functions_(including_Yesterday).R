@@ -134,7 +134,8 @@ Daily_Hist_Data_Save=function(Contract,
                               Working_Dir,
                               Force=T,
                               Log=F,
-                              Market="Futures"){
+                              Market="Futures",
+                              N_Days=0){
   
   # the market closes at 14:00:00 PDT on Friday; and
   # at 15:00:00 PDT on the other weekdays
@@ -151,12 +152,11 @@ Daily_Hist_Data_Save=function(Contract,
   #   message("No new data to save yet.") # echo Message in terminal
   # }
   
-  
   if(!File_Exist| # if 5 second bar has not been saved yet, or
      Force==T){ # Force==1 (execute the saving process by force (overwrite the data))
     
     # request historical data of 5 seconds bar
-    HistData=as.data.table(reqHistoricalData(tws, Contract, barSize="5 secs", duration="5 D", useRTH="0")) # useRTH="0" : not limited to regular trading hours
+    HistData=as.data.table(reqHistoricalData(tws, Contract, barSize="5 secs", duration=paste0(N_Days+2, " D"), useRTH="0")) # useRTH="0" : not limited to regular trading hours
     colnames(HistData)=c("Time", "Open", "High", "Low", "Close", "Volume", "Wap", "hasGaps", "Count")
     
     HistData[, hasGaps:=NULL] # hasGaps is redundant
@@ -190,101 +190,30 @@ Daily_Hist_Data_Save=function(Contract,
     #          paste0(Data_Dir, Contract$symbol, "_", as.Date(Date), ".csv"))
     # }
     
-    #***********
-    # 3 days ago
+    #****************
+    # N_Days days ago
     # remove redundant data
     # different time zone examples : "GMT", "America/Los_Angeles", "Europe/London"
-    if(Market=="Futures"){
-      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-4, " 15:00:00"), tz="America/Los_Angeles")
-      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-3, " 15:00:00"), tz="America/Los_Angeles")
-    }else if(Market=="Stock"){
-      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-4, " 17:00:00"), tz="America/Los_Angeles")
-      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-3, " 17:00:00"), tz="America/Los_Angeles")
+    for(N_Day in N_Days:0){
+      if(Market=="Futures"){
+        Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-(N_Day+1), " 15:00:00"), tz="America/Los_Angeles")
+        Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-N_Day, " 15:00:00"), tz="America/Los_Angeles")
+      }else if(Market=="Stock"){
+        Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-(N_Day+1), " 17:00:00"), tz="America/Los_Angeles")
+        Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-N_Day, " 17:00:00"), tz="America/Los_Angeles")
+      }
+      
+      HistData_Temp=HistData[Time>=Time_From &
+                               Time<Time_To, ]
+      
+      HistData_Temp[, Time:=as.POSIXct(format(as.POSIXct(Time), 
+                                              tz="America/Los_Angeles"), 
+                                       tz="America/Los_Angeles")]
+      
+      # save historical data up to today's market closed at 15:00:00 pm PDT
+      fwrite(HistData_Temp,
+             paste0(Data_Dir, Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles"))-N_Day, ".csv"))
     }
-    
-    HistData_Temp=HistData[Time>=Time_From &
-                             Time<Time_To, ]
-    
-    HistData_Temp[, Time:=as.POSIXct(format(as.POSIXct(Time), 
-                                            tz="America/Los_Angeles"), 
-                                     tz="America/Los_Angeles")]
-    
-    # save historical data up to today's market closed at 15:00:00 pm PDT
-    fwrite(HistData_Temp,
-           paste0(Data_Dir, Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles"))-3, ".csv"))
-    
-    
-    #***********
-    # 2 days ago
-    # remove redundant data
-    # different time zone examples : "GMT", "America/Los_Angeles", "Europe/London"
-    if(Market=="Futures"){
-      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-3, " 15:00:00"), tz="America/Los_Angeles")
-      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-2, " 15:00:00"), tz="America/Los_Angeles")
-    }else if(Market=="Stock"){
-      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-3, " 17:00:00"), tz="America/Los_Angeles")
-      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-2, " 17:00:00"), tz="America/Los_Angeles")
-    }
-    
-    HistData_Temp=HistData[Time>=Time_From &
-                             Time<Time_To, ]
-    
-    HistData_Temp[, Time:=as.POSIXct(format(as.POSIXct(Time), 
-                                            tz="America/Los_Angeles"), 
-                                     tz="America/Los_Angeles")]
-    
-    # save historical data up to today's market closed at 15:00:00 pm PDT
-    fwrite(HistData_Temp,
-           paste0(Data_Dir, Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles"))-2, ".csv"))
-    
-    
-    
-    #**********
-    # yesterday
-    # remove redundant data
-    # different time zone examples : "GMT", "America/Los_Angeles", "Europe/London"
-    if(Market=="Futures"){
-      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-2, " 15:00:00"), tz="America/Los_Angeles")
-      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 15:00:00"), tz="America/Los_Angeles")
-    }else if(Market=="Stock"){
-      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-2, " 17:00:00"), tz="America/Los_Angeles")
-      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 17:00:00"), tz="America/Los_Angeles")
-    }
-    
-    HistData_Temp=HistData[Time>=Time_From &
-                             Time<Time_To, ]
-    
-    HistData_Temp[, Time:=as.POSIXct(format(as.POSIXct(Time), 
-                                            tz="America/Los_Angeles"), 
-                                     tz="America/Los_Angeles")]
-    
-    # save historical data up to today's market closed at 15:00:00 pm PDT
-    fwrite(HistData_Temp,
-           paste0(Data_Dir, Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, ".csv"))
-    
-    
-    #******
-    # today
-    # remove redundant data
-    # different time zone examples : "GMT", "America/Los_Angeles", "Europe/London"
-    if(Market=="Futures"){
-      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 15:00:00"), tz="America/Los_Angeles")
-      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles")), " 15:00:00"), tz="America/Los_Angeles")
-    }else if(Market=="Stock"){
-      Time_From=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles"))-1, " 17:00:00"), tz="America/Los_Angeles")
-      Time_To=as.POSIXct(paste0(as.Date(format(Sys.time(), tz="America/Los_Angeles")), " 17:00:00"), tz="America/Los_Angeles")
-    }
-    
-    HistData_Temp=HistData[Time>=Time_From &
-                             Time<Time_To, ]
-    
-    HistData_Temp[, Time:=as.POSIXct(format(as.POSIXct(Time), 
-                                            tz="America/Los_Angeles"), 
-                                     tz="America/Los_Angeles")]
-    
-    # save historical data up to today's market closed at 15:00:00 pm PDT
-    fwrite(HistData_Temp,
-           paste0(Data_Dir, Contract$symbol, "/", Contract$symbol, "_", as.Date(format(Sys.time(), tz="America/Los_Angeles")), ".csv"))
   }
   
   # create a folder if not exist
