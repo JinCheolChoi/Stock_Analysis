@@ -1809,7 +1809,7 @@ ReqRealTimeBars=function(BarSize=5,
     if(exists("Archiv") & sum(Recent_RealTimeBarData[, -"Symbol"]==RealTimeBarData[, -"Symbol"])==ncol(Recent_RealTimeBarData[, -"Symbol"])){
       # remove RealTimeBarData at the end of everytime iteration
       rm(RealTimeBarData, envir=.GlobalEnv)
-      print("Recent_RealTimeBarData == RealTimeBarData")
+      # print("Recent_RealTimeBarData == RealTimeBarData")
       Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
       return(New_Data) # if the new data is not derived, terminate the algorithm by returning New_Data=0
     }
