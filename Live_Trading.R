@@ -12,8 +12,8 @@ rm(list=ls())
 #
 #***********
 # working directory
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+# working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 
 # account
 # margin account="U4524665"
@@ -24,7 +24,7 @@ Account_Code="DU2656942"
 Port=7497 # tws : 7497, IB gateway : 4002
 
 # BarSize
-BarSize=60*1
+BarSize=60
 
 #*****************
 #
@@ -33,10 +33,10 @@ BarSize=60*1
 #*******************
 # required functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-source(paste0(working.dir, "Remotes.R"))
+# source(paste0(working.dir, "Remotes.R"))
 source(paste0(working.dir, "Additional_Functions.R"))
 source(paste0(working.dir, "Echos/Echo_Live_Trading.R"))
-source(paste0(working.dir, "0. Models.R"))
+# source(paste0(working.dir, "0. Models.R"))
 
 #****************
 # import packages
@@ -53,20 +53,18 @@ for(Package in
 # import strategies
 source(paste0(working.dir, "/Live_Trading_Strategy.R"))
 
-
 #***********************
 #
 # live trading algorithm
 #
 #***********************
 # contract info
-contract=twsFuture("MNQ", "CME", "202212")
+contract=twsFuture("MNQ", "CME", "202303")
 # connect to TWS
-tws=twsConnect(port=Port)
+tws=twsConnect(clientId=round(runif(1)*10000000), port=Port)
 # twsDisconnect(tws) # disconnect from TWS
 # reqCurrentTime(tws)
 # serverVersion(tws)
-
 
 #************************
 # assign local parameters
@@ -117,7 +115,7 @@ while(TRUE){
   # connect to tws
   #***************
   while(!isConnected(tws)){
-    tws=twsConnect(port=Port)
+    tws=twsConnect(clientId=round(runif(1)*10000000), port=Port)
   }
   
   #**************************
@@ -175,9 +173,9 @@ while(TRUE){
     next
   }
   # while(!isConnected(tws)){
-  #   tws=twsConnect(port=Port)
+  #   tws=twsConnect(clientId=round(runif(1)*10000000), port=Port)
   # }
-  print("---------------------------------")
+  # print("---------------------------------")
   
   #*************
   # candle chart
@@ -227,18 +225,19 @@ while(TRUE){
                                              c(list(Calculated_Indicators_Combined),
                                                Models[[x]]))}
                                  }))
+    # rownames(Signals)=c("Long", "Short")
     
-    # if(nrow(Signals)==2){
-    #   # Signals are assigned opposite if Reverse=TRUE & Reverse is TRUE for either direction
-    #   if(Reverse==TRUE){
-    #     if(sum(Signals$Trend)>0){
-    #       Signals[, which(sapply(Signals, function(x) sum(x==T)==1)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)==1))]
-    #     }else{
-    #       Signals[1, ]=FALSE
-    #       Signals[2, ]=FALSE
-    #     }
-    #   }
-    # }
+    if(nrow(Signals)==2){
+      # Signals are assigned opposite if Reverse=TRUE & Reverse is TRUE for either direction
+      if(Reverse==TRUE){
+        if(sum(Signals$Trend)>0){
+          Signals[, which(sapply(Signals, function(x) sum(x==T)==1)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)==1))]
+        }else{
+          Signals[1, ]=FALSE
+          Signals[2, ]=FALSE
+        }
+      }
+    }
     
     #***************
     # transmit order
@@ -283,12 +282,15 @@ while(TRUE){
       # record open and closed orders
       if(exists("Order_to_Transmit")){
         if(!is.null(do.call(rbind, Order_to_Transmit))){
-          print(Calculated_Indicators)
+          # print(Calculated_Indicators)
           # add Order_to_Transmit to Orders_Transmitted
           Orders_Transmitted=rbind(Orders_Transmitted,
                                    do.call(rbind, Order_to_Transmit),
                                    fill=T)
           #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+          
+          # reconnect (required after the version, 0.10-2)
+          tws=twsConnect(clientId=round(runif(1)*10000000), port=Port)
         }
         
         # remove Orders_Transmitted
@@ -301,5 +303,4 @@ while(TRUE){
   }
   
 }
-
 

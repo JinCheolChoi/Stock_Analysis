@@ -180,7 +180,7 @@ OrderRules_Env$Long_Function=function(Live_Data,
     N_Orders_held<<-N_Orders_held+(Action=="Buy")*TotalQuantity-(Action=="Sell")*TotalQuantity
     
     # print the number of positions
-    print(paste0("after : N of Positions : ", get("N_Orders_held", envir=.GlobalEnv)))
+    print(paste0("N of Positions : ", get("N_Orders_held", envir=.GlobalEnv)))
     
     #
     if(Action=="Buy"){
@@ -362,7 +362,7 @@ OrderRules_Env$Short_Function=function(Live_Data,
     N_Orders_held<<-N_Orders_held+(Action=="Buy")*TotalQuantity-(Action=="Sell")*TotalQuantity
     
     # print the number of positions
-    print(paste0("after : N of Positions : ", get("N_Orders_held", envir=.GlobalEnv)))
+    print(paste0("N of Positions : ", get("N_Orders_held", envir=.GlobalEnv)))
     
     #
     if(Action=="Sell"){
