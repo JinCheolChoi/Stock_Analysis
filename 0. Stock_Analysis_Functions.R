@@ -719,8 +719,17 @@ Live_Trading_Imitator=function(BarData,
         N_Orders_held=sum(Orders_Transmitted[["Action"]]=="Buy")-
           sum(Orders_Transmitted[["Action"]]=="Sell")
         
+        # Position_Names_Temp
+        # This part allows to force the long position entrance when there is no position filled yet while Sigs_N indicates tn enter both positions at the same time
+        # Also, it makes sure to transmit only once when N_Orders_held=1 & Max_Orders=1 (or N_Orders_held=-1 & Max_Orders=1).
+        if(N_Orders_held>0){
+          Position_Names_Temp=sort(Position_Names, decreasing=T)
+        }else{
+          Position_Names_Temp=sort(Position_Names, decreasing=F)
+        }
+        
         # Order_to_Transmit
-        Order_to_Transmit=lapply(Position_Names,
+        Order_to_Transmit=lapply(Position_Names_Temp,
                                  function(x){
                                    do.call(OrderRules_Env[[paste0(x, "_Function")]],
                                            c(list(Live_Data=Live_Data,
@@ -767,10 +776,12 @@ Live_Trading_Imitator=function(BarData,
       
       # if not filled, just cancel the transmit 60 minutes later
       if(sum(Orders_Transmitted[["Filled"]]==0)){
-        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>=60*60){
+        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>=Inf){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
           #print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
+      }else{
+        # print(paste0("buy fill", "___", tail(Orders_Transmitted$Detail, 1)))
       }
       
     }
@@ -790,12 +801,13 @@ Live_Trading_Imitator=function(BarData,
       
       # if not filled, just cancel the transmit
       if(sum(Orders_Transmitted[["Filled"]]==0)){
-        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>60*60){
+        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>Inf){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
           #print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
+      }else{
+        # print(paste0("sell fill", "___", tail(Orders_Transmitted$Detail, 1)))
       }
-      
     }
     
     # skip if currently on no position & there is no order transmitted
@@ -855,6 +867,12 @@ Live_Trading_Imitator=function(BarData,
   #**********************
   # calculate the balance
   #**********************
+  # navigate the last order fill that balances out between opening and closing positions to 0
+  Orders_Transmitted[, TotalQuantity_Adj:=TotalQuantity]
+  Orders_Transmitted[Action%in%c("Sell"), TotalQuantity_Adj:=-TotalQuantity] # remove outstanding orders
+  Orders_Transmitted=Orders_Transmitted[1:Orders_Transmitted[, max(.I[cumsum(TotalQuantity_Adj)==0])], ]
+  
+  #
   Collapse_Orders_Transmitted=cbind(Orders_Transmitted[Action=="Buy", 
                                                        c("Filled_Time", "Price")],
                                     Orders_Transmitted[Action=="Sell", 
@@ -1003,75 +1021,124 @@ Backtesting=function(BarData,
   
   # Non_Dupl_Long_Signals_Data_Table
   if("Long"%in%Position_Names){
-    BuyToOpen_Min_Sig_N=as.numeric(Order_Rules["Long"][["Long"]][["BuyToOpen"]][["Min_Sig_N"]])
-    SellToClose_Min_Sig_N=as.numeric(Order_Rules["Long"][["Long"]][["SellToClose"]][["Min_Sig_N"]])
+    BuyToOpen_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Min_Sig_N"]])
+    # BuyToOpen_Min_Sig_N=1
+    SellToClose_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Min_Sig_N"]])
+
+    Long_Signals_Data_Table=as.data.table(expand.grid(BuyToOpen=which(Long_Signals_Sums>=BuyToOpen_Min_Sig_N),
+                                                      SellToClose=which(Short_Signals_Sums>=SellToClose_Min_Sig_N)))
+    Long_Signals_Data_Table=Long_Signals_Data_Table[BuyToOpen<=SellToClose, ]
     
-    BuyToOpen_Signals=Long_Signals_Sums>=BuyToOpen_Min_Sig_N
-    SellToClose_Signals=Short_Signals_Sums>=SellToClose_Min_Sig_N
-    
-    Which_BuyToOpen_Signals=which(BuyToOpen_Signals)
-    Which_SellToClose_Signals=which(SellToClose_Signals)
-    
-    #
-    Long_Signals_Data_Table=data.table(BuyToOpen=Which_BuyToOpen_Signals,
-                                       SellToClose=sapply(Which_BuyToOpen_Signals,
-                                                          function(x){
-                                                            Which_SellToClose_Signals[min(which(x<Which_SellToClose_Signals))]}))
-    
-    Non_Dupl_Long_Signals_Data_Table=Long_Signals_Data_Table[!duplicated(SellToClose), ]
-    
-    # remove missing in BuyToOpen or SellToClose
-    Non_Dupl_Long_Signals_Data_Table=Non_Dupl_Long_Signals_Data_Table[!is.na(BuyToOpen) &
-                                                                        !is.na(SellToClose),]
+    Non_Dupl_Long_Signals_Data_Table=Long_Signals_Data_Table[!duplicated(BuyToOpen), ]
+    Non_Dupl_Long_Signals_Data_Table=Non_Dupl_Long_Signals_Data_Table[!duplicated(SellToClose), ]
   }
   
   # Non_Dupl_Short_Signals_Data_Table
   if("Short"%in%Position_Names){
-    SellToOpen_Min_Sig_N=as.numeric(Order_Rules["Short"][["Short"]][["SellToOpen"]][["Min_Sig_N"]])
-    BuyToClose_Min_Sig_N=as.numeric(Order_Rules["Short"][["Short"]][["BuyToClose"]][["Min_Sig_N"]])
+    SellToOpen_Min_Sig_N=as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Min_Sig_N"]])
+    # SellToOpen_Min_Sig_N=1
+    BuyToClose_Min_Sig_N=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Min_Sig_N"]])
     
-    SellToOpen_Signals=Short_Signals_Sums>=SellToOpen_Min_Sig_N
-    BuyToClose_Signals=Long_Signals_Sums>=BuyToClose_Min_Sig_N
+    Short_Signals_Data_Table=as.data.table(expand.grid(SellToOpen=which(Short_Signals_Sums>=SellToOpen_Min_Sig_N),
+                                                       BuyToClose=which(Long_Signals_Sums>=BuyToClose_Min_Sig_N)))
+    Short_Signals_Data_Table=Short_Signals_Data_Table[SellToOpen<=BuyToClose, ]
     
-    Which_SellToOpen_Signals=which(SellToOpen_Signals)
-    Which_BuyToClose_Signals=which(BuyToClose_Signals)
-    
-    #
-    Short_Signals_Data_Table=data.table(SellToOpen=Which_SellToOpen_Signals,
-                                        BuyToClose=sapply(Which_SellToOpen_Signals,
-                                                          function(x){
-                                                            Which_BuyToClose_Signals[min(which(x<Which_BuyToClose_Signals))]}))
-    
-    Non_Dupl_Short_Signals_Data_Table=Short_Signals_Data_Table[!duplicated(BuyToClose), ]
-    
-    # remove missing in SellToOpen or BuyToClose
-    Non_Dupl_Short_Signals_Data_Table=Non_Dupl_Short_Signals_Data_Table[!is.na(SellToOpen) &
-                                                                          !is.na(BuyToClose),]
+    Non_Dupl_Short_Signals_Data_Table=Short_Signals_Data_Table[!duplicated(SellToOpen), ]
+    Non_Dupl_Short_Signals_Data_Table=Non_Dupl_Short_Signals_Data_Table[!duplicated(BuyToClose), ]
   }
   
-  # T2=system.time({
-  #   Long_Signals_Data_Table_For=data.table(
-  #     BuyToOpen=c(),
-  #     SellToClose=c()
+  # ##############################################################
+  # BuyToOpen_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Min_Sig_N"]])
+  # # BuyToOpen_Min_Sig_N=1
+  # SellToClose_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Min_Sig_N"]])
+  # 
+  # SellToOpen_Min_Sig_N=as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Min_Sig_N"]])
+  # # SellToOpen_Min_Sig_N=1
+  # BuyToClose_Min_Sig_N=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Min_Sig_N"]])
+  # 
+  # BuyToOpen_Signals=Long_Signals_Sums>=BuyToOpen_Min_Sig_N
+  # SellToClose_Signals=Short_Signals_Sums>=SellToClose_Min_Sig_N
+  # 
+  # SellToOpen_Signals=Short_Signals_Sums>=SellToOpen_Min_Sig_N
+  # BuyToClose_Signals=Long_Signals_Sums>=BuyToClose_Min_Sig_N
+  # 
+  # SellToClose_Signals[59]=TRUE
+  # SellToOpen_Signals[59]=TRUE
+  # 
+  # Which_Signals=rbind(
+  #   data.table(
+  #     Ind=which(BuyToOpen_Signals),
+  #     Signals=Long_Signals_Sums[which(BuyToOpen_Signals)],
+  #     Action="Buy",
+  #     Detail="BTO",
+  #     Quantity=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Quantity"]])
+  #   ),
+  #   data.table(
+  #     Ind=which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))],
+  #     Signals=Short_Signals_Sums[which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))]],
+  #     Action="Sell",
+  #     Detail="STC",
+  #     Quantity=-as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Quantity"]])
+  #   ),
+  #   data.table(
+  #     Ind=which(SellToOpen_Signals),
+  #     Signals=Short_Signals_Sums[which(SellToOpen_Signals)],
+  #     Action="Sell",
+  #     Detail="STO",
+  #     Quantity=-as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Quantity"]])
+  #   ),
+  #   data.table(
+  #     Ind=which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))],
+  #     Signals=Long_Signals_Sums[which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))]],
+  #     Action="Buy",
+  #     Detail="BTC",
+  #     Quantity=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Quantity"]])
   #   )
-  #   
-  #   for(BuyToOpen_Signals_Ind in 1:length(Which_BuyToOpen_Signals)){
-  #     Long_Signals_Data_Table_For=rbind(Long_Signals_Data_Table_For,
-  #                                       data.table(BuyToOpen=Which_BuyToOpen_Signals[BuyToOpen_Signals_Ind],
-  #                                                  SellToClose=Which_SellToClose_Signals[min(which(Which_BuyToOpen_Signals[BuyToOpen_Signals_Ind]<=Which_SellToClose_Signals))]))
+  # )
+  # # Max_Orders=3
+  # Which_Signals=Which_Signals[order(Ind), ]
+  # Which_Signals=Which_Signals[!duplicated(Which_Signals, by=c("Ind", "Action")), ]
+  # 
+  # 
+  # Action_=Which_Signals[["Action"]]
+  # Detail_=Which_Signals[["Detail"]]
+  # Both_Direction_=duplicated(Which_Signals[["Ind"]], fromLast=T)|duplicated(Which_Signals[["Ind"]], fromLast=F)
+  # Net_Quantity_=Which_Signals[, Quantity][1]
+  # Remove_=0
+  # for(Ind in 2:nrow(Which_Signals)){
+  #   if(abs(Net_Quantity_[Ind-1]+Which_Signals[, Quantity][Ind])>Max_Orders){
+  #     Net_Quantity_[Ind]=Net_Quantity_[Ind-1]
+  #     Remove_[Ind]=1
+  #   }else{
+  #     if(Both_Direction_[Ind]==TRUE){
+  #       if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Sell"){
+  #         Net_Quantity_[Ind]=Net_Quantity_[Ind-1]
+  #         Remove_[Ind]=1
+  #       }else if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Buy"){
+  #         Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Which_Signals[, Quantity][Ind]
+  #         Remove_[Ind]=0
+  #       }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Buy"){
+  #         Net_Quantity_[Ind]=Net_Quantity_[Ind-1]
+  #         Remove_[Ind]=1
+  #       }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Sell"){
+  #         Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Which_Signals[, Quantity][Ind]
+  #         Remove_[Ind]=0
+  #       }
+  #     }else{
+  #       Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Which_Signals[, Quantity][Ind]
+  #       Remove_[Ind]=0
+  #     }
   #   }
-  #   
-  #   Short_Signals_Data_Table_For=data.table(
-  #     SellToOpen=c(),
-  #     BuyToClose=c()
-  #   )
-  #   
-  #   for(SellToOpen_Signals_Ind in 1:length(Which_SellToOpen_Signals)){
-  #     Short_Signals_Data_Table_For=rbind(Short_Signals_Data_Table_For,
-  #                                        data.table(SellToOpen=Which_SellToOpen_Signals[SellToOpen_Signals_Ind],
-  #                                                   BuyToClose=Which_BuyToClose_Signals[min(which(Which_SellToOpen_Signals[SellToOpen_Signals_Ind]<=Which_BuyToClose_Signals))]))
-  #   }
-  # })
+  # }
+  # 
+  # Which_Signals[, `:=`(Net_Quantity=Net_Quantity_,
+  #                      Remove=Remove_,
+  #                      Both_Direction=Both_Direction_)]
+  # 
+  # Which_Signals=Which_Signals[Remove==0, ]
+  # 
+  # Which_Signals[1:40, ]
+  # ##############################################################
   
   #***************
   # transmit order
@@ -1107,7 +1174,7 @@ Backtesting=function(BarData,
         Filled_Time=BarData[Non_Dupl_Long_Signals_Data_Table[["BuyToOpen"]]+1, Time],
         Action="Buy",
         Detail="BTO",
-        TotalQuantity=1,
+        TotalQuantity=Order_Rules[["Long"]][["BuyToOpen"]][["Quantity"]],
         OrderType=Order_Rules[["Long"]][["BuyToOpen"]][["OrderType"]],
         Price=BarData[Non_Dupl_Long_Signals_Data_Table[["BuyToOpen"]]][["Close"]],
         Filled=1,
@@ -1122,7 +1189,7 @@ Backtesting=function(BarData,
         Filled_Time=BarData[Non_Dupl_Long_Signals_Data_Table[["SellToClose"]]+1, Time],
         Action="Sell",
         Detail="STC",
-        TotalQuantity=1,
+        TotalQuantity=Order_Rules[["Long"]][["SellToClose"]][["Quantity"]],
         OrderType=Order_Rules[["Long"]][["SellToClose"]][["OrderType"]],
         Price=BarData[Non_Dupl_Long_Signals_Data_Table[["SellToClose"]]][["Close"]],
         Filled=1,
@@ -1137,7 +1204,7 @@ Backtesting=function(BarData,
         Filled_Time=BarData[Non_Dupl_Short_Signals_Data_Table[["SellToOpen"]]+1, Time],
         Action="Sell",
         Detail="STO",
-        TotalQuantity=1,
+        TotalQuantity=Order_Rules[["Short"]][["SellToOpen"]][["Quantity"]],
         OrderType=Order_Rules[["Short"]][["SellToOpen"]][["OrderType"]],
         Price=BarData[Non_Dupl_Short_Signals_Data_Table[["SellToOpen"]]][["Close"]],
         Filled=1,
@@ -1152,7 +1219,7 @@ Backtesting=function(BarData,
         Filled_Time=BarData[Non_Dupl_Short_Signals_Data_Table[["BuyToClose"]]+1, Time],
         Action="Buy",
         Detail="BTC",
-        TotalQuantity=1,
+        TotalQuantity=Order_Rules[["Short"]][["BuyToClose"]][["Quantity"]],
         OrderType=Order_Rules[["Short"]][["BuyToClose"]][["OrderType"]],
         Price=BarData[Non_Dupl_Short_Signals_Data_Table[["BuyToClose"]]][["Close"]],
         Filled=1,
@@ -1172,7 +1239,7 @@ Backtesting=function(BarData,
         Filled_Time=BarData[Non_Dupl_Long_Signals_Data_Table[["BuyToOpen"]]+1, Time],
         Action="Buy",
         Detail="BTO",
-        TotalQuantity=1,
+        TotalQuantity=Order_Rules[["Long"]][["BuyToOpen"]][["Quantity"]],
         OrderType=Order_Rules[["Long"]][["BuyToOpen"]][["OrderType"]],
         Price=BarData[Non_Dupl_Long_Signals_Data_Table[["BuyToOpen"]]][["Close"]],
         Filled=1,
@@ -1187,7 +1254,7 @@ Backtesting=function(BarData,
         Filled_Time=BarData[Non_Dupl_Long_Signals_Data_Table[["SellToClose"]]+1, Time],
         Action="Sell",
         Detail="STC",
-        TotalQuantity=1,
+        TotalQuantity=Order_Rules[["Long"]][["SellToClose"]][["Quantity"]],
         OrderType=Order_Rules[["Long"]][["SellToClose"]][["OrderType"]],
         Price=BarData[Non_Dupl_Long_Signals_Data_Table[["SellToClose"]]][["Close"]],
         Filled=1,
@@ -1207,7 +1274,7 @@ Backtesting=function(BarData,
         Filled_Time=BarData[Non_Dupl_Short_Signals_Data_Table[["SellToOpen"]]+1, Time],
         Action="Sell",
         Detail="STO",
-        TotalQuantity=1,
+        TotalQuantity=Order_Rules[["Short"]][["SellToOpen"]][["Quantity"]],
         OrderType=Order_Rules[["Short"]][["SellToOpen"]][["OrderType"]],
         Price=BarData[Non_Dupl_Short_Signals_Data_Table[["SellToOpen"]]][["Close"]],
         Filled=1,
@@ -1222,7 +1289,7 @@ Backtesting=function(BarData,
         Filled_Time=BarData[Non_Dupl_Short_Signals_Data_Table[["BuyToClose"]]+1, Time],
         Action="Buy",
         Detail="BTC",
-        TotalQuantity=1,
+        TotalQuantity=Order_Rules[["Short"]][["BuyToClose"]][["Quantity"]],
         OrderType=Order_Rules[["Short"]][["BuyToClose"]][["OrderType"]],
         Price=BarData[Non_Dupl_Short_Signals_Data_Table[["BuyToClose"]]][["Close"]],
         Filled=1,
