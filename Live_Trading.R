@@ -12,8 +12,8 @@ rm(list=ls())
 #
 #***********
 # working directory
-# working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+# working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 
 # account
 # margin account="U4524665"
@@ -24,7 +24,7 @@ Account_Code="DU2656942"
 Port=7497 # tws : 7497, IB gateway : 4002
 
 # BarSize
-BarSize=60
+BarSize=10
 
 #*****************
 #

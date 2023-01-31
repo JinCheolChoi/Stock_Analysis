@@ -192,7 +192,7 @@ OrderRules_Env$Long_Function=function(Live_Data,
                         TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
                         Price=tail(Live_Data, 1)[, Close],
-                        Filled=1,
+                        Filled=0,
                         Sigs_N=Sigs_N[1]))
     }
     if(Action=="Sell"){
@@ -204,7 +204,7 @@ OrderRules_Env$Long_Function=function(Live_Data,
                         TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
                         Price=tail(Live_Data, 1)[, Close],
-                        Filled=1,
+                        Filled=0,
                         Sigs_N=Sigs_N[2]))
     }
   }
