@@ -257,10 +257,11 @@ while(TRUE){
       }
       
       # Position_Names_Temp
-      if(N_Orders_held<0){
-        Position_Names_Temp=Position_Names[order(Position_Names, decreasing=T)]
+      # these part allows to force the long position entrance when there is no position filled yet while Sigs_N indicates tn enter both positions at the same time
+      if(N_Orders_held>0){
+        Position_Names_Temp=sort(Position_Names, decreasing=T)
       }else{
-        Position_Names_Temp=Position_Names
+        Position_Names_Temp=sort(Position_Names, decreasing=F)
       }
       
       # Order_to_Transmit
