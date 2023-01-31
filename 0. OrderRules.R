@@ -58,15 +58,8 @@ OrderRules_Env$Long_Function=function(Live_Data,
                                       Live_Trading=FALSE){
   #Sigs_N[1] : buy signal
   #Sigs_N[2] : sell signal
-  if(0<=N_Orders_held & 
-     N_Orders_held<Max_Orders &
-     Sigs_N[1]>=Params[["BuyToOpen"]][["Min_Sig_N"]]){
-    
-    Action="Buy"
-    Detail="BTO"
-    TotalQuantity=as.numeric(Params[["BuyToOpen"]][["Quantity"]])
-    OrderType=Params[["BuyToOpen"]][["OrderType"]]
-  }else if(0<N_Orders_held & # if there's a long position
+  # first if condition ensures to short a current long position if there is any
+  if(0<N_Orders_held & # if there's a long position
            N_Orders_held<=Max_Orders &
            Sigs_N[2]>=Params[["SellToClose"]][["Min_Sig_N"]]){
     
@@ -74,6 +67,14 @@ OrderRules_Env$Long_Function=function(Live_Data,
     Detail="STC"
     TotalQuantity=as.numeric(Params[["SellToClose"]][["Quantity"]])
     OrderType=Params[["SellToClose"]][["OrderType"]]
+  }else if(0<=N_Orders_held & 
+           N_Orders_held<Max_Orders &
+           Sigs_N[1]>=Params[["BuyToOpen"]][["Min_Sig_N"]]){
+    
+    Action="Buy"
+    Detail="BTO"
+    TotalQuantity=as.numeric(Params[["BuyToOpen"]][["Quantity"]])
+    OrderType=Params[["BuyToOpen"]][["OrderType"]]
   }
   
   # transmit orders for live trading
@@ -239,15 +240,8 @@ OrderRules_Env$Short_Function=function(Live_Data,
                                        Live_Trading=FALSE){
   #Sigs_N[1] : buy signal
   #Sigs_N[2] : sell signal
-  if(0>=N_Orders_held &
-     N_Orders_held>(-Max_Orders) &
-     Sigs_N[2]>=Params[["SellToOpen"]][["Min_Sig_N"]]){
-    
-    Action="Sell"
-    Detail="STO"
-    TotalQuantity=as.numeric(Params[["SellToOpen"]][["Quantity"]])
-    OrderType=Params[["SellToOpen"]][["OrderType"]]
-  }else if(0>N_Orders_held & # if there's a short position
+  # first if condition ensures to long a current short position if there is any
+  if(0>N_Orders_held & # if there's a short position
            N_Orders_held>=(-Max_Orders) & 
            Sigs_N[1]>=Params[["BuyToClose"]][["Min_Sig_N"]]){
     
@@ -255,6 +249,14 @@ OrderRules_Env$Short_Function=function(Live_Data,
     Detail="BTC"
     TotalQuantity=as.numeric(Params[["BuyToClose"]][["Quantity"]])
     OrderType=Params[["BuyToClose"]][["OrderType"]]
+  }else if(0>=N_Orders_held &
+           N_Orders_held>(-Max_Orders) &
+           Sigs_N[2]>=Params[["SellToOpen"]][["Min_Sig_N"]]){
+    
+    Action="Sell"
+    Detail="STO"
+    TotalQuantity=as.numeric(Params[["SellToOpen"]][["Quantity"]])
+    OrderType=Params[["SellToOpen"]][["OrderType"]]
   }
   
   # transmit orders for live trading
