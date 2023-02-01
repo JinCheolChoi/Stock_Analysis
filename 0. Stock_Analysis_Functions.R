@@ -1047,98 +1047,193 @@ Backtesting=function(BarData,
     Non_Dupl_Short_Signals_Data_Table=Non_Dupl_Short_Signals_Data_Table[!duplicated(BuyToClose), ]
   }
   
-  # ##############################################################
-  # BuyToOpen_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Min_Sig_N"]])
-  # # BuyToOpen_Min_Sig_N=1
-  # SellToClose_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Min_Sig_N"]])
-  # 
-  # SellToOpen_Min_Sig_N=as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Min_Sig_N"]])
-  # # SellToOpen_Min_Sig_N=1
-  # BuyToClose_Min_Sig_N=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Min_Sig_N"]])
-  # 
-  # BuyToOpen_Signals=Long_Signals_Sums>=BuyToOpen_Min_Sig_N
-  # SellToClose_Signals=Short_Signals_Sums>=SellToClose_Min_Sig_N
-  # 
-  # SellToOpen_Signals=Short_Signals_Sums>=SellToOpen_Min_Sig_N
-  # BuyToClose_Signals=Long_Signals_Sums>=BuyToClose_Min_Sig_N
-  # 
-  # SellToClose_Signals[59]=TRUE
-  # SellToOpen_Signals[59]=TRUE
-  # 
-  # Which_Signals=rbind(
-  #   data.table(
-  #     Ind=which(BuyToOpen_Signals),
-  #     Signals=Long_Signals_Sums[which(BuyToOpen_Signals)],
-  #     Action="Buy",
-  #     Detail="BTO",
-  #     Quantity=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Quantity"]])
-  #   ),
-  #   data.table(
-  #     Ind=which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))],
-  #     Signals=Short_Signals_Sums[which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))]],
-  #     Action="Sell",
-  #     Detail="STC",
-  #     Quantity=-as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Quantity"]])
-  #   ),
-  #   data.table(
-  #     Ind=which(SellToOpen_Signals),
-  #     Signals=Short_Signals_Sums[which(SellToOpen_Signals)],
-  #     Action="Sell",
-  #     Detail="STO",
-  #     Quantity=-as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Quantity"]])
-  #   ),
-  #   data.table(
-  #     Ind=which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))],
-  #     Signals=Long_Signals_Sums[which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))]],
-  #     Action="Buy",
-  #     Detail="BTC",
-  #     Quantity=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Quantity"]])
-  #   )
-  # )
-  # # Max_Orders=3
-  # Which_Signals=Which_Signals[order(Ind), ]
-  # Which_Signals=Which_Signals[!duplicated(Which_Signals, by=c("Ind", "Action")), ]
-  # 
-  # 
-  # Action_=Which_Signals[["Action"]]
-  # Detail_=Which_Signals[["Detail"]]
-  # Both_Direction_=duplicated(Which_Signals[["Ind"]], fromLast=T)|duplicated(Which_Signals[["Ind"]], fromLast=F)
-  # Net_Quantity_=Which_Signals[, Quantity][1]
-  # Remove_=0
-  # for(Ind in 2:nrow(Which_Signals)){
-  #   if(abs(Net_Quantity_[Ind-1]+Which_Signals[, Quantity][Ind])>Max_Orders){
-  #     Net_Quantity_[Ind]=Net_Quantity_[Ind-1]
-  #     Remove_[Ind]=1
-  #   }else{
-  #     if(Both_Direction_[Ind]==TRUE){
-  #       if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Sell"){
-  #         Net_Quantity_[Ind]=Net_Quantity_[Ind-1]
-  #         Remove_[Ind]=1
-  #       }else if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Buy"){
-  #         Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Which_Signals[, Quantity][Ind]
-  #         Remove_[Ind]=0
-  #       }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Buy"){
-  #         Net_Quantity_[Ind]=Net_Quantity_[Ind-1]
-  #         Remove_[Ind]=1
-  #       }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Sell"){
-  #         Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Which_Signals[, Quantity][Ind]
-  #         Remove_[Ind]=0
-  #       }
-  #     }else{
-  #       Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Which_Signals[, Quantity][Ind]
-  #       Remove_[Ind]=0
-  #     }
-  #   }
-  # }
-  # 
-  # Which_Signals[, `:=`(Net_Quantity=Net_Quantity_,
-  #                      Remove=Remove_,
-  #                      Both_Direction=Both_Direction_)]
-  # 
-  # Which_Signals=Which_Signals[Remove==0, ]
-  # 
-  # Which_Signals[1:40, ]
-  # ##############################################################
+#   ##############################################################
+#   BuyToOpen_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Min_Sig_N"]])
+#   # BuyToOpen_Min_Sig_N=1
+#   SellToClose_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Min_Sig_N"]])
+#   
+#   SellToOpen_Min_Sig_N=as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Min_Sig_N"]])
+#   # SellToOpen_Min_Sig_N=1
+#   BuyToClose_Min_Sig_N=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Min_Sig_N"]])
+#   
+#   BuyToOpen_Signals=Long_Signals_Sums>=BuyToOpen_Min_Sig_N
+#   SellToClose_Signals=Short_Signals_Sums>=SellToClose_Min_Sig_N
+#   
+#   SellToOpen_Signals=Short_Signals_Sums>=SellToOpen_Min_Sig_N
+#   BuyToClose_Signals=Long_Signals_Sums>=BuyToClose_Min_Sig_N
+#   
+#   SellToClose_Signals[59]=TRUE
+#   SellToOpen_Signals[59]=TRUE
+#   
+#   Which_Signals=rbind(
+#     data.table(
+#       Ind=which(BuyToOpen_Signals),
+#       Signals=Long_Signals_Sums[which(BuyToOpen_Signals)],
+#       Action="Buy",
+#       Detail="BTO",
+#       Quantity=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Quantity"]])
+#     ),
+#     data.table(
+#       Ind=which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))],
+#       Signals=Short_Signals_Sums[which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))]],
+#       Action="Sell",
+#       Detail="STC",
+#       Quantity=-as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Quantity"]])
+#     ),
+#     data.table(
+#       Ind=which(SellToOpen_Signals),
+#       Signals=Short_Signals_Sums[which(SellToOpen_Signals)],
+#       Action="Sell",
+#       Detail="STO",
+#       Quantity=-as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Quantity"]])
+#     ),
+#     data.table(
+#       Ind=which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))],
+#       Signals=Long_Signals_Sums[which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))]],
+#       Action="Buy",
+#       Detail="BTC",
+#       Quantity=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Quantity"]])
+#     )
+#   )
+#   # Max_Orders=3
+#   Which_Signals=Which_Signals[order(Ind), ]
+#   Which_Signals=Which_Signals[!duplicated(Which_Signals, by=c("Ind", "Action")), ]
+#   
+#   
+#   # r code
+#   Action_=Which_Signals[["Action"]]
+#   Both_Direction_=duplicated(Which_Signals[["Ind"]], fromLast=T)|duplicated(Which_Signals[["Ind"]], fromLast=F)
+#   Quantity_=Which_Signals[, Quantity]
+#   Quantity_[2]=-5
+#   Quantity_[3]=10
+#   Net_Quantity_=rep(0, nrow(Which_Signals))
+#   Net_Quantity_[1]=Which_Signals[, Quantity][1]
+#   Remove_=rep(0, nrow(Which_Signals))
+#   Max_Orders=3
+#   for(Ind in 2:length(Action_)){
+#     # if the quantity exceeds Max_Orders
+#     if(abs(Net_Quantity_[Ind-1]+Quantity_[Ind])>=Max_Orders){
+#       
+#       # adjust Quantity_ in accordance with Max_Orders
+#       if(Quantity_[Ind]<0){
+#         Quantity_[Ind]=-(Max_Orders+Quantity_[Ind-1])
+#         Net_Quantity_[Ind]=-Max_Orders
+#       }else if(Quantity_[Ind]>=0){
+#         Quantity_[Ind]=Max_Orders-Quantity_[Ind-1]
+#         Net_Quantity_[Ind]=Max_Orders
+#       }
+#       
+#       # a row is subject to elimination unless the direction change has led to abs(Net_Quantity_[Ind-1]+Quantity_[Ind])>=Max_Orders
+#       if((sign(Net_Quantity_[Ind-1])==sign(Net_Quantity_[Ind])) &
+#          (abs(Net_Quantity_[Ind-1])>=Max_Orders)){
+#         Remove_[Ind]=1
+#       }else{
+#         Remove_[Ind]=0
+#       }
+#       
+#     }else{ # if the quantity does not exceed Max_Orders, but the signs indicate entering both long and short
+#       if(Both_Direction_[Ind]==TRUE){
+#         
+#         # Currently, the code is written as reducing the number of filled positions.
+#         # That is, the opposite position is a preferred choice of entering.
+#         if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Sell"){
+#           Net_Quantity_[Ind]=Net_Quantity_[Ind-1]
+#           Remove_[Ind]=1
+#         }else if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Buy"){
+#           Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind]
+#           Remove_[Ind]=0
+#         }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Buy"){
+#           Net_Quantity_[Ind]=Net_Quantity_[Ind-1]
+#           Remove_[Ind]=1
+#         }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Sell"){
+#           Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind]
+#           Remove_[Ind]=0
+#         }
+#       }else{ # if the quantity does not exceed Max_Orders, and the signs indicate entering either long or short
+#         Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind]
+#         Remove_[Ind]=0
+#       }
+#     }
+#   }
+#   
+#   Which_Signals[, `:=`(Quantity=Quantity_,
+#                        Net_Quantity=Net_Quantity_,
+#                        Remove=Remove_,
+#                        Both_Direction=Both_Direction_)]
+#   
+#   Which_Signals=Which_Signals[Remove==0, ]
+#   
+#   # c++ code
+#   cppFunction('#include<math.h>
+#   List Order_Filled(List Which_Signals, LogicalVector Both_Direction_, int Max_Orders){
+#        
+#   CharacterVector Action_ = as<CharacterVector>(Which_Signals["Action"]);
+#   int n=Action_.size();
+#   
+#   IntegerVector Quantity_ = as<IntegerVector>(Which_Signals["Quantity"]);
+#   Quantity_[1]=-5;
+#   Quantity_[2]=10;
+# 
+#   IntegerVector Net_Quantity_(n);
+#   //std::vector<int> Net_Quantity_ (n);
+#   std::fill(Net_Quantity_.begin(), Net_Quantity_.end(), 0);
+#   Net_Quantity_[0]=Quantity_[0];
+#   
+#   IntegerVector Remove_(n);
+#   std::fill(Remove_.begin(), Remove_.end(), 0);
+#   
+#   for(int Ind = 1; Ind < n; ++Ind) {
+#     if(abs(Net_Quantity_[Ind-1]+Quantity_[Ind])>=Max_Orders){
+#       if(Quantity_[Ind]<0){
+#          Quantity_[Ind]=-(Max_Orders+Quantity_[Ind-1]);
+#         Net_Quantity_[Ind]=-Max_Orders;
+#       }else if(Quantity_[Ind]>=0){
+#         Quantity_[Ind]=Max_Orders-Quantity_[Ind-1];
+#         Net_Quantity_[Ind]=Max_Orders;
+#       }
+#   
+#       if((signbit(Net_Quantity_[Ind-1])==signbit(Net_Quantity_[Ind]))&&(abs(Net_Quantity_[Ind-1])>=Max_Orders)){
+#           Remove_[Ind]=1;
+#       }else{
+#           Remove_[Ind]=0;
+#       }
+#     }else{
+#       if(Both_Direction_[Ind]==TRUE){
+#         if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Sell"){
+#             Net_Quantity_[Ind]=Net_Quantity_[Ind-1];
+#             Remove_[Ind]=1;
+#           }else if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Buy"){
+#           Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind];
+#             Remove_[Ind]=0;
+#         }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Buy"){
+#             Net_Quantity_[Ind]=Net_Quantity_[Ind-1];
+#             Remove_[Ind]=1;
+#         }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Sell"){
+#             Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind];
+#             Remove_[Ind]=0;
+#         }
+#       }else{
+#         Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind];
+#         Remove_[Ind]=0;
+#       }
+#     }
+#   }
+#   
+#   return List::create(Quantity_, Net_Quantity_, Remove_, Both_Direction_);
+# }')
+#   
+#   Both_Direction_=duplicated(Which_Signals[["Ind"]], fromLast=T)|duplicated(Which_Signals[["Ind"]], fromLast=F)
+#   C_Results=Order_Filled(Which_Signals = Which_Signals,
+#                          Both_Direction_ = Both_Direction_,
+#                          Max_Orders = 3)
+#   
+#   Which_Signals[, `:=`(Quantity=C_Results[[1]],
+#                        Net_Quantity=C_Results[[2]],
+#                        Remove=C_Results[[3]],
+#                        Both_Direction=C_Results[[4]])]
+#   
+#   Which_Signals=Which_Signals[Remove==0, ]
+#   ##############################################################
   
   #***************
   # transmit order
