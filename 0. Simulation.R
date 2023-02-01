@@ -31,8 +31,8 @@ Symbols=c("MNQ")
 #*******************
 # load functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-# source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
-source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R")) # laptop
+source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
+# source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R")) # laptop
 
 # import libraries
 for(pack in c("IBrokers",
@@ -59,17 +59,17 @@ Get_Data(Symbols=list("MNQ"),
 # Training_BarData=MNQ[Time<"2021-07-22 15:00:00", ]
 # Test_BarData=MNQ[Time>="2021-07-22 15:00:00", ]
 # fwrite(MNQ,
-#        paste0("E:/Stock_Data/5seconds/MNQ/MNQ.csv"))
-fwrite(MNQ,
-       paste0("C:/Users/jchoi02/Desktop/Data/60mins/MNQ/MNQ.csv"))
+#        paste0("E:/Stock_Data/1min/MNQ/MNQ.csv"))
+# fwrite(MNQ,
+#        paste0("C:/Users/jchoi02/Desktop/Data/60mins/MNQ/MNQ.csv"))
 
-# MNQ=fread("E:/Stock_Data/60mins/MNQ/MNQ.csv")
+# MNQ=fread("E:/Stock_Data/5seconds/MNQ/MNQ.csv")
 MNQ=fread("C:/Users/jchoi02/Desktop/Data/60mins/MNQ/MNQ.csv")
 
 MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 
-Training_BarData=MNQ
-Test_BarData=MNQ[6001:nrow(MNQ)]
+Training_BarData=copy(MNQ)
+Test_BarData=copy(MNQ[6001:nrow(MNQ)])
 
 #************
 # grid search
