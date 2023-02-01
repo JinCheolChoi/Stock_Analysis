@@ -49,11 +49,11 @@ for(pack in c("IBrokers",
 }
 
 # import data
-Get_Data(Symbols=list("MNQ"),
-         Data_Dir=data.dir,
-         BarSize=60*60,
-         Convert_Tz=T,
-         Filter=T)
+# Get_Data(Symbols=list("MNQ"),
+#          Data_Dir=data.dir,
+#          BarSize=60*60,
+#          Convert_Tz=T,
+#          Filter=T)
 
 # bar data
 # SPY
@@ -64,10 +64,10 @@ Get_Data(Symbols=list("MNQ"),
 # fwrite(MNQ,
 #        paste0("C:/Users/jchoi02/Desktop/Data/60mins/MNQ/MNQ.csv"))
 
-# MNQ=fread("E:/Stock_Data/5seconds/MNQ/MNQ.csv")
+MNQ=fread("E:/Stock_Data/5seconds/MNQ/MNQ.csv")
 # MNQ=fread("C:/Users/jchoi02/Desktop/Data/60mins/MNQ/MNQ.csv")
 
-MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
+# MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 
 Training_BarData=copy(MNQ)
 Test_BarData=copy(MNQ[6001:nrow(MNQ)])

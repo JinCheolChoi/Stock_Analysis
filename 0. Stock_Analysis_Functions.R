@@ -2831,8 +2831,8 @@ cppFunction('#include<math.h>
   int n=Action_.size();
 
   IntegerVector Quantity_ = as<IntegerVector>(Which_Signals["Quantity"]);
-  Quantity_[1]=-5;
-  Quantity_[2]=10;
+  //Quantity_[1]=-5;
+  //Quantity_[2]=10;
 
   IntegerVector Net_Quantity_(n);
   //std::vector<int> Net_Quantity_ (n);
