@@ -19,6 +19,7 @@ data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
 # data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
 
 
+
 #****************
 # data parameters
 #****************
@@ -64,7 +65,7 @@ Get_Data(Symbols=list("MNQ"),
 #        paste0("C:/Users/jchoi02/Desktop/Data/60mins/MNQ/MNQ.csv"))
 
 # MNQ=fread("E:/Stock_Data/5seconds/MNQ/MNQ.csv")
-MNQ=fread("C:/Users/jchoi02/Desktop/Data/60mins/MNQ/MNQ.csv")
+# MNQ=fread("C:/Users/jchoi02/Desktop/Data/60mins/MNQ/MNQ.csv")
 
 MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 

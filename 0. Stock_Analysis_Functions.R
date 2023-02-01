@@ -1016,8 +1016,15 @@ Backtesting=function(BarData,
                                        Signals[[x]][[2]]
                                      }))
   
-  Long_Signals_Sums=apply(Long_Signals, 1, function(x) sum(x, na.rm=T))
-  Short_Signals_Sums=apply(Short_Signals, 1, function(x) sum(x, na.rm=T))
+  Long_Signals=Long_Signals[, lapply(.SD, as.numeric)]
+  Short_Signals=Short_Signals[, lapply(.SD, as.numeric)]
+  Long_Signals=Long_Signals[, lapply(.SD, function(x){ifelse(is.na(x), 0, x)})]
+  Short_Signals=Short_Signals[, lapply(.SD, function(x){ifelse(is.na(x), 0, x)})]
+  
+  Long_Signals_Sums=apply_row_sum_C(as.matrix(Long_Signals))
+  Short_Signals_Sums=apply_row_sum_C(as.matrix(Short_Signals))
+  # Long_Signals_Sums=apply(Long_Signals, 1, function(x) sum(x, na.rm=T))
+  # Short_Signals_Sums=apply(Short_Signals, 1, function(x) sum(x, na.rm=T))
   
   # Non_Dupl_Long_Signals_Data_Table
   if("Long"%in%Position_Names){
@@ -2875,3 +2882,18 @@ cppFunction('#include<math.h>
 
   return List::create(Quantity_, Net_Quantity_, Remove_, Both_Direction_);
 }')
+
+#****************
+# apply_row_sum_C
+#****************
+apply_row_sum_C=\(){}
+cppFunction('NumericVector apply_row_sum_C(NumericMatrix x){
+  int n=x.nrow();
+  NumericVector output(n);
+  
+  for(int i=0; i<n; i++){
+      output[i]=sum(x(i, _));
+  }
+  return(output);
+}')
+
