@@ -776,7 +776,7 @@ Live_Trading_Imitator=function(BarData,
       
       # if not filled, just cancel the transmit 60 minutes later
       if(sum(Orders_Transmitted[["Filled"]]==0)){
-        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>=Inf){
+        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>Inf){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
           #print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
@@ -1107,7 +1107,7 @@ Backtesting=function(BarData,
   Which_Signals=Which_Signals[order(Ind), ]
   Which_Signals=Which_Signals[!duplicated(Which_Signals, by=c("Ind", "Action")), ] # This part reflects the current algorithm that allows to force the long position entrance when there is no position filled yet while Sigs_N indicates tn enter both positions at the same time
   
-  ##############################################################################################################
+  # ##############################################################################################################
   # # r code
   # Action_=Which_Signals[["Action"]]
   # Detail_=Which_Signals[["Detail"]]
@@ -1118,6 +1118,7 @@ Backtesting=function(BarData,
   # Net_Quantity_=rep(0, nrow(Which_Signals))
   # Net_Quantity_[1]=Which_Signals[, Quantity][1]
   # Remove_=rep(0, nrow(Which_Signals))
+  # 
   # for(Ind in 2:length(Action_)){
   #   # skip BTC and STC
   #   if((Net_Quantity_[Ind-1]>=0&Detail_[Ind]=="BTC")|
@@ -1145,7 +1146,7 @@ Backtesting=function(BarData,
   #       }else{
   #         Remove_[Ind]=0
   #       }
-  #       
+  # 
   #     }else{ # if the quantity does not exceed Max_Orders, but the signs indicate entering both long and short
   #       if(Both_Direction_[Ind]==TRUE){
   # 
@@ -1178,7 +1179,7 @@ Backtesting=function(BarData,
   #                      Both_Direction=Both_Direction_)]
   # 
   # Which_Signals=Which_Signals[Remove==0, ]
-  ##############################################################################################################
+  # #############################################################################################################
   
   Both_Direction_=duplicated(Which_Signals[["Ind"]], fromLast=T)|duplicated(Which_Signals[["Ind"]], fromLast=F)
   
