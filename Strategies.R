@@ -356,7 +356,7 @@ Add_OrderRule(Strategy="Test_Strategy_1",
                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
                                    Stop_Order=10000000,
                                    Profit_Order=10000000,
-                                   Maximum_Elapsed_Time=60*60*60,
+                                   Maximum_Elapsed_Time=Inf,
                                    Reverse=FALSE)) # Opposite actions are made if Reverse=TRUE (haven't been applied yet)
 Add_OrderRule(Strategy="Test_Strategy_1",
               OrderRule="Long",
@@ -451,7 +451,7 @@ Add_OrderRule(Strategy="Test_Strategy_2",
                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
                                    Stop_Order=10000000,
                                    Profit_Order=10000000,
-                                   Maximum_Elapsed_Time=60*60*60,
+                                   Maximum_Elapsed_Time=Inf,
                                    Reverse=FALSE)) # Opposite actions are made if Reverse=TRUE (haven't been applied yet)
 Add_OrderRule(Strategy="Test_Strategy_2",
               OrderRule="Long",

@@ -775,7 +775,7 @@ Live_Trading_Imitator=function(BarData,
                          `:=`(Filled_Time=BarData[i+1, Time],
                               Filled=1)]
       
-      # if not filled, just cancel the transmit 60 minutes later
+      # if not filled, just cancel the transmit Maximum_Elapsed_Time seconds later
       if(sum(Orders_Transmitted[["Filled"]]==0)){
         if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>Maximum_Elapsed_Time){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
@@ -800,7 +800,7 @@ Live_Trading_Imitator=function(BarData,
                          `:=`(Filled_Time=BarData[i+1, Time],
                               Filled=1)]
       
-      # if not filled, just cancel the transmit
+      # if not filled, just cancel the transmit Maximum_Elapsed_Time seconds later
       if(sum(Orders_Transmitted[["Filled"]]==0)){
         if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>Maximum_Elapsed_Time){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
@@ -938,6 +938,7 @@ Backtesting=function(BarData,
   Reverse=Order_Rules[["General"]][["Reverse"]]
   Stop_Order=as.numeric(Order_Rules[["General"]][["Stop_Order"]])
   Profit_Order=as.numeric(Order_Rules[["General"]][["Profit_Order"]])
+  Maximum_Elapsed_Time=as.numeric(Order_Rules[["General"]][["Maximum_Elapsed_Time"]])
   Strategy_Indicators=names(Indicators)
   Strategy_Models=names(Models)
   General_Strategy="General"
