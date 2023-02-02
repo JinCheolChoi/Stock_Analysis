@@ -21,6 +21,7 @@ OrderRules_Env$General=list(
   # Negative : loss cut is prioritized over early profit
   Stop_Order=10,
   Profit_Order=10,
+  Maximum_Elapsed_Time=Inf, 
   Reverse=FALSE          # Opposite actions are made if Reverse=TRUE
 )
 
@@ -28,7 +29,6 @@ OrderRules_Env$General=list(
 OrderRules_Env$General_Function=function(...){
   
 }
-
 
 #**********
 #

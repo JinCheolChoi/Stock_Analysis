@@ -595,6 +595,7 @@ Live_Trading_Imitator=function(BarData,
   Reverse=Order_Rules[["General"]][["Reverse"]]
   Stop_Order=as.numeric(Order_Rules[["General"]][["Stop_Order"]])
   Profit_Order=as.numeric(Order_Rules[["General"]][["Profit_Order"]])
+  Maximum_Elapsed_Time=as.numeric(Order_Rules[["General"]][["Maximum_Elapsed_Time"]])
   Strategy_Indicators=names(Indicators)
   Strategy_Models=names(Models)
   General_Strategy="General"
@@ -776,7 +777,7 @@ Live_Trading_Imitator=function(BarData,
       
       # if not filled, just cancel the transmit 60 minutes later
       if(sum(Orders_Transmitted[["Filled"]]==0)){
-        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>Inf){
+        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>Maximum_Elapsed_Time){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
           #print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
@@ -801,7 +802,7 @@ Live_Trading_Imitator=function(BarData,
       
       # if not filled, just cancel the transmit
       if(sum(Orders_Transmitted[["Filled"]]==0)){
-        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>Inf){
+        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>Maximum_Elapsed_Time){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
           #print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
