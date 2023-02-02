@@ -13,11 +13,15 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-# working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-# data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
-data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
-rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/" #
+# desktop
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/"
+data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+
+# # laptop
+# working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
+# data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
+# rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
 
 
 #****************
@@ -32,8 +36,8 @@ Symbols=c("MNQ")
 #*******************
 # load functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-# source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
-source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R")) # laptop
+source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
+# source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R")) # laptop
 
 # import libraries
 for(pack in c("IBrokers",
@@ -64,8 +68,8 @@ for(pack in c("IBrokers",
 # fwrite(MNQ,
 #        paste0("C:/Users/jchoi02/Desktop/Data/5seconds/MNQ/MNQ.csv"))
 
-# MNQ=fread("E:/Stock_Data/5seconds/MNQ/MNQ.csv")
-MNQ=fread("C:/Users/jchoi02/Desktop/Data/60mins/MNQ/MNQ.csv")
+MNQ=fread("E:/Stock_Data/60mins/MNQ/MNQ.csv")
+# MNQ=fread("C:/Users/jchoi02/Desktop/Data/60mins/MNQ/MNQ.csv")
 
 # MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 
@@ -255,6 +259,51 @@ Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted %>% head(20)
 Test_Strategy_2_Test_Setting_1[[2]]$Orders_Transmitted %>% head(20)
 
 
+all.equal(
+  Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted[1:20,
+                                                             .SD,
+                                                             .SDcols=c("Symbol",
+                                                                       # "Submit_Time",
+                                                                       # "Filled_Time",
+                                                                       "Action",
+                                                                       "Detail",
+                                                                       "TotalQuantity",
+                                                                       "OrderType",
+                                                                       "Price")],
+  Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted[1:20,
+                                                             .SD,
+                                                             .SDcols=c("Symbol",
+                                                                       # "Submit_Time",
+                                                                       # "Filled_Time",
+                                                                       "Action",
+                                                                       "Detail",
+                                                                       "TotalQuantity",
+                                                                       "OrderType",
+                                                                       "Price")]
+)
+
+
+
+Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted[1:20,
+                                                           .SD,
+                                                           .SDcols=c("Symbol",
+                                                                     "Submit_Time",
+                                                                     "Filled_Time",
+                                                                     "Action",
+                                                                     "Detail",
+                                                                     "TotalQuantity",
+                                                                     "OrderType",
+                                                                     "Price")]
+Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted[1:20,
+                                                           .SD,
+                                                           .SDcols=c("Symbol",
+                                                                     "Submit_Time",
+                                                                     "Filled_Time",
+                                                                     "Action",
+                                                                     "Detail",
+                                                                     "TotalQuantity",
+                                                                     "OrderType",
+                                                                     "Price")]
 #****************************
 # calculate useful indicators
 #****************************

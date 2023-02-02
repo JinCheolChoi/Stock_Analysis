@@ -637,7 +637,7 @@ Live_Trading_Imitator=function(BarData,
   Early_Order_Transmit_Proceeded="No"
   Count=0
   for(i in 1:(nrow(BarData)-1)){
-    # i=2971
+    # i=23
     Live_Data=rbind(Live_Data, BarData[i, ], fill=T) %>% tail(Max_Rows)
     
     # if Early_Order_Transmit_Proceeded was done at i-1, skip
@@ -755,7 +755,7 @@ Live_Trading_Imitator=function(BarData,
                                  fill=T)
         # remove Orders_Transmitted
         rm(Order_to_Transmit)
-        #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+        print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
       }
     }
     
@@ -1107,6 +1107,7 @@ Backtesting=function(BarData,
   Which_Signals=Which_Signals[order(Ind), ]
   Which_Signals=Which_Signals[!duplicated(Which_Signals, by=c("Ind", "Action")), ] # This part reflects the current algorithm that allows to force the long position entrance when there is no position filled yet while Sigs_N indicates tn enter both positions at the same time
   
+  ##############################################################################################################
   # # r code
   # Action_=Which_Signals[["Action"]]
   # Detail_=Which_Signals[["Detail"]]
@@ -1126,7 +1127,7 @@ Backtesting=function(BarData,
   #   }else{
   #     # if the quantity exceeds Max_Orders
   #     if(abs(Net_Quantity_[Ind-1]+Quantity_[Ind])>Max_Orders){
-  #       
+  # 
   #       # adjust Quantity_ in accordance with Max_Orders
   #       if(Quantity_[Ind]<0){
   #         Quantity_[Ind]=-(Max_Orders+Quantity_[Ind-1])
@@ -1135,7 +1136,7 @@ Backtesting=function(BarData,
   #         Quantity_[Ind]=Max_Orders-Quantity_[Ind-1]
   #         Net_Quantity_[Ind]=Max_Orders
   #       }
-  #       
+  # 
   #       # a row is subject to elimination unless the direction change has led to abs(Net_Quantity_[Ind-1]+Quantity_[Ind])>=Max_Orders
   #       if((sign(Net_Quantity_[Ind-1])==sign(Net_Quantity_[Ind])) &
   #          (abs(Net_Quantity_[Ind-1])>=Max_Orders)){
@@ -1147,7 +1148,7 @@ Backtesting=function(BarData,
   #       
   #     }else{ # if the quantity does not exceed Max_Orders, but the signs indicate entering both long and short
   #       if(Both_Direction_[Ind]==TRUE){
-  #         
+  # 
   #         # Currently, the code is written as reducing the number of filled positions.
   #         # That is, the opposite position is a preferred choice of entering.
   #         if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Sell"){
@@ -1177,8 +1178,11 @@ Backtesting=function(BarData,
   #                      Both_Direction=Both_Direction_)]
   # 
   # Which_Signals=Which_Signals[Remove==0, ]
+  ##############################################################################################################
   
   Both_Direction_=duplicated(Which_Signals[["Ind"]], fromLast=T)|duplicated(Which_Signals[["Ind"]], fromLast=F)
+  
+  
   C_Results=Order_Filled(Which_Signals=Which_Signals,
                          Both_Direction_=Both_Direction_,
                          Max_Orders=Max_Orders)
@@ -1201,7 +1205,7 @@ Backtesting=function(BarData,
       # buy to open
       data.table(
         Symbol=BarData[BTO_Orders[, Ind], Symbol],
-        Submit_Time=BarData[BTO_Orders[, Ind], Time],
+        Submit_Time=BarData[BTO_Orders[, Ind], Time]+Time_Unit,
         Filled_Time=BarData[BTO_Orders[, Ind]+1, Time],
         Action="Buy",
         Detail="BTO",
@@ -1216,11 +1220,11 @@ Backtesting=function(BarData,
       # sell to close
       data.table(
         Symbol=BarData[STC_Orders[, Ind], Symbol],
-        Submit_Time=BarData[STC_Orders[, Ind], Time],
+        Submit_Time=BarData[STC_Orders[, Ind], Time]+Time_Unit,
         Filled_Time=BarData[STC_Orders[, Ind]+1, Time],
         Action="Sell",
         Detail="STC",
-        TotalQuantity=STC_Orders[, Quantity],
+        TotalQuantity=-STC_Orders[, Quantity],
         OrderType=Order_Rules[["Long"]][["SellToClose"]][["OrderType"]],
         Price=BarData[STC_Orders[, Ind]][["Close"]],
         Filled=1,
@@ -1231,11 +1235,11 @@ Backtesting=function(BarData,
       # sell to open
       data.table(
         Symbol=BarData[STO_Orders[, Ind], Symbol],
-        Submit_Time=BarData[STO_Orders[, Ind], Time],
+        Submit_Time=BarData[STO_Orders[, Ind], Time]+Time_Unit,
         Filled_Time=BarData[STO_Orders[, Ind]+1, Time],
         Action="Sell",
         Detail="STO",
-        TotalQuantity=STO_Orders[, Quantity],
+        TotalQuantity=-STO_Orders[, Quantity],
         OrderType=Order_Rules[["Short"]][["SellToOpen"]][["OrderType"]],
         Price=BarData[STO_Orders[, Ind]][["Close"]],
         Filled=1,
@@ -1246,7 +1250,7 @@ Backtesting=function(BarData,
       # buy to close
       data.table(
         Symbol=BarData[BTC_Orders[, Ind], Symbol],
-        Submit_Time=BarData[BTC_Orders[, Ind], Time],
+        Submit_Time=BarData[BTC_Orders[, Ind], Time]+Time_Unit,
         Filled_Time=BarData[BTC_Orders[, Ind]+1, Time],
         Action="Buy",
         Detail="BTC",
@@ -1266,7 +1270,7 @@ Backtesting=function(BarData,
       # buy to open
       data.table(
         Symbol=BarData[BTO_Orders[, Ind], Symbol],
-        Submit_Time=BarData[BTO_Orders[, Ind], Time],
+        Submit_Time=BarData[BTO_Orders[, Ind], Time]+Time_Unit,
         Filled_Time=BarData[BTO_Orders[, Ind]+1, Time],
         Action="Buy",
         Detail="BTO",
@@ -1281,11 +1285,11 @@ Backtesting=function(BarData,
       # sell to close
       data.table(
         Symbol=BarData[STC_Orders[, Ind], Symbol],
-        Submit_Time=BarData[STC_Orders[, Ind], Time],
+        Submit_Time=BarData[STC_Orders[, Ind], Time]+Time_Unit,
         Filled_Time=BarData[STC_Orders[, Ind]+1, Time],
         Action="Sell",
         Detail="STC",
-        TotalQuantity=STC_Orders[, Quantity],
+        TotalQuantity=-STC_Orders[, Quantity],
         OrderType=Order_Rules[["Long"]][["SellToClose"]][["OrderType"]],
         Price=BarData[STC_Orders[, Ind]][["Close"]],
         Filled=1,
@@ -1301,11 +1305,11 @@ Backtesting=function(BarData,
       # sell to open
       data.table(
         Symbol=BarData[STO_Orders[, Ind], Symbol],
-        Submit_Time=BarData[STO_Orders[, Ind], Time],
+        Submit_Time=BarData[STO_Orders[, Ind], Time]+Time_Unit,
         Filled_Time=BarData[STO_Orders[, Ind]+1, Time],
         Action="Sell",
         Detail="STO",
-        TotalQuantity=STO_Orders[, Quantity],
+        TotalQuantity=-STO_Orders[, Quantity],
         OrderType=Order_Rules[["Short"]][["SellToOpen"]][["OrderType"]],
         Price=BarData[STO_Orders[, Ind]][["Close"]],
         Filled=1,
@@ -1316,7 +1320,7 @@ Backtesting=function(BarData,
       # buy to close
       data.table(
         Symbol=BarData[BTC_Orders[, Ind], Symbol],
-        Submit_Time=BarData[BTC_Orders[, Ind], Time],
+        Submit_Time=BarData[BTC_Orders[, Ind], Time]+Time_Unit,
         Filled_Time=BarData[BTC_Orders[, Ind]+1, Time],
         Action="Buy",
         Detail="BTC",
