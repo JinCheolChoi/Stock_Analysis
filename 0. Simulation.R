@@ -284,7 +284,7 @@ all.equal(
 
 
 
-Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted[1:20,
+Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted[21:40,
                                                            .SD,
                                                            .SDcols=c("Symbol",
                                                                      "Submit_Time",
@@ -294,7 +294,7 @@ Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted[1:20,
                                                                      "TotalQuantity",
                                                                      "OrderType",
                                                                      "Price")]
-Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted[1:20,
+Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted[21:40,
                                                            .SD,
                                                            .SDcols=c("Symbol",
                                                                      "Submit_Time",
@@ -304,6 +304,8 @@ Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted[1:20,
                                                                      "TotalQuantity",
                                                                      "OrderType",
                                                                      "Price")]
+Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted %>% tail(20)
+Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted %>% tail(20)
 #****************************
 # calculate useful indicators
 #****************************

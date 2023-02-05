@@ -1107,10 +1107,11 @@ Backtesting=function(BarData,
     )
   )
   Which_Signals=Which_Signals[order(Ind), ]
-  Which_Signals=Which_Signals[!duplicated(Which_Signals, by=c("Ind", "Action")), ] # This part reflects the current algorithm that allows to force the long position entrance when there is no position filled yet while Sigs_N indicates tn enter both positions at the same time
+  # Which_Signals=Which_Signals[!duplicated(Which_Signals, by=c("Ind", "Action"), fromLast=T), ] # This part reflects the current algorithm that allows to force the long position entrance when there is no position filled yet while Sigs_N indicates tn enter both positions at the same time
   
   # ##############################################################################################################
   # # r code
+  # Ind_=Which_Signals[["Ind"]]
   # Action_=Which_Signals[["Action"]]
   # Detail_=Which_Signals[["Detail"]]
   # Both_Direction_=duplicated(Which_Signals[["Ind"]], fromLast=T)|duplicated(Which_Signals[["Ind"]], fromLast=F)
@@ -1154,18 +1155,26 @@ Backtesting=function(BarData,
   # 
   #         # Currently, the code is written as reducing the number of filled positions.
   #         # That is, the opposite position is a preferred choice of entering.
-  #         if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Sell"){
+  #         if(Net_Quantity_[Ind-1]<0 & Action_[Ind]=="Sell"){
   #           Net_Quantity_[Ind]=Net_Quantity_[Ind-1]
   #           Remove_[Ind]=1
-  #         }else if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Buy"){
+  #         }else if(Net_Quantity_[Ind-1]<0 & Action_[Ind]=="Buy"){
   #           Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind]
   #           Remove_[Ind]=0
-  #         }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Buy"){
+  #         }else if(Net_Quantity_[Ind-1]>0 & Action_[Ind]=="Buy"){
   #           Net_Quantity_[Ind]=Net_Quantity_[Ind-1]
   #           Remove_[Ind]=1
-  #         }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Sell"){
+  #         }else if(Net_Quantity_[Ind-1]>0 & Action_[Ind]=="Sell"){
   #           Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind]
   #           Remove_[Ind]=0
+  #         }else if(Net_Quantity_[Ind-1]==0){
+  #           if("BTO"%in%Detail_[which(Ind_==Ind_[Ind])] & Detail_[Ind]=="STO"){
+  #             Net_Quantity_[Ind]=Net_Quantity_[Ind-1]
+  #             Remove_[Ind]=1
+  #           }else{
+  #             Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind]
+  #             Remove_[Ind]=0
+  #           }
   #         }
   #       }else{ # if the quantity does not exceed Max_Orders, and the signs indicate entering either long or short
   #         Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind]
