@@ -756,7 +756,7 @@ Live_Trading_Imitator=function(BarData,
                                  fill=T)
         # remove Orders_Transmitted
         rm(Order_to_Transmit)
-        print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+        # print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
       }
     }
     
@@ -1131,7 +1131,7 @@ Backtesting=function(BarData,
   #   }else{
   #     # if the quantity exceeds Max_Orders
   #     if(abs(Net_Quantity_[Ind-1]+Quantity_[Ind])>Max_Orders){
-  # 
+  #       
   #       # adjust Quantity_ in accordance with Max_Orders
   #       if(Quantity_[Ind]<0){
   #         Quantity_[Ind]=-(Max_Orders+Quantity_[Ind-1])
@@ -1140,7 +1140,7 @@ Backtesting=function(BarData,
   #         Quantity_[Ind]=Max_Orders-Quantity_[Ind-1]
   #         Net_Quantity_[Ind]=Max_Orders
   #       }
-  # 
+  #       
   #       # a row is subject to elimination unless the direction change has led to abs(Net_Quantity_[Ind-1]+Quantity_[Ind])>=Max_Orders
   #       if((sign(Net_Quantity_[Ind-1])==sign(Net_Quantity_[Ind])) &
   #          (abs(Net_Quantity_[Ind-1])>=Max_Orders)){
@@ -1149,10 +1149,10 @@ Backtesting=function(BarData,
   #       }else{
   #         Remove_[Ind]=0
   #       }
-  # 
+  #       
   #     }else{ # if the quantity does not exceed Max_Orders, but the signs indicate entering both long and short
   #       if(Both_Direction_[Ind]==TRUE){
-  # 
+  #         
   #         # Currently, the code is written as reducing the number of filled positions.
   #         # That is, the opposite position is a preferred choice of entering.
   #         if(Net_Quantity_[Ind-1]<0 & Action_[Ind]=="Sell"){
@@ -1168,12 +1168,11 @@ Backtesting=function(BarData,
   #           Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind]
   #           Remove_[Ind]=0
   #         }else if(Net_Quantity_[Ind-1]==0){
+  #           Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind]
+  #           Remove_[Ind]=0
   #           if("BTO"%in%Detail_[which(Ind_==Ind_[Ind])] & Detail_[Ind]=="STO"){
   #             Net_Quantity_[Ind]=Net_Quantity_[Ind-1]
   #             Remove_[Ind]=1
-  #           }else{
-  #             Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind]
-  #             Remove_[Ind]=0
   #           }
   #         }
   #       }else{ # if the quantity does not exceed Max_Orders, and the signs indicate entering either long or short
@@ -2826,84 +2825,87 @@ Initiate_BarData=function(BarSize=60,
 # c++ code
 Order_Filled=\(){}
 lapply("Rcpp", checkpackages)
-cppFunction('#include<math.h>
-  List Order_Filled(List Which_Signals, LogicalVector Both_Direction_, int Max_Orders){
-
-  CharacterVector Action_ = as<CharacterVector>(Which_Signals["Action"]);
-  int n=Action_.size();
-  
-  CharacterVector Detail_ = as<CharacterVector>(Which_Signals["Detail"]);
-
-  IntegerVector Quantity_ = as<IntegerVector>(Which_Signals["Quantity"]);
-  //Quantity_[1]=-5;
-  //Quantity_[2]=10;
-
-  IntegerVector Net_Quantity_(n);
-  //std::vector<int> Net_Quantity_ (n);
-  std::fill(Net_Quantity_.begin(), Net_Quantity_.end(), 0);
-  Net_Quantity_[0]=Quantity_[0];
-
-  IntegerVector Remove_(n);
-  std::fill(Remove_.begin(), Remove_.end(), 0);
-
-  for(int Ind = 1; Ind < n; ++Ind) {
-    if((Net_Quantity_[Ind-1]>=0&Detail_[Ind]=="BTC")||
-       (Net_Quantity_[Ind-1]<=0&Detail_[Ind]=="STC")){
-          Net_Quantity_[Ind]=Net_Quantity_[Ind-1];
-          Remove_[Ind]=1;
-       }else{
-        if(abs(Net_Quantity_[Ind-1]+Quantity_[Ind])>Max_Orders){
-          if(Quantity_[Ind]<0){
-              Quantity_[Ind]=-(Max_Orders+Quantity_[Ind-1]);
-              Net_Quantity_[Ind]=-Max_Orders;
-        }else if(Quantity_[Ind]>=0){
-          Quantity_[Ind]=Max_Orders-Quantity_[Ind-1];
-          Net_Quantity_[Ind]=Max_Orders;
-        }
-  
-        if((signbit(Net_Quantity_[Ind-1])==signbit(Net_Quantity_[Ind]))&&(abs(Net_Quantity_[Ind-1])>=Max_Orders)){
-            Quantity_[Ind]=0;
-            Remove_[Ind]=1;
-        }else{
-            Remove_[Ind]=0;
-        }
-      }else{
-        if(Both_Direction_[Ind]==TRUE){
-          if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Sell"){
-              Net_Quantity_[Ind]=Net_Quantity_[Ind-1];
-              Remove_[Ind]=1;
-            }else if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Buy"){
-            Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind];
-              Remove_[Ind]=0;
-          }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Buy"){
-              Net_Quantity_[Ind]=Net_Quantity_[Ind-1];
-              Remove_[Ind]=1;
-          }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Sell"){
-              Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind];
-              Remove_[Ind]=0;
-          }
-        }else{
-          Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind];
-          Remove_[Ind]=0;
-        }
-      }
-    }
-  }
-
-  return List::create(Quantity_, Net_Quantity_, Remove_, Both_Direction_);
-}')
+# cppFunction('#include<math.h>
+#   List Order_Filled(List Which_Signals, LogicalVector Both_Direction_, int Max_Orders){
+# 
+#   CharacterVector Action_ = as<CharacterVector>(Which_Signals["Action"]);
+#   int n=Action_.size();
+# 
+#   CharacterVector Detail_ = as<CharacterVector>(Which_Signals["Detail"]);
+# 
+#   IntegerVector Quantity_ = as<IntegerVector>(Which_Signals["Quantity"]);
+#   //Quantity_[1]=-5;
+#   //Quantity_[2]=10;
+# 
+#   IntegerVector Net_Quantity_(n);
+#   //std::vector<int> Net_Quantity_ (n);
+#   std::fill(Net_Quantity_.begin(), Net_Quantity_.end(), 0);
+#   Net_Quantity_[0]=Quantity_[0];
+# 
+#   IntegerVector Remove_(n);
+#   std::fill(Remove_.begin(), Remove_.end(), 0);
+# 
+#   for(int Ind = 1; Ind < n; ++Ind) {
+#     if((Net_Quantity_[Ind-1]>=0&Detail_[Ind]=="BTC")||
+#        (Net_Quantity_[Ind-1]<=0&Detail_[Ind]=="STC")){
+#           Net_Quantity_[Ind]=Net_Quantity_[Ind-1];
+#           Remove_[Ind]=1;
+#        }else{
+#         if(abs(Net_Quantity_[Ind-1]+Quantity_[Ind])>Max_Orders){
+#           if(Quantity_[Ind]<0){
+#               Quantity_[Ind]=-(Max_Orders+Quantity_[Ind-1]);
+#               Net_Quantity_[Ind]=-Max_Orders;
+#         }else if(Quantity_[Ind]>=0){
+#           Quantity_[Ind]=Max_Orders-Quantity_[Ind-1];
+#           Net_Quantity_[Ind]=Max_Orders;
+#         }
+# 
+#         if((signbit(Net_Quantity_[Ind-1])==signbit(Net_Quantity_[Ind]))&&(abs(Net_Quantity_[Ind-1])>=Max_Orders)){
+#             Quantity_[Ind]=0;
+#             Remove_[Ind]=1;
+#         }else{
+#             Remove_[Ind]=0;
+#         }
+#       }else{
+#         if(Both_Direction_[Ind]==TRUE){
+#           if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Sell"){
+#               Net_Quantity_[Ind]=Net_Quantity_[Ind-1];
+#               Remove_[Ind]=1;
+#             }else if(Net_Quantity_[Ind-1]<=0 & Action_[Ind]=="Buy"){
+#             Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind];
+#               Remove_[Ind]=0;
+#           }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Buy"){
+#               Net_Quantity_[Ind]=Net_Quantity_[Ind-1];
+#               Remove_[Ind]=1;
+#           }else if(Net_Quantity_[Ind-1]>=0 & Action_[Ind]=="Sell"){
+#               Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind];
+#               Remove_[Ind]=0;
+#           }
+#         }else{
+#           Net_Quantity_[Ind]=Net_Quantity_[Ind-1]+Quantity_[Ind];
+#           Remove_[Ind]=0;
+#         }
+#       }
+#     }
+#   }
+# 
+#   return List::create(Quantity_, Net_Quantity_, Remove_, Both_Direction_);
+# }')
+sourceCpp("C:/Users/jchoi02/Desktop/C++/Order_Filled.cpp")
 
 #****************
 # apply_row_sum_C
 #****************
 apply_row_sum_C=\(){}
-cppFunction('NumericVector apply_row_sum_C(NumericMatrix x){
-  int n=x.nrow();
-  NumericVector output(n);
-  
-  for(int i=0; i<n; i++){
-      output[i]=sum(x(i, _));
-  }
-  return(output);
-}')
+# cppFunction('NumericVector apply_row_sum_C(NumericMatrix x){
+#   int n=x.nrow();
+#   NumericVector output(n);
+#   
+#   for(int i=0; i<n; i++){
+#       output[i]=sum(x(i, _));
+#   }
+#   return(output);
+# }')
+sourceCpp("C:/Users/jchoi02/Desktop/C++/apply_row_sum_C.cpp")
+
 

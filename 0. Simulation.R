@@ -13,15 +13,15 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-# desktop
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/"
-data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
-rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+# # desktop
+# working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/"
+# data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+# rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
 
-# # laptop
-# working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
-# data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
-# rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+# laptop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
+data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
+rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
 
 
 #****************
@@ -36,8 +36,8 @@ Symbols=c("MNQ")
 #*******************
 # load functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
-# source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R")) # laptop
+# source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
+source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R")) # laptop
 
 # import libraries
 for(pack in c("IBrokers",
@@ -66,10 +66,10 @@ for(pack in c("IBrokers",
 # fwrite(MNQ,
 #        paste0("E:/Stock_Data/1min/MNQ/MNQ.csv"))
 # fwrite(MNQ,
-#        paste0("C:/Users/jchoi02/Desktop/Data/5seconds/MNQ/MNQ.csv"))
+#        paste0("C:/Users/jchoi02/Desktop/Data/1min/MNQ/MNQ.csv"))
 
-MNQ=fread("E:/Stock_Data/60mins/MNQ/MNQ.csv")
-# MNQ=fread("C:/Users/jchoi02/Desktop/Data/60mins/MNQ/MNQ.csv")
+# MNQ=fread("E:/Stock_Data/60mins/MNQ/MNQ.csv")
+MNQ=fread("C:/Users/jchoi02/Desktop/Data/1min/MNQ/MNQ.csv")
 
 # MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 
@@ -145,49 +145,49 @@ for(i in 1:nrow(Params)){
   #****************
   # run Backtesting
   #****************
-  #############################################################################################################
-  Strategies="Test_Strategy_1"
-  # create profit variables for strategies
-  if(i==1){
-    Additional_Cols=apply(expand.grid(Strategies, c("_NP_on_Training", "_NP_on_Test")), 1, paste, collapse="")
-    Temp=setNames(data.table(matrix(nrow=0, ncol=length(Additional_Cols))), Additional_Cols)
-    Temp[, (Additional_Cols):=lapply(.SD, as.numeric), .SDcols=Additional_Cols]
-    Params=cbind(Params,
-                 Temp)
-  }
-
-  for(Strategy_Name in Strategies){
-    # Strategy_Name=Strategies
-    # on training data sets
-    T1_1=system.time({
-      Training_Results_Temp=Live_Trading_Imitator(BarData=Training_BarData,
-                                                  Strategy=get(Strategies[which(Strategies==Strategy_Name)]))
-    })
-
-    # save results
-    assign(paste0(Strategy_Name, "_Training_", "Setting_", i),
-           list(T1_1,
-                Training_Results_Temp))
-
-    # save net profits
-    Params[i, paste0(Strategy_Name, "_NP_on_Training"):=get(paste0(Strategy_Name, "_Training_", "Setting_", i))[[2]]$Net_Profit]
-
-    #******************
-    # on test data sets
-    T2_1=system.time({
-      Test_Results_Temp=Live_Trading_Imitator(BarData=Test_BarData,
-                                              Strategy=get(Strategies[which(Strategies==Strategy_Name)]))
-    })
-
-    # save results
-    assign(paste0(Strategy_Name, "_Test_", "Setting_", i),
-           list(T2_1,
-                Test_Results_Temp))
-
-    # save net profits
-    Params[i, paste0(Strategy_Name, "_NP_on_Test"):=get(paste0(Strategy_Name, "_Test_", "Setting_", i))[[2]]$Net_Profit]
-  }
-  #############################################################################################################
+  # #############################################################################################################
+  # Strategies="Test_Strategy_1"
+  # # create profit variables for strategies
+  # if(i==1){
+  #   Additional_Cols=apply(expand.grid(Strategies, c("_NP_on_Training", "_NP_on_Test")), 1, paste, collapse="")
+  #   Temp=setNames(data.table(matrix(nrow=0, ncol=length(Additional_Cols))), Additional_Cols)
+  #   Temp[, (Additional_Cols):=lapply(.SD, as.numeric), .SDcols=Additional_Cols]
+  #   Params=cbind(Params,
+  #                Temp)
+  # }
+  # 
+  # for(Strategy_Name in Strategies){
+  #   # Strategy_Name=Strategies
+  #   # on training data sets
+  #   T1_1=system.time({
+  #     Training_Results_Temp=Live_Trading_Imitator(BarData=Training_BarData,
+  #                                                 Strategy=get(Strategies[which(Strategies==Strategy_Name)]))
+  #   })
+  #   
+  #   # save results
+  #   assign(paste0(Strategy_Name, "_Training_", "Setting_", i),
+  #          list(T1_1,
+  #               Training_Results_Temp))
+  # 
+  #   # save net profits
+  #   Params[i, paste0(Strategy_Name, "_NP_on_Training"):=get(paste0(Strategy_Name, "_Training_", "Setting_", i))[[2]]$Net_Profit]
+  # 
+  #   #******************
+  #   # on test data sets
+  #   T2_1=system.time({
+  #     Test_Results_Temp=Live_Trading_Imitator(BarData=Test_BarData,
+  #                                             Strategy=get(Strategies[which(Strategies==Strategy_Name)]))
+  #   })
+  # 
+  #   # save results
+  #   assign(paste0(Strategy_Name, "_Test_", "Setting_", i),
+  #          list(T2_1,
+  #               Test_Results_Temp))
+  # 
+  #   # save net profits
+  #   Params[i, paste0(Strategy_Name, "_NP_on_Test"):=get(paste0(Strategy_Name, "_Test_", "Setting_", i))[[2]]$Net_Profit]
+  # }
+  # #############################################################################################################
   
   #############################################################################################################
   Strategies="Test_Strategy_2"
@@ -207,7 +207,7 @@ for(i in 1:nrow(Params)){
       Training_Results_Temp=Backtesting(BarData=Training_BarData,
                                         Strategy=get(Strategies[which(Strategies==Strategy_Name)]))
     })
-    
+     
     # save results
     assign(paste0(Strategy_Name, "_Training_", "Setting_", i),
            list(T1_2,
@@ -244,7 +244,8 @@ for(i in 1:nrow(Params)){
   #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-23.Rdata")
   # }
 }
-
+Test_Strategy_1_Training_Setting_1[[2]]$Ind_Profit$Cum_Profit %>% plot
+Test_Strategy_2_Training_Setting_1[[2]]$Ind_Profit$Cum_Profit %>% plot
 
 #**************
 # save and load
