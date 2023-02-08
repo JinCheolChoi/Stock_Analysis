@@ -519,4 +519,4 @@ Contingency_Table_Generator_Conti_X(Data=Params,
 # 3. work on "remove redundant long & short signals that are not supposed to be filled" in Backtesting()
 # 4. calculate indicators only once prior to fitting models for different parameter settings
 # 5. output expense for commissions in Orders_Transmitted
-
+# 6. utilize switch()
