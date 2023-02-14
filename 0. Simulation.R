@@ -48,6 +48,7 @@ for(pack in c("IBrokers",
               
               "RcppRoll",
               "Rcpp",
+              "RcppArmadillo",
               "bench")){ 
   lapply(pack, checkpackages)
 }
