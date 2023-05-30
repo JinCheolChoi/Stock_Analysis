@@ -111,6 +111,10 @@ colnames(Params)=c("Simple_BBands_1_Long_PctB",
                    "Simple_BBands_1_Short_PctB",
                    "Simple_BBands_2_Long_PctB",
                    "Simple_BBands_2_Short_PctB")
+
+# Simulation_Trading
+Simulation_Trading=TRUE
+
 # Optimal_Params=data.table(
 #   c(0.15, 0.15, 0.2, 0.15, 0.15, 0.15, 0.1, 0.15, 0.15, 0.15, 0.15),
 #   c(0.6, 0.65, 0.6, 0.65, 0.6, 0.6, 0.6, 0.55, 0.55, 0.55, 0.65),

@@ -1066,6 +1066,24 @@ Backtesting=function(BarData,
     
     BuyToOpen_Signals=Long_Signals_Sums>=BuyToOpen_Min_Sig_N
     SellToClose_Signals=Short_Signals_Sums>=SellToClose_Min_Sig_N
+    
+    Long_Which_Signals=c()
+    Long_Which_Signals=rbind(
+      data.table(
+        Ind=which(BuyToOpen_Signals),
+        Signals=Long_Signals_Sums[which(BuyToOpen_Signals)],
+        Action="Buy",
+        Detail="BTO",
+        Quantity=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Quantity"]])
+      ),
+      data.table(
+        Ind=which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))],
+        Signals=Short_Signals_Sums[which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))]],
+        Action="Sell",
+        Detail="STC",
+        Quantity=-as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Quantity"]])
+      )
+    )
   }
   if("Short"%in%Position_Names){
     SellToOpen_Min_Sig_N=as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Min_Sig_N"]])
@@ -1074,47 +1092,37 @@ Backtesting=function(BarData,
     
     SellToOpen_Signals=Short_Signals_Sums>=SellToOpen_Min_Sig_N
     BuyToClose_Signals=Long_Signals_Sums>=BuyToClose_Min_Sig_N
+    
+    Short_Which_Signals=c()
+    Short_Which_Signals=rbind(
+      data.table(
+        Ind=which(SellToOpen_Signals),
+        Signals=Short_Signals_Sums[which(SellToOpen_Signals)],
+        Action="Sell",
+        Detail="STO",
+        Quantity=-as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Quantity"]])
+      ),
+      data.table(
+        Ind=which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))],
+        Signals=Long_Signals_Sums[which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))]],
+        Action="Buy",
+        Detail="BTC",
+        Quantity=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Quantity"]])
+      )
+    )
   }
   
   # SellToClose_Signals[59]=TRUE
   # SellToOpen_Signals[59]=TRUE
   
   Which_Signals=rbind(
-    data.table(
-      Ind=which(BuyToOpen_Signals),
-      Signals=Long_Signals_Sums[which(BuyToOpen_Signals)],
-      Action="Buy",
-      Detail="BTO",
-      Quantity=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Quantity"]])
-    ),
-    data.table(
-      Ind=which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))],
-      Signals=Short_Signals_Sums[which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))]],
-      Action="Sell",
-      Detail="STC",
-      Quantity=-as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Quantity"]])
-    ),
-    data.table(
-      Ind=which(SellToOpen_Signals),
-      Signals=Short_Signals_Sums[which(SellToOpen_Signals)],
-      Action="Sell",
-      Detail="STO",
-      Quantity=-as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Quantity"]])
-    ),
-    data.table(
-      Ind=which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))],
-      Signals=Long_Signals_Sums[which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))]],
-      Action="Buy",
-      Detail="BTC",
-      Quantity=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Quantity"]])
-    )
+    Long_Which_Signals,
+    Short_Which_Signals
   )
   Which_Signals=Which_Signals[order(Ind), ]
   
-  Both_Direction_=duplicated(Which_Signals[["Ind"]], fromLast=T)|duplicated(Which_Signals[["Ind"]], fromLast=F)
-  
   Which_Signals=cbind(Which_Signals,
-                      Both_Direction_=Both_Direction_,
+                      Both_Direction_=duplicated(Which_Signals[["Ind"]], fromLast=T)|duplicated(Which_Signals[["Ind"]], fromLast=F),
                       BarData[Which_Signals[["Ind"]], .SD, .SDcols=c("Time", "Open", "High", "Low", "Close")])
   
   # Which_Signals=Which_Signals[!duplicated(Which_Signals, by=c("Ind", "Action"), fromLast=T), ] # This part reflects the current algorithm that allows to force the long position entrance when there is no position filled yet while Sigs_N indicates tn enter both positions at the same time
@@ -1204,7 +1212,7 @@ Backtesting=function(BarData,
   
   
   C_Results=Order_Filled(Which_Signals=Which_Signals,
-                         Both_Direction_=Both_Direction_,
+                         Both_Direction_=duplicated(Which_Signals[["Ind"]], fromLast=T)|duplicated(Which_Signals[["Ind"]], fromLast=F),
                          Max_Orders=Max_Orders)
   
   Which_Signals[, `:=`(Quantity=C_Results[[1]],

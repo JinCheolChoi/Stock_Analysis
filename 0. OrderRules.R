@@ -21,7 +21,7 @@ OrderRules_Env$General=list(
   # Negative : loss cut is prioritized over early profit
   Stop_Order=10,
   Profit_Order=10,
-  Maximum_Elapsed_Time=Inf, 
+  Maximum_Elapsed_Time=Inf, # This argument is to be defined for OrderType=="LMT"
   Reverse=FALSE          # Opposite actions are made if Reverse=TRUE
 )
 
