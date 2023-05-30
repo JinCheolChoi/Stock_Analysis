@@ -208,7 +208,7 @@ for(i in 1:nrow(Params)){
       Training_Results_Temp=Backtesting(BarData=Training_BarData,
                                         Strategy=get(Strategies[which(Strategies==Strategy_Name)]))
     })
-     
+    
     # save results
     assign(paste0(Strategy_Name, "_Training_", "Setting_", i),
            list(T1_2,
