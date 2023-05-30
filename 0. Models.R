@@ -150,14 +150,14 @@ Models_Env$Simple_BBands_1=list(
       #                c(rep(NA, length=Long_Consec_Times-1),
       #                  RcppRoll::roll_sum(Data[, "pctB"]<=Long_PctB, Long_Consec_Times)))
       Long_Sig=c(rep(NA, length=Long_Consec_Times-1),
-                 RcppRoll::roll_sum(Data[, "pctB"]<=Long_PctB, Long_Consec_Times))==Long_Consec_Times
+                 RcppRoll::roll_sum(Data[, "pctB"]<=Long_PctB, Long_Consec_Times, na.rm=T))==Long_Consec_Times
       # positive short signal if pctB>=Long_PctB in the past `Short_Consec_Times` consecutive times
       # Short_Sig=cbind(Data[, "pctB"],
       #                Data[, "pctB"]<=Short_PctB,
       #                c(rep(NA, length=Short_Consec_Times-1),
       #                  RcppRoll::roll_sum(Data[, "pctB"]<=Short_PctB, Short_Consec_Times)))
       Short_Sig=c(rep(NA, length=Short_Consec_Times-1),
-                  RcppRoll::roll_sum(Data[, "pctB"]>=Short_PctB, Short_Consec_Times))==Short_Consec_Times
+                  RcppRoll::roll_sum(Data[, "pctB"]>=Short_PctB, Short_Consec_Times, na.rm=T))==Short_Consec_Times
       
       # return signals
       Signals=c()
@@ -201,14 +201,14 @@ Models_Env$Simple_BBands_2=list(
       #                c(rep(NA, length=Long_Consec_Times-1),
       #                  RcppRoll::roll_sum(Data[, "pctB"]<=Long_PctB, Long_Consec_Times)))
       Long_Sig=c(rep(NA, length=Long_Consec_Times-1),
-                 RcppRoll::roll_sum(Data[, "pctB"]<=Long_PctB, Long_Consec_Times))==Long_Consec_Times
+                 RcppRoll::roll_sum(Data[, "pctB"]<=Long_PctB, Long_Consec_Times, na.rm=T))==Long_Consec_Times
       # positive short signal if pctB>=Long_PctB in the past `Short_Consec_Times` consecutive times
       # Short_Sig=cbind(Data[, "pctB"],
       #                Data[, "pctB"]<=Short_PctB,
       #                c(rep(NA, length=Short_Consec_Times-1),
       #                  RcppRoll::roll_sum(Data[, "pctB"]<=Short_PctB, Short_Consec_Times)))
       Short_Sig=c(rep(NA, length=Short_Consec_Times-1),
-                  RcppRoll::roll_sum(Data[, "pctB"]>=Short_PctB, Short_Consec_Times))==Short_Consec_Times
+                  RcppRoll::roll_sum(Data[, "pctB"]>=Short_PctB, Short_Consec_Times, na.rm=T))==Short_Consec_Times
       
       # return signals
       Signals=c()
@@ -269,14 +269,14 @@ Models_Env$Simple_RSI_1=list(
       #                c(rep(NA, length=Long_Consec_Times-1),
       #                  RcppRoll::roll_sum(Data[, "RSI"]<=Long_RSI, Long_Consec_Times)))
       Long_Sig=c(rep(NA, length=Long_Consec_Times-1),
-                 RcppRoll::roll_sum(Data[, "RSI"]<=Long_RSI, Long_Consec_Times))==Long_Consec_Times
+                 RcppRoll::roll_sum(Data[, "RSI"]<=Long_RSI, Long_Consec_Times, na.rm=T))==Long_Consec_Times
       # positive short signal if RSI<=Short_RSI in the past `Long_Consec_Times` consecutive times
       # Short_Sig=cbind(Data[, "RSI"],
       #                Data[, "RSI"]<=Short_RSI,
       #                c(rep(NA, length=Short_Consec_Times-1),
       #                  RcppRoll::roll_sum(Data[, "RSI"]<=Short_RSI, Short_Consec_Times)))
       Short_Sig=c(rep(NA, length=Short_Consec_Times-1),
-                  RcppRoll::roll_sum(Data[, "RSI"]>=Short_RSI, Short_Consec_Times))==Short_Consec_Times
+                  RcppRoll::roll_sum(Data[, "RSI"]>=Short_RSI, Short_Consec_Times, na.rm=T))==Short_Consec_Times
       
       # return signals
       Signals=c()
@@ -323,14 +323,14 @@ Models_Env$Simple_RSI_2=list(
       #                c(rep(NA, length=Long_Consec_Times-1),
       #                  RcppRoll::roll_sum(Data[, "RSI"]<=Long_RSI, Long_Consec_Times)))
       Long_Sig=c(rep(NA, length=Long_Consec_Times-1),
-                 RcppRoll::roll_sum(Data[, "RSI"]<=Long_RSI, Long_Consec_Times))==Long_Consec_Times
+                 RcppRoll::roll_sum(Data[, "RSI"]<=Long_RSI, Long_Consec_Times, na.rm=T))==Long_Consec_Times
       # positive short signal if RSI<=Short_RSI in the past `Long_Consec_Times` consecutive times
       # Short_Sig=cbind(Data[, "RSI"],
       #                Data[, "RSI"]<=Short_RSI,
       #                c(rep(NA, length=Short_Consec_Times-1),
       #                  RcppRoll::roll_sum(Data[, "RSI"]<=Short_RSI, Short_Consec_Times)))
       Short_Sig=c(rep(NA, length=Short_Consec_Times-1),
-                  RcppRoll::roll_sum(Data[, "RSI"]>=Short_RSI, Short_Consec_Times))==Short_Consec_Times
+                  RcppRoll::roll_sum(Data[, "RSI"]>=Short_RSI, Short_Consec_Times, na.rm=T))==Short_Consec_Times
       
       # return signals
       Signals=c()

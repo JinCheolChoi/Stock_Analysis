@@ -13,10 +13,15 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
-# working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
-# data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
+# # desktop
+# working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/"
+# data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+# rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+
+# laptop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
+data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
+rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
 
 
 #****************
@@ -31,7 +36,8 @@ Symbols=c("MNQ")
 #*******************
 # load functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R"))
+# source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
+source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R")) # laptop
 
 # import libraries
 for(pack in c("IBrokers",
@@ -42,28 +48,34 @@ for(pack in c("IBrokers",
               
               "RcppRoll",
               "Rcpp",
+              "RcppArmadillo",
               "bench")){ 
   lapply(pack, checkpackages)
 }
 
 # import data
-Get_Data(Symbols=list("MNQ"),
-         Data_Dir=data.dir,
-         BarSize=60*60,
-         Convert_Tz=T,
-         Filter=T)
+# Get_Data(Symbols=list("MNQ"),
+#          Data_Dir=data.dir,
+#          BarSize=5,
+#          Convert_Tz=T,
+#          Filter=T)
 
 # bar data
 # SPY
 # Training_BarData=MNQ[Time<"2021-07-22 15:00:00", ]
 # Test_BarData=MNQ[Time>="2021-07-22 15:00:00", ]
 # fwrite(MNQ,
-#        paste0("E:/Stock_Data/5seconds/MNQ/MNQ.csv"))
-MNQ=fread("E:/Stock_Data/5seconds/MNQ/MNQ.csv")
-MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
+#        paste0("E:/Stock_Data/1min/MNQ/MNQ.csv"))
+# fwrite(MNQ,
+#        paste0("C:/Users/jchoi02/Desktop/Data/1min/MNQ/MNQ.csv"))
 
-Training_BarData=MNQ
-Test_BarData=MNQ[6001:nrow(MNQ)]
+# MNQ=fread("E:/Stock_Data/60mins/MNQ/MNQ.csv")
+MNQ=fread("C:/Users/jchoi02/Desktop/Data/1min/MNQ/MNQ.csv")
+
+# MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
+
+Training_BarData=copy(MNQ)
+Test_BarData=copy(MNQ[6001:nrow(MNQ)])
 
 #************
 # grid search
@@ -99,6 +111,10 @@ colnames(Params)=c("Simple_BBands_1_Long_PctB",
                    "Simple_BBands_1_Short_PctB",
                    "Simple_BBands_2_Long_PctB",
                    "Simple_BBands_2_Short_PctB")
+
+# Simulation_Trading
+Simulation_Trading=TRUE
+
 # Optimal_Params=data.table(
 #   c(0.15, 0.15, 0.2, 0.15, 0.15, 0.15, 0.1, 0.15, 0.15, 0.15, 0.15),
 #   c(0.6, 0.65, 0.6, 0.65, 0.6, 0.6, 0.6, 0.55, 0.55, 0.55, 0.65),
@@ -160,7 +176,7 @@ for(i in 1:nrow(Params)){
   # 
   #   # save net profits
   #   Params[i, paste0(Strategy_Name, "_NP_on_Training"):=get(paste0(Strategy_Name, "_Training_", "Setting_", i))[[2]]$Net_Profit]
-  #   
+  # 
   #   #******************
   #   # on test data sets
   #   T2_1=system.time({
@@ -233,8 +249,69 @@ for(i in 1:nrow(Params)){
   #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-23.Rdata")
   # }
 }
+Test_Strategy_1_Training_Setting_1[[2]]$Ind_Profit$Cum_Profit %>% plot
+Test_Strategy_2_Training_Setting_1[[2]]$Ind_Profit$Cum_Profit %>% plot
+
+#**************
+# save and load
+#**************
+#save.image(paste0(rdata.dir, "Futures_2023-02-01.Rdata"))
+#load(paste0(rdata.dir, "Futures_2023-02-01.Rdata"))
+
+Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted %>% head(20)
+Test_Strategy_1_Test_Setting_1[[2]]$Orders_Transmitted %>% head(20)
+
+Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted %>% head(20)
+Test_Strategy_2_Test_Setting_1[[2]]$Orders_Transmitted %>% head(20)
 
 
+all.equal(
+  Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted[1:20,
+                                                             .SD,
+                                                             .SDcols=c("Symbol",
+                                                                       "Submit_Time",
+                                                                       # "Filled_Time",
+                                                                       "Action",
+                                                                       "Detail",
+                                                                       "TotalQuantity",
+                                                                       "OrderType",
+                                                                       "Price")],
+  Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted[1:20,
+                                                             .SD,
+                                                             .SDcols=c("Symbol",
+                                                                       "Submit_Time",
+                                                                       # "Filled_Time",
+                                                                       "Action",
+                                                                       "Detail",
+                                                                       "TotalQuantity",
+                                                                       "OrderType",
+                                                                       "Price")]
+)
+
+
+
+Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted[21:40,
+                                                           .SD,
+                                                           .SDcols=c("Symbol",
+                                                                     "Submit_Time",
+                                                                     "Filled_Time",
+                                                                     "Action",
+                                                                     "Detail",
+                                                                     "TotalQuantity",
+                                                                     "OrderType",
+                                                                     "Price")]
+Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted[21:40,
+                                                           .SD,
+                                                           .SDcols=c("Symbol",
+                                                                     "Submit_Time",
+                                                                     "Filled_Time",
+                                                                     "Action",
+                                                                     "Detail",
+                                                                     "TotalQuantity",
+                                                                     "OrderType",
+                                                                     "Price")]
+Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted %>% tail(20)
+Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted %>% tail(20)
 #****************************
 # calculate useful indicators
 #****************************
@@ -447,4 +524,4 @@ Contingency_Table_Generator_Conti_X(Data=Params,
 # 3. work on "remove redundant long & short signals that are not supposed to be filled" in Backtesting()
 # 4. calculate indicators only once prior to fitting models for different parameter settings
 # 5. output expense for commissions in Orders_Transmitted
-
+# 6. utilize switch()
