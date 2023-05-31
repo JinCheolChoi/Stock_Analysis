@@ -59,7 +59,7 @@ source(paste0(working.dir, "/Live_Trading_Strategy.R"))
 #
 #***********************
 # contract info
-contract=twsFuture("MNQ", "CME", "202303")
+contract=twsFuture("MNQ", "CME", "202306")
 # connect to TWS
 tws=twsConnect(clientId=round(runif(1)*10000000), port=Port)
 # twsDisconnect(tws) # disconnect from TWS

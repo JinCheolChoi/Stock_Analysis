@@ -21,6 +21,7 @@ OrderRules_Env$General=list(
   # Negative : loss cut is prioritized over early profit
   Stop_Order=10,
   Profit_Order=10,
+  Maximum_Elapsed_Time=Inf, # This argument is to be defined for OrderType=="LMT"
   Reverse=FALSE          # Opposite actions are made if Reverse=TRUE
 )
 
@@ -28,7 +29,6 @@ OrderRules_Env$General=list(
 OrderRules_Env$General_Function=function(...){
   
 }
-
 
 #**********
 #
@@ -181,7 +181,7 @@ OrderRules_Env$Long_Function=function(Live_Data,
     N_Orders_held<<-N_Orders_held+(Action=="Buy")*TotalQuantity-(Action=="Sell")*TotalQuantity
     
     # print the number of positions
-    print(paste0("N of Positions : ", get("N_Orders_held", envir=.GlobalEnv)))
+    # print(paste0("N of Positions : ", get("N_Orders_held", envir=.GlobalEnv)))
     
     #
     if(Action=="Buy"){
@@ -364,7 +364,7 @@ OrderRules_Env$Short_Function=function(Live_Data,
     N_Orders_held<<-N_Orders_held+(Action=="Buy")*TotalQuantity-(Action=="Sell")*TotalQuantity
     
     # print the number of positions
-    print(paste0("N of Positions : ", get("N_Orders_held", envir=.GlobalEnv)))
+    # print(paste0("N of Positions : ", get("N_Orders_held", envir=.GlobalEnv)))
     
     #
     if(Action=="Sell"){

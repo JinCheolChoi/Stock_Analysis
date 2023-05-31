@@ -81,9 +81,9 @@ if(PP>A){ # x > 0 equivalently translantes to Profit_price > Ask price
 #****************
 # option leverage
 #****************
-ask=2.71
-delta=0.448
-spot_price=375
+ask=0.12
+delta=0.085
+spot_price=321.17
 
 delta*spot_price/ask
 
