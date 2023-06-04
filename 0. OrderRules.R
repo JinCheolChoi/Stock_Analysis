@@ -60,8 +60,8 @@ OrderRules_Env$Long_Function=function(Live_Data,
   #Sigs_N[2] : sell signal
   # first if condition ensures to short a current long position if there is any
   if(0<N_Orders_held & # if there's a long position
-           N_Orders_held<=Max_Orders &
-           Sigs_N[2]>=Params[["SellToClose"]][["Min_Sig_N"]]){
+     N_Orders_held<=Max_Orders &
+     Sigs_N[2]>=Params[["SellToClose"]][["Min_Sig_N"]]){
     
     Action="Sell"
     Detail="STC"
@@ -242,8 +242,8 @@ OrderRules_Env$Short_Function=function(Live_Data,
   #Sigs_N[2] : sell signal
   # first if condition ensures to long a current short position if there is any
   if(0>N_Orders_held & # if there's a short position
-           N_Orders_held>=(-Max_Orders) & 
-           Sigs_N[1]>=Params[["BuyToClose"]][["Min_Sig_N"]]){
+     N_Orders_held>=(-Max_Orders) & 
+     Sigs_N[1]>=Params[["BuyToClose"]][["Min_Sig_N"]]){
     
     Action="Buy"
     Detail="BTC"

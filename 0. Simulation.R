@@ -49,11 +49,12 @@ for(pack in c("IBrokers",
               "RcppRoll",
               "Rcpp",
               "RcppArmadillo",
-              "bench")){ 
+              "bench",
+              "tseries")){ 
   lapply(pack, checkpackages)
 }
 
-# import data
+# # import data
 # Get_Data(Symbols=list("MNQ"),
 #          Data_Dir=data.dir,
 #          BarSize=5,
@@ -73,9 +74,8 @@ for(pack in c("IBrokers",
 MNQ=fread("C:/Users/jchoi02/Desktop/Data/1min/MNQ/MNQ.csv")
 
 # MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
-
-Training_BarData=copy(MNQ)
-Test_BarData=copy(MNQ[6001:nrow(MNQ)])
+Training_BarData=copy(MNQ[1:round(nrow(MNQ)/2)])
+Test_BarData=copy(MNQ[(round(nrow(MNQ)/2)+1):nrow(MNQ)])
 
 #************
 # grid search
@@ -112,8 +112,8 @@ colnames(Params)=c("Simple_BBands_1_Long_PctB",
                    "Simple_BBands_2_Long_PctB",
                    "Simple_BBands_2_Short_PctB")
 
-# Simulation_Trading
-Simulation_Trading=TRUE
+# Live_Trading
+Live_Trading=FALSE
 
 # Optimal_Params=data.table(
 #   c(0.15, 0.15, 0.2, 0.15, 0.15, 0.15, 0.1, 0.15, 0.15, 0.15, 0.15),
@@ -195,7 +195,7 @@ for(i in 1:nrow(Params)){
   # #############################################################################################################
   
   #############################################################################################################
-  Strategies="Test_Strategy_2"
+  # Strategies="Test_Strategy_1"
   # create profit variables for strategies
   if(i==1){
     Additional_Cols=apply(expand.grid(Strategies, c("_NP_on_Training", "_NP_on_Test")), 1, paste, collapse="")
@@ -238,7 +238,6 @@ for(i in 1:nrow(Params)){
   }
   #############################################################################################################
   
-  
   #***************
   # print messages
   #***************
@@ -249,69 +248,7 @@ for(i in 1:nrow(Params)){
   #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-23.Rdata")
   # }
 }
-Test_Strategy_1_Training_Setting_1[[2]]$Ind_Profit$Cum_Profit %>% plot
-Test_Strategy_2_Training_Setting_1[[2]]$Ind_Profit$Cum_Profit %>% plot
 
-#**************
-# save and load
-#**************
-#save.image(paste0(rdata.dir, "Futures_2023-02-01.Rdata"))
-#load(paste0(rdata.dir, "Futures_2023-02-01.Rdata"))
-
-Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted %>% head(20)
-Test_Strategy_1_Test_Setting_1[[2]]$Orders_Transmitted %>% head(20)
-
-Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted %>% head(20)
-Test_Strategy_2_Test_Setting_1[[2]]$Orders_Transmitted %>% head(20)
-
-
-all.equal(
-  Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted[1:20,
-                                                             .SD,
-                                                             .SDcols=c("Symbol",
-                                                                       "Submit_Time",
-                                                                       # "Filled_Time",
-                                                                       "Action",
-                                                                       "Detail",
-                                                                       "TotalQuantity",
-                                                                       "OrderType",
-                                                                       "Price")],
-  Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted[1:20,
-                                                             .SD,
-                                                             .SDcols=c("Symbol",
-                                                                       "Submit_Time",
-                                                                       # "Filled_Time",
-                                                                       "Action",
-                                                                       "Detail",
-                                                                       "TotalQuantity",
-                                                                       "OrderType",
-                                                                       "Price")]
-)
-
-
-
-Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted[21:40,
-                                                           .SD,
-                                                           .SDcols=c("Symbol",
-                                                                     "Submit_Time",
-                                                                     "Filled_Time",
-                                                                     "Action",
-                                                                     "Detail",
-                                                                     "TotalQuantity",
-                                                                     "OrderType",
-                                                                     "Price")]
-Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted[21:40,
-                                                           .SD,
-                                                           .SDcols=c("Symbol",
-                                                                     "Submit_Time",
-                                                                     "Filled_Time",
-                                                                     "Action",
-                                                                     "Detail",
-                                                                     "TotalQuantity",
-                                                                     "OrderType",
-                                                                     "Price")]
-Test_Strategy_1_Training_Setting_1[[2]]$Orders_Transmitted %>% tail(20)
-Test_Strategy_2_Training_Setting_1[[2]]$Orders_Transmitted %>% tail(20)
 #****************************
 # calculate useful indicators
 #****************************
@@ -331,14 +268,16 @@ for(i in 1:nrow(Params)){
     
     # Max_Loss (same as MDD, but just not percentage)
     Data_Temp=get(paste0(Strategy, "_Training_", "Setting_", i))[[2]]$Ind_Profit
-    Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
-                                            function(x) Data_Temp[, min(Cum_Profit[.I>=x])])]
-    Params[i, paste0(Strategy, "_Training_", "Max_Loss"):=-max(Data_Temp$Max_Loss)]
+    # Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
+    #                                         function(x) Data_Temp[, min(Cum_Profit[.I>=x])])]
+    # Params[i, paste0(Strategy, "_Training_", "Max_Loss"):=-max(Data_Temp$Max_Loss)]
+    Params[i, paste0(Strategy, "_Training_", "Max_Loss"):=-maxdrawdown(Data_Temp$Cum_Profit)$maxdrawdown]
     
     Data_Temp=get(paste0(Strategy, "_Test_", "Setting_", i))[[2]]$Ind_Profit
-    Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
-                                            function(x) Data_Temp[, min(Cum_Profit[.I>=x])])]
-    Params[i, paste0(Strategy, "_Test_", "Max_Loss"):=-max(Data_Temp$Max_Loss)]
+    # Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
+    #                                         function(x) Data_Temp[, min(Cum_Profit[.I>=x])])]
+    # Params[i, paste0(Strategy, "_Test_", "Max_Loss"):=-max(Data_Temp$Max_Loss)]
+    Params[i, paste0(Strategy, "_Test_", "Max_Loss"):=-maxdrawdown(Data_Temp$Cum_Profit)$maxdrawdown]
     
     # minimum Cum_Profit
     Data_Temp=get(paste0(Strategy, "_Training_", "Setting_", i))[[2]]$Ind_Profit
@@ -346,175 +285,23 @@ for(i in 1:nrow(Params)){
     
     Data_Temp=get(paste0(Strategy, "_Test_", "Setting_", i))[[2]]$Ind_Profit
     Params[i, paste0(Strategy, "_Test_", "Min_Cum_Profit"):=min(Data_Temp$Cum_Profit)]
+    
+    if(Params[i, .SD, .SDcols=paste0(Strategy, "_NP_on_Training")]>0 &
+       Params[i, .SD, .SDcols=paste0(Strategy, "_NP_on_Test")]>0){
+      Params[, paste0(Strategy, "_Profitable"):=1] # Yes
+    }else{
+      Params[, paste0(Strategy, "_Profitable"):=0] # No
+    }
   }
 }
+Params[apply(Params[, .SD, .SDcols=paste0(Strategies, "_Profitable")], 1, sum)>0, ] # models profitable on both training and test data sets
 
 
-#
-Params[
-  # Stop_Order!=1000&
-  Test_Strategy_2_NP_on_Training>500&
-    Test_Strategy_2_NP_on_Test>500&
-    
-    Test_Strategy_2_Test_Min_Cum_Profit>-5000
-  ,
-  .SD,
-  .SDcols=c("Simple_BBands_1_Long_PctB", "Simple_BBands_2_Short_PctB",
-            # "Stop_Order", "Profit_Order",
-            "Test_Strategy_2_NP_on_Training",
-            "Test_Strategy_2_Training_Standard_Deviation",
-            "Test_Strategy_2_Training_Max_Loss",
-            "Test_Strategy_2_Training_Min_Cum_Profit",
-            
-            
-            "Test_Strategy_2_NP_on_Test",
-            "Test_Strategy_2_Test_Standard_Deviation",
-            "Test_Strategy_2_Test_Max_Loss",
-            "Test_Strategy_2_Test_Min_Cum_Profit",
-            
-            "Row")]
-
-Params$Short_Strategy_Test_Min_Cum_Profit %>% summary
-Params[Stop_Order!=1000&
-         Test_Strategy_Training_Min_Cum_Profit>0,
-       .SD,
-       .SDcols=c("Test_Strategy_NP_on_Training", "Test_Strategy_NP_on_Test")] %>% plot
-
-
-Params[Stop_Order!=1000&
-         Test_Strategy_NP_on_Training>2000&
-         Test_Strategy_NP_on_Test>2000,
-       .SD,
-       .SDcols=c("Simple_BBands_1_Long_PctB", "Simple_BBands_2_Short_PctB", "Stop_Order", "Profit_Order",
-                 "Test_Strategy_NP_on_Training",
-                 "Test_Strategy_NP_on_Test",
-                 "Long_Strategy_NP_on_Training",
-                 "Long_Strategy_NP_on_Test",
-                 "Short_Strategy_NP_on_Training",
-                 "Short_Strategy_NP_on_Test")] %>% cor
-
-Params[Stop_Order!=1000&
-         Test_Strategy_Test_Min_Cum_Profit>0,Row]
-Params[i, ]
-i=11
-par(mfrow=c(2,1))
-get(paste0("Test_Strategy_2_Training_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Training")
-get(paste0("Test_Strategy_2_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
-get(paste0("Long_Strategy_2_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
-get(paste0("Short_Strategy_2_Test_", "Setting_", i))[[2]]$Ind_Profit[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")] %>% plot(type='o', main="Test")
-
-
-Params[, .SD, .SDcols=c(colnames(Params)[grepl("NP_on_", colnames(Params))], "Row")]
-
-
-
-Params[Net_Profit_on_Training>0, ]
-Params[Net_Profit_on_Test>0, ]
-
-Contingency_Table_Generator_Conti_X(Data=Params,
-                                    Row_Var="Net_Profit_on_Test",
-                                    Col_Var="Stop_Order",
-                                    Missing="Not_Include")[c(3, 4),]
-Contingency_Table_Generator_Conti_X(Data=Params,
-                                    Row_Var="Net_Profit_on_Training",
-                                    Col_Var="Stop_Order",
-                                    Missing="Not_Include")[c(3, 4),]
-
-
-# 
-# #5548.48
-# Params[Stop_Order==10 & Profit_Order==100, ]
-# Params$Net_Profit[i]=get(paste0("Training_", "Setting_", i))[[2]]$Net_Profit
-# 
-# Non_NA_Params=Params[Stop_Order<=10000, ]
-# Non_NA_Params[which.max(Net_Profit), ]
-# Non_NA_Params$Net_Profit %>% plot
-# 
-# Non_NA_Params[, c("Stop_Order", "Net_Profit")] %>% plot
-# Non_NA_Params[, c("Profit_Order", "Net_Profit")] %>% plot
-# 
-# 8702.72 #0.15, 0.6, 100, 50
-# 3993.2 #0.15, 0.65, 100, 15
-# 7876.72 #0.2, 0.6, 100, 50
-# 6102.24 #0.15 0.65 100 20
-# 
-# Params[Simple_BBands_1_Long_PctB<=0.2 &
-#          Simple_BBands_2_Short_PctB<=0.65, .SD, .SDcols=c("Profit_Order", "Net_Profit")] %>% plot()
-# Temp[order(Net_Profit, decreasing=F), ] %>% head(30)
-# Temp[order(Net_Profit, decreasing=T), ] %>% head(30)
-# 
-# summary(lm(Net_Profit~Simple_BBands_1_Long_PctB+
-#              Simple_BBands_2_Short_PctB+
-#              Stop_Order+
-#              Profit_Order, data=Params))
-# #**************
-# # save and load
-# #**************
-# #save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-07-20.Rdata")
-# #load("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-06_Trend.Rdata")
-# 
-# #***********************
-# # visualize in bar chart
-# #***********************
-# # convert xts.Collapsed_BarData
-# library(quantmod)
-# BarData[, Volume:=abs(Net_Volume)]
-# xts.Collapsed_BarData=as.xts.data.table(BarData[, -1])
-# chartSeries(xts.Collapsed_BarData[1:1000, ],
-#             name=Symbols,
-#             theme="white")
-# 
-# 
-# 
-# lm(Net_Profit~Simple_BBands_1_Long_PctB+
-#      Simple_BBands_2_Short_PctB+
-#      Stop_Order+
-#      Profit_Order, data=Params[!(is.na(Net_Profit)|
-#                                    Net_Profit==-Inf), ]) %>% summary
-# Params[!(is.na(Net_Profit)|
-#            Net_Profit==-Inf),
-#        .SD,
-#        .SDcols=c("Stop_Order", "Net_Profit")] %>% plot
-# Params[!(is.na(Net_Profit)|
-#            Net_Profit==-Inf),
-#        .SD,
-#        .SDcols=c("Profit_Order", "Net_Profit")] %>% plot
-# Params[!(is.na(Net_Profit)|
-#            Net_Profit==-Inf),
-#        .SD,
-#        .SDcols=c("Simple_BBands_1_Long_PctB", "Net_Profit")] %>% plot
-# Params[!(is.na(Net_Profit)|
-#            Net_Profit==-Inf),
-#        .SD,
-#        .SDcols=c("Simple_BBands_2_Short_PctB", "Net_Profit")] %>% plot
-# 
-# Params[!(is.na(Net_Profit)|
-#            Net_Profit==-Inf)&
-#          Stop_Order==1000,
-#        .SD,
-#        .SDcols=c("Simple_BBands_2_Short_PctB", "Net_Profit")] %>% plot
-# 
-# Params[!(is.na(Net_Profit)|
-#            Net_Profit==-Inf)&
-#          Stop_Order==5,
-#        .SD,
-#        .SDcols=c("Profit_Order", "Net_Profit")] %>% plot
-# 
-# 
-# Params[!(is.na(Net_Profit)|
-#            Net_Profit==-Inf)&
-#          Stop_Order==5 &
-#          Profit_Order==35,
-#        .SD,
-#        .SDcols=c("Net_Profit")]$Net_Profit %>% hist
-
-
-
-
-
-
-
-
+#**************
+# save and load
+#**************
+#save.image(paste0(rdata.dir, "Futures_2023-02-01.Rdata"))
+#load(paste0(rdata.dir, "Futures_2023-02-01.Rdata"))
 
 
 

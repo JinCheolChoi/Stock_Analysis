@@ -81,6 +81,7 @@ Stop_Order=as.numeric(Order_Rules[["General"]][["Stop_Order"]])
 Profit_Order=as.numeric(Order_Rules[["General"]][["Profit_Order"]])
 Strategy_Indicators=names(Indicators)
 Strategy_Models=names(Models)
+Strategy_Models_Class=unlist(lapply(Models, class))
 General_Strategy="General"
 Position_Names=names(Order_Rules)[names(Order_Rules)!="General"]
 
@@ -212,12 +213,20 @@ while(TRUE){
     names(Calculated_Indicators)=Strategy_Indicators
     # Calculated_Indicators=Calculated_Indicators[-which(sapply(Calculated_Indicators, is.null))]
     
+    # if there is an indicator that hasn't been computed, skip the iteration
+    if(sum(unlist(lapply(Calculated_Indicators,
+                         function(x){
+                           is.null(x)
+                         })))>0){
+      next
+    }
+    
     #***********
     # fit models
     #***********
     Signals=as.data.table(sapply(Strategy_Models,
                                  function(x){
-                                   Model_Info=Models_Env[[x]] # variables and functions defined for the model object
+                                   Model_Info=Models_Env[[Strategy_Models_Class[x]]] # variables and functions defined for the model object
                                    Calculated_Indicators_Combined=do.call(cbind, Calculated_Indicators) # combined Calculated_Indicators
                                    Calculated_Indicators_Names=names(Calculated_Indicators)[unlist(lapply(Calculated_Indicators, function(x) !is.null(x)))] #
                                    if(sum(!Model_Info[["Essential_Indicators"]]%in%Calculated_Indicators_Names)==0){ # if none of essential indicators hasn't been calculated in Calculated_Indicators, proceed to run the model
@@ -257,7 +266,9 @@ while(TRUE){
       }
       
       # Position_Names_Temp
-      # these part allows to force the long position entrance when there is no position filled yet while Sigs_N indicates tn enter both positions at the same time
+      # This part allows to force the long position entrance when there is no position filled yet while Sigs_N indicates to enter both positions at the same time
+      # Also, it makes sure to transmit only once when N_Orders_held=1 & Max_Orders=1 (or N_Orders_held=-1 & Max_Orders=1).
+      # If N_Orders_held>0, Short_Function is ignored and Long_Function is considered to take care of N_Orders_held (and vice versa).
       if(N_Orders_held>0){
         Position_Names_Temp=sort(Position_Names, decreasing=T)
       }else{
@@ -297,7 +308,7 @@ while(TRUE){
         # remove Orders_Transmitted
         rm(Order_to_Transmit)
       }
-
+      
       # remove Signals
       rm(Signals)
     }
