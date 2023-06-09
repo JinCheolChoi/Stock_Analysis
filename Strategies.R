@@ -10,7 +10,7 @@ source(paste0(working.dir, "0. OrderRules.R"))
 
 #************************
 #
-# Long_Short_Strategy ---- 
+# Long_Short_Strategy ----
 #
 #*************************
 # initiate a strategy called "Long_Short_Strategy"
@@ -40,12 +40,12 @@ Add_Indicator(Strategy="Long_Short_Strategy",
 Add_Model(Strategy="Long_Short_Strategy",
           Model="Simple_BBands",
           Model_Name="Simple_BBands_1",
-          ModelParams=list(Long_Consec_Times=2,
-                           Short_Consec_Times=2,
+          ModelParams=list(Long_Consec_Times=4,
+                           Short_Consec_Times=4,
                            Long_PctB=Params$Simple_BBands_1_Long_PctB[i],
                            Short_PctB=Params$Simple_BBands_1_Short_PctB[i],
-                           Live_Trading=Live_Trading))
-
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
 Add_Model(Strategy="Long_Short_Strategy",
           Model="Simple_BBands",
           Model_Name="Simple_BBands_2",
@@ -53,15 +53,17 @@ Add_Model(Strategy="Long_Short_Strategy",
                            Short_Consec_Times=1,
                            Long_PctB=Params$Simple_BBands_2_Long_PctB[i],
                            Short_PctB=Params$Simple_BBands_2_Short_PctB[i],
-                           Live_Trading=Live_Trading))
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
 Add_Model(Strategy="Long_Short_Strategy",
           Model="Simple_RSI",
           Model_Name="Simple_RSI_1",
-          ModelParams=list(Long_Consec_Times=2,
-                           Short_Consec_Times=2,
+          ModelParams=list(Long_Consec_Times=4,
+                           Short_Consec_Times=4,
                            Long_RSI=Params$Simple_BBands_1_Long_PctB[i]*100,
                            Short_RSI=Params$Simple_BBands_1_Short_PctB[i]*100,
-                           Live_Trading=Live_Trading))
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
 Add_Model(Strategy="Long_Short_Strategy",
           Model="Simple_RSI",
           Model_Name="Simple_RSI_2",
@@ -69,7 +71,8 @@ Add_Model(Strategy="Long_Short_Strategy",
                            Short_Consec_Times=1,
                            Long_RSI=Params$Simple_BBands_2_Long_PctB[i]*100,
                            Short_RSI=Params$Simple_BBands_2_Short_PctB[i]*100,
-                           Live_Trading=Live_Trading))
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
 # Add_Model(Strategy="Long_Short_Strategy",
 #           Model="Trend",
 #           ModelParams=list(Interval=5,
@@ -86,10 +89,10 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
               OrderRule="General",
               OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
-                                   Stop_Order=10000000,
-                                   Profit_Order=10000000,
+                                   Stop_Order=Inf,
+                                   Profit_Order=Inf,
                                    Maximum_Elapsed_Time=Inf,
-                                   Reverse=FALSE)) # Opposite actions are made if Reverse=TRUE (haven't been applied yet)
+                                   Commission=0.25))
 Add_OrderRule(Strategy="Long_Short_Strategy",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
@@ -113,7 +116,7 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
 
 #*******************
 #
-# Long_Strategy ---- 
+# Long_Strategy ----
 #
 #*******************
 # initiate a strategy called "Long_Strategy"
@@ -143,19 +146,21 @@ Add_Indicator(Strategy="Long_Strategy",
 Add_Model(Strategy="Long_Strategy",
           Model="Simple_BBands",
           Model_Name="Simple_BBands_1",
-          ModelParams=list(Long_Consec_Times=1,
-                           Short_Consec_Times=1,
+          ModelParams=list(Long_Consec_Times=4,
+                           Short_Consec_Times=4,
                            Long_PctB=Params$Simple_BBands_1_Long_PctB[i],
                            Short_PctB=Params$Simple_BBands_2_Short_PctB[i],
-                           Live_Trading=Live_Trading))
-# Add_Model(Strategy="Long_Strategy",
-#           Model="Simple_BBands",
-#           Model_Name="Simple_BBands_2",
-#           ModelParams=list(Long_Consec_Times=1,
-#                            Short_Consec_Times=1,
-#                            Long_PctB=-Inf,
-#                            Short_PctB=Params$Simple_BBands_2_Short_PctB[i],
-#                            Live_Trading=Live_Trading))
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
+Add_Model(Strategy="Long_Strategy",
+          Model="Simple_BBands",
+          Model_Name="Simple_BBands_2",
+          ModelParams=list(Long_Consec_Times=4,
+                           Short_Consec_Times=4,
+                           Long_PctB=-Inf,
+                           Short_PctB=Params$Simple_BBands_2_Short_PctB[i],
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
 Add_Model(Strategy="Long_Strategy",
           Model="Simple_RSI",
           Model_Name="Simple_RSI_1",
@@ -163,15 +168,17 @@ Add_Model(Strategy="Long_Strategy",
                            Short_Consec_Times=1,
                            Long_RSI=Params$Simple_BBands_1_Long_PctB[i]*100,
                            Short_RSI=Inf,
-                           Live_Trading=Live_Trading))
-# Add_Model(Strategy="Long_Strategy",
-#           Model="Simple_RSI",
-#           Model_Name="Simple_RSI_2",
-#           ModelParams=list(Long_Consec_Times=1,
-#                            Short_Consec_Times=1,
-#                            Long_RSI=-Inf,
-#                            Short_RSI=Params$Simple_BBands_2_Short_PctB[i]*100,
-#                            Live_Trading=Live_Trading))
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
+Add_Model(Strategy="Long_Strategy",
+          Model="Simple_RSI",
+          Model_Name="Simple_RSI_2",
+          ModelParams=list(Long_Consec_Times=1,
+                           Short_Consec_Times=1,
+                           Long_RSI=-Inf,
+                           Short_RSI=Params$Simple_BBands_2_Short_PctB[i]*100,
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
 # Add_Model(Strategy="Long_Strategy",
 #           Model="Trend",
 #           ModelParams=list(Interval=5,
@@ -188,9 +195,10 @@ Add_OrderRule(Strategy="Long_Strategy",
               OrderRule="General",
               OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
-                                   Stop_Order=Params$Stop_Order[i],
-                                   Profit_Order=Params$Profit_Order[i],
-                                   Reverse=TRUE))
+                                   Stop_Order=Inf,
+                                   Profit_Order=Inf,
+                                   Maximum_Elapsed_Time=Inf,
+                                   Commission=0.25))
 Add_OrderRule(Strategy="Long_Strategy",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
@@ -211,10 +219,9 @@ Add_OrderRule(Strategy="Long_Strategy",
 
 
 
-
 #*******************
 #
-# Short_Strategy ---- 
+# Short_Strategy ----
 #
 #*******************
 # initiate a strategy called "Short_Strategy"
@@ -244,27 +251,30 @@ Add_Indicator(Strategy="Short_Strategy",
 Add_Model(Strategy="Short_Strategy",
           Model="Simple_BBands",
           Model_Name="Simple_BBands_1",
-          ModelParams=list(Long_Consec_Times=1,
-                           Short_Consec_Times=1,
+          ModelParams=list(Long_Consec_Times=4,
+                           Short_Consec_Times=4,
                            Long_PctB=Params$Simple_BBands_1_Long_PctB[i],
                            Short_PctB=Params$Simple_BBands_2_Short_PctB[i],
-                           Live_Trading=Live_Trading))
-# Add_Model(Strategy="Short_Strategy",
-#           Model="Simple_BBands",
-#           Model_Name="Simple_BBands_2",
-#           ModelParams=list(Long_Consec_Times=1,
-#                            Short_Consec_Times=1,
-#                            Long_PctB=-Inf,
-#                            Short_PctB=Params$Simple_BBands_2_Short_PctB[i],
-#                            Live_Trading=Live_Trading))
-# Add_Model(Strategy="Short_Strategy",
-#           Model="Simple_RSI",
-#           Model_Name="Simple_RSI_1",
-#           ModelParams=list(Long_Consec_Times=1,
-#                            Short_Consec_Times=1,
-#                            Long_RSI=Params$Simple_BBands_1_Long_PctB[i]*100,
-#                            Short_RSI=Inf,
-#                            Live_Trading=Live_Trading))
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
+Add_Model(Strategy="Short_Strategy",
+          Model="Simple_BBands",
+          Model_Name="Simple_BBands_2",
+          ModelParams=list(Long_Consec_Times=4,
+                           Short_Consec_Times=4,
+                           Long_PctB=-Inf,
+                           Short_PctB=Params$Simple_BBands_2_Short_PctB[i],
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
+Add_Model(Strategy="Short_Strategy",
+          Model="Simple_RSI",
+          Model_Name="Simple_RSI_1",
+          ModelParams=list(Long_Consec_Times=1,
+                           Short_Consec_Times=1,
+                           Long_RSI=Params$Simple_BBands_1_Long_PctB[i]*100,
+                           Short_RSI=Inf,
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
 Add_Model(Strategy="Short_Strategy",
           Model="Simple_RSI",
           Model_Name="Simple_RSI_2",
@@ -272,7 +282,8 @@ Add_Model(Strategy="Short_Strategy",
                            Short_Consec_Times=1,
                            Long_RSI=-Inf,
                            Short_RSI=Params$Simple_BBands_2_Short_PctB[i]*100,
-                           Live_Trading=Live_Trading))
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
 # Add_Model(Strategy="Short_Strategy",
 #           Model="Trend",
 #           ModelParams=list(Interval=5,
@@ -289,9 +300,10 @@ Add_OrderRule(Strategy="Short_Strategy",
               OrderRule="General",
               OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
-                                   Stop_Order=Params$Stop_Order[i],
-                                   Profit_Order=Params$Profit_Order[i],
-                                   Reverse=TRUE))
+                                   Stop_Order=Inf,
+                                   Profit_Order=Inf,
+                                   Maximum_Elapsed_Time=Inf,
+                                   Commission=0.25))
 # Add_OrderRule(Strategy="Short_Strategy",
 #               OrderRule="Long",
 #               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
@@ -309,5 +321,216 @@ Add_OrderRule(Strategy="Short_Strategy",
                                                    Quantity=1,
                                                    Min_Sig_N=1))) # minimum number of positive signals from models to transmit
 
+
+
+
+# #*******************
+# #
+# # Live_Strategy ----
+# #
+# #*******************
+# # initiate a strategy called "Live_Strategy"
+# Init_Strategy(Name="Live_Strategy",
+#               Max_Rows=50) # the maximum number of rows in a temp dataset to parse
+# 
+# 
+# #**************
+# # add indicator
+# #**************
+# # Add_Indicator(Strategy="Live_Strategy",
+# #               Indicator="BBands",
+# #               IndicatorParams=list(n=20,
+# #                                    sd=2)) # default n=20, sd=2
+# 
+# Add_Indicator(Strategy="Live_Strategy",
+#               Indicator="RSI",
+#               IndicatorParams=list(n=9))
+# 
+# Add_Indicator(Strategy="Live_Strategy",
+#               Indicator="Close")
+# 
+# 
+# #********************************************************************************************
+# # add model (to run in combination with other included models to decide to transmit an order)
+# #********************************************************************************************
+# # Add_Model(Strategy="Live_Strategy",
+# #           Model="Simple_BBands_1",
+# #           ModelParams=list(Long_Consec_Times=1,
+# #                            Short_Consec_Times=1,
+# #                            Long_PctB=0.4,
+# #                            Short_PctB=Inf))
+# # Add_Model(Strategy="Live_Strategy",
+# #           Model="Simple_BBands_2",
+# #           ModelParams=list(Long_Consec_Times=1,
+# #                            Short_Consec_Times=1,
+# #                            Long_PctB=-Inf,
+# #                            Short_PctB=0.6))
+# Add_Model(Strategy="Live_Strategy",
+#           Model="Simple_RSI",
+#           Model_Name="Simple_RSI_1",
+#           ModelParams=list(Long_Consec_Times=1,
+#                            Short_Consec_Times=1,
+#                            Long_RSI=0.30*100,
+#                            Short_RSI=0.70*100,
+#                            Live_Trading=Live_Trading,
+#                            Reverse=Params$Reverse[i]))
+# Add_Model(Strategy="Live_Strategy",
+#           Model="Simple_RSI",
+#           Model_Name="Simple_RSI_2",
+#           ModelParams=list(Long_Consec_Times=1,
+#                            Short_Consec_Times=1,
+#                            Long_RSI=0.40*100,
+#                            Short_RSI=0.60*100,
+#                            Live_Trading=Live_Trading,
+#                            Reverse=Params$Reverse[i]))
+# # Add_Model(Strategy="Live_Strategy",
+# #           Model="Trend",
+# #           ModelParams=list(Interval=5,
+# #                            Extent=1))
+# 
+# # Live_Strategy$Indicators$BBands
+# # Live_Strategy$Models$Simple_BBands
+# # Live_Strategy$Order_Rules$SellToClose
+# #***************
+# # add order rule
+# #***************
+# Add_OrderRule(Strategy="Live_Strategy",
+#               OrderRule="General",
+#               OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
+#                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
+#                                    Stop_Order=Inf,
+#                                    Profit_Order=Inf,
+#                                    Maximum_Elapsed_Time=Inf,
+#                                    Commission=0.25))
+# Add_OrderRule(Strategy="Live_Strategy",
+#               OrderRule="Long",
+#               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
+#                                                   Quantity=1,
+#                                                   Min_Sig_N=2),
+#                                    SellToClose=list(OrderType="MKT",
+#                                                     Quantity=1,
+#                                                     Min_Sig_N=1)))
+# Add_OrderRule(Strategy="Live_Strategy",
+#               OrderRule="Short",
+#               OrderRuleParams=list(SellToOpen=list(OrderType="MKT",
+#                                                    Quantity=1,
+#                                                    Min_Sig_N=2), # minimum number of positive signals from models to transmit
+#                                    BuyToClose=list(OrderType="MKT",
+#                                                    Quantity=1,
+#                                                    Min_Sig_N=1))) # minimum number of positive signals from models to transmit
+
+
+#********************************
+#
+# RSI_Averages_Band_Strategy ---- 
+#
+#********************************
+# initiate a strategy called "RSI_Averages_Band_Strategy"
+Init_Strategy(Name="RSI_Averages_Band_Strategy",
+              Max_Rows=50) # the maximum number of rows in a temp dataset to parse
+
+
+#**************
+# add indicator
+#**************
+# Add_Indicator(Strategy="RSI_Averages_Band_Strategy",
+#               Indicator="BBands",
+#               IndicatorParams=list(n=20,
+#                                    sd=2)) # default n=20, sd=2
+
+Add_Indicator(Strategy="RSI_Averages_Band_Strategy",
+              Indicator="RSI",
+              IndicatorParams=list(n=Params$RSI_n[i]))
+
+Add_Indicator(Strategy="RSI_Averages_Band_Strategy",
+              Indicator="Close")
+
+
+#********************************************************************************************
+# add model (to run in combination with other included models to decide to transmit an order)
+#********************************************************************************************
+Add_Model(Strategy="RSI_Averages_Band_Strategy",
+          Model="RSI_Averages_Band",
+          Model_Name="RSI_Averages_Band_1",
+          ModelParams=list(MA_Length=16,
+                           RSI_RSI_MA_Diff_Min=0,
+                           RSI_RSI_MA_Diff_Max=Inf,
+                           Early_Execution_Gap=Inf,
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
+Add_Model(Strategy="RSI_Averages_Band_Strategy",
+          Model="RSI_Averages_Band",
+          Model_Name="RSI_Averages_Band_2",
+          ModelParams=list(MA_Length=24,
+                           RSI_RSI_MA_Diff_Min=0,
+                           RSI_RSI_MA_Diff_Max=Inf,
+                           Early_Execution_Gap=Inf,
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
+Add_Model(Strategy="RSI_Averages_Band_Strategy",
+          Model="RSI_Averages_Band",
+          Model_Name="RSI_Averages_Band_3",
+          ModelParams=list(MA_Length=32,
+                           RSI_RSI_MA_Diff_Min=0,
+                           RSI_RSI_MA_Diff_Max=Inf,
+                           Early_Execution_Gap=Inf,
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
+Add_Model(Strategy="RSI_Averages_Band_Strategy",
+          Model="RSI_Averages_Band",
+          Model_Name="RSI_Averages_Band_4",
+          ModelParams=list(MA_Length=40,
+                           RSI_RSI_MA_Diff_Min=0,
+                           RSI_RSI_MA_Diff_Max=Inf,
+                           Early_Execution_Gap=Inf,
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
+Add_Model(Strategy="RSI_Averages_Band_Strategy",
+          Model="RSI_Averages_Band",
+          Model_Name="RSI_Averages_Band_5",
+          ModelParams=list(MA_Length=48,
+                           RSI_RSI_MA_Diff_Min=0,
+                           RSI_RSI_MA_Diff_Max=Inf,
+                           Early_Execution_Gap=Inf,
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
+Add_Model(Strategy="RSI_Averages_Band_Strategy",
+          Model="RSI_Averages_Band",
+          Model_Name="RSI_Averages_Band_6",
+          ModelParams=list(MA_Length=32,
+                           RSI_RSI_MA_Diff_Min=Inf,
+                           RSI_RSI_MA_Diff_Max=0,
+                           Early_Execution_Gap=30,
+                           Live_Trading=Live_Trading,
+                           Reverse=Params$Reverse[i]))
+
+
+#***************
+# add order rule
+#***************
+Add_OrderRule(Strategy="RSI_Averages_Band_Strategy",
+              OrderRule="General",
+              OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
+                                   Scenario="Negative", # Positive : early profit is prioritized over loss cut
+                                   Stop_Order=Inf,
+                                   Profit_Order=Inf,
+                                   Maximum_Elapsed_Time=Inf,
+                                   Commission=0.25))
+Add_OrderRule(Strategy="RSI_Averages_Band_Strategy",
+              OrderRule="Long",
+              OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
+                                                  Quantity=1,
+                                                  Min_Sig_N=3),
+                                   SellToClose=list(OrderType="MKT",
+                                                    Quantity=1,
+                                                    Min_Sig_N=5)))
+Add_OrderRule(Strategy="RSI_Averages_Band_Strategy",
+              OrderRule="Short",
+              OrderRuleParams=list(SellToOpen=list(OrderType="MKT",
+                                                   Quantity=1,
+                                                   Min_Sig_N=3), # minimum number of positive signals from models to transmit
+                                   BuyToClose=list(OrderType="MKT",
+                                                   Quantity=1,
+                                                   Min_Sig_N=5))) # minimum number of positive signals from models to transmit
 
 

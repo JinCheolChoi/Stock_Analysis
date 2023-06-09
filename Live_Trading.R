@@ -12,8 +12,8 @@ rm(list=ls())
 #
 #***********
 # working directory
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-# working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+# working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
+working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
 
 # account
 # margin account="U4524665"
@@ -24,7 +24,7 @@ Account_Code="DU2656942"
 Port=7497 # tws : 7497, IB gateway : 4002
 
 # BarSize
-BarSize=10
+BarSize=5
 
 #*****************
 #
@@ -33,10 +33,7 @@ BarSize=10
 #*******************
 # required functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-# source(paste0(working.dir, "Remotes.R"))
-source(paste0(working.dir, "Additional_Functions.R"))
 source(paste0(working.dir, "Echos/Echo_Live_Trading.R"))
-# source(paste0(working.dir, "0. Models.R"))
 
 #****************
 # import packages
@@ -69,23 +66,14 @@ tws=twsConnect(clientId=round(runif(1)*10000000), port=Port)
 #************************
 # assign local parameters
 #************************
-Max_Rows=Live_Strategy[["Max_Rows"]]
-Order_Rules=Live_Strategy[["Order_Rules"]]
-Indicators=Live_Strategy[["Indicators"]]
-Models=Live_Strategy[["Models"]]
+Strategy_Name="Live_Strategy"
+source(paste0(working.dir, "/Common_Parameters.R"))
 
-Max_Orders=as.numeric(Order_Rules[["General"]][["Max_Orders"]])
-Scenario=Order_Rules[["General"]][["Scenario"]]
-Reverse=Order_Rules[["General"]][["Reverse"]]
-Stop_Order=as.numeric(Order_Rules[["General"]][["Stop_Order"]])
-Profit_Order=as.numeric(Order_Rules[["General"]][["Profit_Order"]])
-Strategy_Indicators=names(Indicators)
-Strategy_Models=names(Models)
-Strategy_Models_Class=unlist(lapply(Models, class))
-General_Strategy="General"
-Position_Names=names(Order_Rules)[names(Order_Rules)!="General"]
+# Live_Trading
+Live_Trading=TRUE
 
 Transmitted_Orders=0
+
 # Positions=0
 Orders_Transmitted=c()
 
@@ -98,8 +86,6 @@ while(!exists("N_Orders_held")){
   }
   Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
 }
-
-
 
 #********
 # BarData
@@ -194,24 +180,9 @@ while(TRUE){
     #*********************
     # calculate indicators
     #*********************
-    Calculated_Indicators=lapply(Strategy_Indicators, # lapply is used here unlike simulation functions where sapply is used
-                                 function(x)
-                                   if(x=="Close"){
-                                     Live_Data_Temp[["Close"]]
-                                   }else{
-                                     if(x=="BBands" & nrow(Live_Data_Temp)>=Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
-                                       do.call(x, 
-                                               c(list(Live_Data_Temp[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
-                                                 Indicators[[x]]))
-                                     }else if(x!="BBands" & nrow(Live_Data_Temp)>Indicators[[x]][['n']]+1){
-                                       do.call(x, 
-                                               c(list(Live_Data_Temp[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
-                                                 Indicators[[x]]))
-                                     }
-                                   }
-    )
-    names(Calculated_Indicators)=Strategy_Indicators
-    # Calculated_Indicators=Calculated_Indicators[-which(sapply(Calculated_Indicators, is.null))]
+    Calculated_Indicators=Indicator_Calculator(BarData=Live_Data_Temp,
+                                               Strategy_Indicators=Strategy_Indicators,
+                                               Indicators=Indicators)
     
     # if there is an indicator that hasn't been computed, skip the iteration
     if(sum(unlist(lapply(Calculated_Indicators,
@@ -224,29 +195,12 @@ while(TRUE){
     #***********
     # fit models
     #***********
-    Signals=as.data.table(sapply(Strategy_Models,
-                                 function(x){
-                                   Model_Info=Models_Env[[Strategy_Models_Class[x]]] # variables and functions defined for the model object
-                                   Calculated_Indicators_Combined=do.call(cbind, Calculated_Indicators) # combined Calculated_Indicators
-                                   Calculated_Indicators_Names=names(Calculated_Indicators)[unlist(lapply(Calculated_Indicators, function(x) !is.null(x)))] #
-                                   if(sum(!Model_Info[["Essential_Indicators"]]%in%Calculated_Indicators_Names)==0){ # if none of essential indicators hasn't been calculated in Calculated_Indicators, proceed to run the model
-                                     do.call(Model_Info[["Function"]],
-                                             c(list(Calculated_Indicators_Combined),
-                                               Models[[x]]))}
-                                 }))
+    Signals=Signal_Obtainer(Strategy_Models=Strategy_Models,
+                            Models_Env=Models_Env,
+                            Models=Models,
+                            Strategy_Models_Class=Strategy_Models_Class,
+                            Calculated_Indicators=Calculated_Indicators)
     # rownames(Signals)=c("Long", "Short")
-    
-    if(nrow(Signals)==2){
-      # Signals are assigned opposite if Reverse=TRUE & Reverse is TRUE for either direction
-      if(Reverse==TRUE){
-        if(sum(Signals$Trend)>0){
-          Signals[, which(sapply(Signals, function(x) sum(x==T)==1)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)==1))]
-        }else{
-          Signals[1, ]=FALSE
-          Signals[2, ]=FALSE
-        }
-      }
-    }
     
     #***************
     # transmit order
@@ -262,6 +216,7 @@ while(TRUE){
       
       # number of orders held (+:more long, -:more short)
       if(abs(N_Orders_held)>Max_Orders){
+        warning("abs(N_Orders_held)>Max_Orders")
         break
       }
       

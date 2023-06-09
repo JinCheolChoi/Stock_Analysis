@@ -666,7 +666,7 @@ Live_Trading_Imitator=function(BarData,
       #*********************
       # calculate indicators
       #*********************
-      Calculated_Indicators=sapply(Strategy_Indicators,
+      Calculated_Indicators=lapply(Strategy_Indicators,
                                    function(x)
                                      if(x=="Close"){
                                        Live_Data[["Close"]]
@@ -683,6 +683,7 @@ Live_Trading_Imitator=function(BarData,
                                      }
       )
       # Calculated_Indicators=Calculated_Indicators[-which(sapply(Calculated_Indicators, is.null))]
+      names(Calculated_Indicators)=Strategy_Indicators
       
       # if there is an indicator that hasn't been computed, skip the iteration
       if(sum(unlist(lapply(Calculated_Indicators,
@@ -705,18 +706,6 @@ Live_Trading_Imitator=function(BarData,
                                                c(list(Calculated_Indicators_Combined),
                                                  Models[[x]]))}
                                    }))
-      
-      # # Opposite actions are made if Reverse=TRUE
-      # if(nrow(Signals)==2){
-      #   if(Reverse==TRUE){
-      #     if(sum(Signals$Trend)>0){
-      #       Signals[, which(sapply(Signals, function(x) sum(x==T)==1)):=lapply(.SD, function(x) x==F), .SDcols=which(sapply(Signals, function(x) sum(x==T)==1))]
-      #     }else{
-      #       Signals[1, ]=FALSE
-      #       Signals[2, ]=FALSE
-      #     }
-      #   }
-      # }
       
       #***************
       # transmit order
@@ -919,18 +908,18 @@ Live_Trading_Imitator=function(BarData,
   
 }
 
+
+
+
+
 #************
 # Backtesting
 #***********************************************************
 # run a fast version of backtesting algorithm for simulation
 #***********************************************************
 Backtesting=function(BarData,
-                     Strategy){
-  Max_Rows=Strategy[["Max_Rows"]]
-  Order_Rules=Strategy[["Order_Rules"]]
-  Indicators=Strategy[["Indicators"]]
-  Models=Strategy[["Models"]]
-  
+                     Strategy_Name,
+                     Working_Dir){
   #****************
   # import packages
   #****************
@@ -940,33 +929,10 @@ Backtesting=function(BarData,
            "dplyr"),
          checkpackages)
   
-  #************************
-  # assign local parameters
-  #************************
-  Max_Orders=as.numeric(Order_Rules[["General"]][["Max_Orders"]])
-  Scenario=Order_Rules[["General"]][["Scenario"]]
-  Reverse=Order_Rules[["General"]][["Reverse"]]
-  Stop_Order=as.numeric(Order_Rules[["General"]][["Stop_Order"]])
-  Profit_Order=as.numeric(Order_Rules[["General"]][["Profit_Order"]])
-  Maximum_Elapsed_Time=as.numeric(Order_Rules[["General"]][["Maximum_Elapsed_Time"]])
-  Strategy_Indicators=names(Indicators)
-  Strategy_Models=names(Models)
-  Strategy_Models_Class=unlist(lapply(Models, class))
-  General_Strategy="General"
-  
-  #******************
-  # preliminary steps
-  #******************
-  # if(Position_Direction=="both"){
-  #   Max_Long_Orders=Max_Short_Orders=Max_Orders-1
-  # }else if(Position_Direction=="long"){
-  #   Max_Long_Orders=Max_Orders-1
-  #   Max_Short_Orders=-1
-  # }else if(Position_Direction=="short"){
-  #   Max_Long_Orders=-1
-  #   Max_Short_Orders=Max_Orders-1
-  # }
-  Position_Names=names(Order_Rules)[names(Order_Rules)!=General_Strategy]
+  #*****************
+  # local parameters
+  #*****************
+  source(paste0(Working_Dir, "/Common_Parameters.R"))
   
   #*********************
   # simulation algorithm
@@ -988,37 +954,18 @@ Backtesting=function(BarData,
   #*********************
   # calculate indicators
   #*********************
-  Calculated_Indicators=sapply(Strategy_Indicators,
-                               function(x)
-                                 if(x=="Close"){
-                                   BarData[["Close"]]
-                                 }else{
-                                   if(x=="BBands" & nrow(BarData)>=Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
-                                     do.call(x, 
-                                             c(list(BarData[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
-                                               Indicators[[x]]))
-                                   }else if(x!="BBands" & nrow(BarData)>Indicators[[x]][['n']]+1){
-                                     do.call(x, 
-                                             c(list(BarData[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
-                                               Indicators[[x]]))
-                                   }
-                                 }
-  )
-  # Calculated_Indicators=Calculated_Indicators[-which(sapply(Calculated_Indicators, is.null))]
+  Calculated_Indicators=Indicator_Calculator(BarData=BarData,
+                                             Strategy_Indicators=Strategy_Indicators,
+                                             Indicators=Indicators)
   
   #***********
   # fit models
   #***********
-  Signals=as.data.table(sapply(Strategy_Models,
-                               function(x){
-                                 Model_Info=Models_Env[[Strategy_Models_Class[x]]] # variables and functions defined for the model object
-                                 Calculated_Indicators_Combined=do.call(cbind, Calculated_Indicators) # combined Calculated_Indicators
-                                 Calculated_Indicators_Names=names(Calculated_Indicators)[unlist(lapply(Calculated_Indicators, function(x) !is.null(x)))] #
-                                 if(sum(!Model_Info[["Essential_Indicators"]]%in%Calculated_Indicators_Names)==0){ # if none of essential indicators hasn't been calculated in Calculated_Indicators, proceed to run the model
-                                   do.call(Model_Info[["Function"]],
-                                           c(list(Calculated_Indicators_Combined),
-                                             Models[[x]]))}
-                               }))
+  Signals=Signal_Obtainer(Strategy_Models=Strategy_Models,
+                          Models_Env=Models_Env,
+                          Models=Models,
+                          Strategy_Models_Class=Strategy_Models_Class,
+                          Calculated_Indicators=Calculated_Indicators)
   
   Long_Signals=as.data.table(sapply(Strategy_Models,
                                     function(x){
@@ -1150,9 +1097,9 @@ Backtesting=function(BarData,
         Detail="BTO",
         TotalQuantity=BTO_Orders[, Quantity],
         OrderType=Order_Rules[["Long"]][["BuyToOpen"]][["OrderType"]],
-        Price=BarData[BTO_Orders[, Ind]][["Close"]]+0.25,
+        Price=BarData[BTO_Orders[, Ind]][["Close"]]+Commission,
         Filled=1,
-        Signs_N=Short_Signals_Sums[BTO_Orders[, Ind]],
+        Signs_N=Long_Signals_Sums[BTO_Orders[, Ind]],
         Row_N=1:nrow(BTO_Orders)
       ),
       
@@ -1165,9 +1112,9 @@ Backtesting=function(BarData,
         Detail="STC",
         TotalQuantity=-STC_Orders[, Quantity],
         OrderType=Order_Rules[["Long"]][["SellToClose"]][["OrderType"]],
-        Price=BarData[STC_Orders[, Ind]][["Close"]]-0.25,
+        Price=BarData[STC_Orders[, Ind]][["Close"]]-Commission,
         Filled=1,
-        Signs_N=Long_Signals_Sums[STC_Orders[, Ind]],
+        Signs_N=Short_Signals_Sums[STC_Orders[, Ind]],
         Row_N=1:nrow(STC_Orders)
       ),
       
@@ -1180,7 +1127,7 @@ Backtesting=function(BarData,
         Detail="STO",
         TotalQuantity=-STO_Orders[, Quantity],
         OrderType=Order_Rules[["Short"]][["SellToOpen"]][["OrderType"]],
-        Price=BarData[STO_Orders[, Ind]][["Close"]]-0.25,
+        Price=BarData[STO_Orders[, Ind]][["Close"]]-Commission,
         Filled=1,
         Signs_N=Short_Signals_Sums[STO_Orders[, Ind]],
         Row_N=1:nrow(STO_Orders)
@@ -1195,7 +1142,7 @@ Backtesting=function(BarData,
         Detail="BTC",
         TotalQuantity=BTC_Orders[, Quantity],
         OrderType=Order_Rules[["Short"]][["BuyToClose"]][["OrderType"]],
-        Price=BarData[BTC_Orders[, Ind]][["Close"]]+0.25,
+        Price=BarData[BTC_Orders[, Ind]][["Close"]]+Commission,
         Filled=1,
         Signs_N=Long_Signals_Sums[BTC_Orders[, Ind]],
         Row_N=1:nrow(BTC_Orders)
@@ -1215,9 +1162,9 @@ Backtesting=function(BarData,
         Detail="BTO",
         TotalQuantity=BTO_Orders[, Quantity],
         OrderType=Order_Rules[["Long"]][["BuyToOpen"]][["OrderType"]],
-        Price=BarData[BTO_Orders[, Ind]][["Close"]]+0.25,
+        Price=BarData[BTO_Orders[, Ind]][["Close"]]+Commission,
         Filled=1,
-        Signs_N=Short_Signals_Sums[BTO_Orders[, Ind]],
+        Signs_N=Long_Signals_Sums[BTO_Orders[, Ind]],
         Row_N=1:nrow(BTO_Orders)
       ),
       
@@ -1230,9 +1177,9 @@ Backtesting=function(BarData,
         Detail="STC",
         TotalQuantity=-STC_Orders[, Quantity],
         OrderType=Order_Rules[["Long"]][["SellToClose"]][["OrderType"]],
-        Price=BarData[STC_Orders[, Ind]][["Close"]]-0.25,
+        Price=BarData[STC_Orders[, Ind]][["Close"]]-Commission,
         Filled=1,
-        Signs_N=Long_Signals_Sums[STC_Orders[, Ind]],
+        Signs_N=Short_Signals_Sums[STC_Orders[, Ind]],
         Row_N=1:nrow(STC_Orders)
       )
     )
@@ -1250,7 +1197,7 @@ Backtesting=function(BarData,
         Detail="STO",
         TotalQuantity=-STO_Orders[, Quantity],
         OrderType=Order_Rules[["Short"]][["SellToOpen"]][["OrderType"]],
-        Price=BarData[STO_Orders[, Ind]][["Close"]]-0.25,
+        Price=BarData[STO_Orders[, Ind]][["Close"]]-Commission,
         Filled=1,
         Signs_N=Short_Signals_Sums[STO_Orders[, Ind]],
         Row_N=1:nrow(STO_Orders)
@@ -1265,7 +1212,7 @@ Backtesting=function(BarData,
         Detail="BTC",
         TotalQuantity=BTC_Orders[, Quantity],
         OrderType=Order_Rules[["Short"]][["BuyToClose"]][["OrderType"]],
-        Price=BarData[BTC_Orders[, Ind]][["Close"]]+0.25,
+        Price=BarData[BTC_Orders[, Ind]][["Close"]]+Commission,
         Filled=1,
         Signs_N=Long_Signals_Sums[BTC_Orders[, Ind]],
         Row_N=1:nrow(BTC_Orders)
@@ -1290,13 +1237,13 @@ Backtesting=function(BarData,
       Collapse_Orders_Transmitted=Collapse_Orders_Transmitted[-Duplicated_Row, ]
     }
     
-    Collapse_Orders_Transmitted[, Profit:=2*(Sell_Price-Buy_Price)-2*0.52]
+    Collapse_Orders_Transmitted[, Profit:=2*(Sell_Price-Buy_Price)-2*Commission]
     Collapse_Orders_Transmitted[, Cum_Profit:=cumsum(Profit)]
     # Collapse_Orders_Transmitted[, Time:=as.POSIXct(format(as.POSIXct(max(Buy_Time, Sell_Time)),
     #                                                       tz="America/Los_Angeles")), by=1:nrow(Collapse_Orders_Transmitted)]
-    # Collapse_Orders_Transmitted[, Date:=as.Date(Time, tz="America/Los_Angeles")]
     Collapse_Orders_Transmitted[, Time:=max(Buy_Time, Sell_Time), by=1:nrow(Collapse_Orders_Transmitted)]
-    Collapse_Orders_Transmitted[, Date:=Time]
+    Collapse_Orders_Transmitted[, Date:=as.Date(Time, tz="America/Los_Angeles")]
+    # Collapse_Orders_Transmitted[, Date:=Time]
     Collapse_Orders_Transmitted[, Daily_Cum_Profit:=Cum_Profit[Time==max(Time)], by="Date"]
     Collapse_Orders_Transmitted[, Daily_Profit:=sum(Profit), by="Date"]
     
@@ -1679,7 +1626,7 @@ Add_OrderRule=function(Strategy,
                        OrderRule=NULL,
                        OrderRuleParams=NULL){
   #
-  lapply(c("plyr"), checkpackages)
+  lapply(c("data.table", "dplyr", "plyr"), checkpackages)
   
   if(!exists(paste0(Strategy), envir=.GlobalEnv)){
     #Init.Strategy(Name=Strategy)
@@ -2752,6 +2699,77 @@ Initiate_BarData=function(BarSize=60,
 }
 
 
+
+#*************
+# twsExecution
+#*************
+# I don't remember why I included this function, but let's keep it just in case.
+# Nonetheleses, this function doesn't seem to have an important role to play.
+twsExecution <- 
+  function(orderId,
+           clientId,
+           execId,
+           time,
+           acctNumber,
+           exchange,
+           side,
+           shares,
+           price,
+           permId,
+           liquidation,
+           cumQty,
+           avgPrice,
+           orderRef,
+           evRule,
+           evMultiplier) {
+    
+    # special constructor if called with no args
+    if(is.null(names(match.call()[-1])))
+      return(do.call('twsExecution', rep(list(NULL),16)))
+    
+    structure(list(orderId=orderId,
+                   clientId=clientId,
+                   execId=execId,
+                   time=time,
+                   acctNumber=acctNumber,
+                   exchange=exchange,
+                   side=side,
+                   shares=shares,
+                   price=price,
+                   permId=permId,
+                   liquidation=liquidation,
+                   cumQty=cumQty,
+                   avgPrice=avgPrice,
+                   orderRef=orderRef,
+                   evRule=evRule,
+                   evMultiplier=evMultiplier),
+              class="twsExecution")
+    
+  }
+
+
+
+#***************
+# readExecutions
+#***************
+# New utility function. Call immediately after a reqExecutions() call.
+# I don't remember why I included this function, but let's keep it just in case.
+# Nonetheleses, this function doesn't seem to have an important role to play.
+readExecutions <- function(twsconn) {
+  # .reqOpenOrders(twsconn)
+  con <- twsconn[[1]]
+  eW <- eWrapper()
+  while (TRUE) {
+    socketSelect(list(con), FALSE, NULL)
+    curMsg <- readBin(con, character(), 1L)
+    processMsg(curMsg, con, eW)
+    if (curMsg == .twsIncomingMSG$EXECUTION_DATA_END) break
+  }
+}
+
+
+
+
 #**********************
 #
 # [ --- Rcpp --- ] ----
@@ -2850,6 +2868,18 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
     #i=2
     # Quantity_[i]=-4
     # Net_Quantity_[i-1]=0
+    
+    # adjust Quantity[i]
+    if((Net_Quantity_[i-1]<0)&
+       (Net_Quantity_[i-1]+Quantity_[i]>0)&
+       (Net_Quantity_[i-1]+Quantity_[i]<=Max_Orders)){
+      Quantity_[i]=-Net_Quantity_[i-1]
+    }else if((Net_Quantity_[i-1])>0&
+             (Net_Quantity_[i-1]+Quantity_[i]<0)&
+             (Net_Quantity_[i-1]+Quantity_[i]>=-Max_Orders)){
+      Quantity_[i]=-Net_Quantity_[i-1]
+    }
+    
     if(abs(Net_Quantity_[i-1]+Quantity_[i])>Max_Orders){
       if(Quantity_[i]<0){
         Quantity_[i]=max(Quantity_[i], -(Max_Orders+Net_Quantity_[i-1]))
@@ -2858,35 +2888,29 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
       }
     }
     
+    
     # if abs(Net_Quantity_[i-1])>=Max_Orders
     if(abs(Net_Quantity_[i-1])>=Max_Orders){
-      if(Action_[i-1]==Action_[i]){
+      if(Detail_[i]=="BTO"|
+         Detail_[i]=="STO"){
         Net_Quantity_[i]=Net_Quantity_[i-1]
         Remove_[i]=1
         
-        next
       }
       
       switch(as.character(Both_Direction_[i]),
              
              "TRUE"={
                if(Both_Direction_Ind==Ind_[i]){
+                 Net_Quantity_[i]=Net_Quantity_[i-1]
                  Remove_[i]=1
                  
                  next
                }
                
                # Always first try to clear the existing positions
-               if(Detail_[i]=="BTC"|
-                  Detail_[i]=="STC"){
-                 Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i]
-                 
-                 next
-               }
-               
-               if(Detail_[i]=="BTO"|
-                  Detail_[i]=="STO"){
+               if((Net_Quantity_[i-1]>0&Detail_[i]=="STC")|
+                  (Net_Quantity_[i-1]<0&Detail_[i]=="BTC")){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
                  Both_Direction_Ind=Ind_[i]
                  
@@ -2895,8 +2919,8 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
              },
              
              "FALSE"={
-               if(Detail_[i]=="BTC"|
-                  Detail_[i]=="STC"){
+               if((Net_Quantity_[i-1]>0&Detail_[i]=="STC")|
+                  (Net_Quantity_[i-1]<0&Detail_[i]=="BTC")){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
                  next
                }
@@ -2917,6 +2941,7 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
              
              "TRUE"={
                if(Both_Direction_Ind==Ind_[i]){
+                 Net_Quantity_[i]=Net_Quantity_[i-1]
                  Remove_[i]=1
                  
                  next
@@ -2962,6 +2987,7 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
              
              "TRUE"={
                if(Both_Direction_Ind==Ind_[i]){
+                 Net_Quantity_[i]=Net_Quantity_[i-1]
                  Remove_[i]=1
                  
                  next
@@ -3007,6 +3033,7 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
              
              "TRUE"={
                if(Both_Direction_Ind==Ind_[i]){
+                 Net_Quantity_[i]=Net_Quantity_[i-1]
                  Remove_[i]=1
                  
                  next
@@ -3074,3 +3101,62 @@ sourceCpp("C:/Users/jchoi02/Desktop/C++/apply_row_sum_C.cpp")
 
 
 
+
+#**********************************
+#
+# [ --- Common functions --- ] ----
+#
+#**********************************
+# Calculated_Indicators
+#**********************
+Indicator_Calculator=function(BarData,
+                              Strategy_Indicators,
+                              Indicators){
+  #*********************
+  # calculate indicators
+  Calculated_Indicators=lapply(Strategy_Indicators,
+                               function(x)
+                                 if(x=="Close"){
+                                   BarData[["Close"]]
+                                 }else{
+                                   if(x=="BBands" & nrow(BarData)>=Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
+                                     do.call(x, 
+                                             c(list(BarData[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
+                                               Indicators[[x]]))
+                                   }else if(x!="BBands" & nrow(BarData)>Indicators[[x]][['n']]+1){
+                                     do.call(x, 
+                                             c(list(BarData[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
+                                               Indicators[[x]]))
+                                   }
+                                 }
+  )
+  
+  # Calculated_Indicators=Calculated_Indicators[-which(sapply(Calculated_Indicators, is.null))]
+  names(Calculated_Indicators)=Strategy_Indicators
+  
+  return(Calculated_Indicators)
+}
+
+#****************
+# Signal_Obtainer
+#****************
+Signal_Obtainer=function(Strategy_Models,
+                         Models_Env,
+                         Models,
+                         Strategy_Models_Class,
+                         Calculated_Indicators){
+  #***********
+  # fit models
+  Signals=as.data.table(sapply(Strategy_Models,
+                               function(x){
+                                 Model_Info=Models_Env[[Strategy_Models_Class[x]]] # variables and functions defined for the model object
+                                 Calculated_Indicators_Combined=do.call(cbind, Calculated_Indicators) # combined Calculated_Indicators
+                                 Calculated_Indicators_Names=names(Calculated_Indicators)[unlist(lapply(Calculated_Indicators, function(x) !is.null(x)))] #
+                                 if(sum(!Model_Info[["Essential_Indicators"]]%in%Calculated_Indicators_Names)==0){ # if none of essential indicators hasn't been calculated in Calculated_Indicators, proceed to run the model
+                                   do.call(Model_Info[["Function"]],
+                                           c(list(Calculated_Indicators_Combined),
+                                             Models[[x]]))}
+                               }))
+  
+  return(Signals)
+}
