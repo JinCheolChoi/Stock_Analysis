@@ -50,17 +50,23 @@ Add_Indicator(Strategy="Live_Strategy",
 #                            Long_PctB=-Inf,
 #                            Short_PctB=0.6))
 Add_Model(Strategy="Live_Strategy",
-          Model="Simple_RSI_1",
+          Model="Simple_RSI",
+          Model_Name="Simple_RSI_1",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
                            Long_RSI=0.30*100,
-                           Short_RSI=0.70*100))
+                           Short_RSI=0.70*100,
+                           Live_Trading=TRUE,
+                           Reverse=TRUE))
 Add_Model(Strategy="Live_Strategy",
-          Model="Simple_RSI_2",
+          Model="Simple_RSI",
+          Model_Name="Simple_RSI_2",
           ModelParams=list(Long_Consec_Times=1,
                            Short_Consec_Times=1,
                            Long_RSI=0.40*100,
-                           Short_RSI=0.60*100))
+                           Short_RSI=0.60*100,
+                           Live_Trading=TRUE,
+                           Reverse=TRUE))
 # Add_Model(Strategy="Live_Strategy",
 #           Model="Trend",
 #           ModelParams=list(Interval=5,
@@ -77,8 +83,7 @@ Add_OrderRule(Strategy="Live_Strategy",
               OrderRuleParams=list(Max_Orders=1, # the maximum number of orders to hold to average dollar cost (not optimized yet except for 1)
                                    Scenario="Negative", # Positive : early profit is prioritized over loss cut
                                    Stop_Order=Inf,
-                                   Profit_Order=Inf,
-                                   Reverse=FALSE)) # Opposite actions are made if Reverse=TRUE (haven't been applied yet)
+                                   Profit_Order=Inf))
 Add_OrderRule(Strategy="Live_Strategy",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
