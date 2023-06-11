@@ -14,7 +14,7 @@ Strategy_Models=names(Models)
 Strategy_Models_Class=unlist(lapply(Models, class))
 General_Strategy="General"
 
-# Commission per contract
+# Commission (US$) per contract
 Commission=as.numeric(Order_Rules[["General"]][["Commission"]])
 
 #******************
