@@ -23,7 +23,6 @@ working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
 data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
 rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
 
-
 #****************
 # data parameters
 #****************
@@ -55,23 +54,8 @@ for(pack in c("IBrokers",
 }
 
 # # import data
-# Get_Data(Symbols=list("MNQ"),
-#          Data_Dir=data.dir,
-#          BarSize=5,
-#          Convert_Tz=T,
-#          Filter=T)
-
-# bar data
-# SPY
-# Training_BarData=MNQ[Time<"2021-07-22 15:00:00", ]
-# Test_BarData=MNQ[Time>="2021-07-22 15:00:00", ]
-# fwrite(MNQ,
-#        paste0("E:/Stock_Data/1min/MNQ/MNQ.csv"))
-# fwrite(MNQ,
-#        paste0("C:/Users/jchoi02/Desktop/Data/1min/MNQ/MNQ.csv"))
-
 # MNQ=fread("E:/Stock_Data/60mins/MNQ/MNQ.csv")
-MNQ=fread("C:/Users/jchoi02/Desktop/Data/15mins/MNQ/MNQ.csv")
+MNQ=fread("C:/Users/jchoi02/Desktop/Data/30mins/MNQ/MNQ.csv")
 
 # MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 Training_BarData=copy(MNQ[1:round(nrow(MNQ)/2)])
@@ -80,13 +64,38 @@ Test_BarData=copy(MNQ[(round(nrow(MNQ)/2)+1):nrow(MNQ)])
 # Live_Trading
 Live_Trading=FALSE
 
+
 #************
 # grid search
 #************
-Simple_BBands_1_Long_PctB=seq(0.2, 0.4, by=0.05)
-Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
-Simple_BBands_2_Long_PctB=seq(0.3, 0.5, by=0.05)
-Simple_BBands_2_Short_PctB=seq(0.6, 0.8, by=0.05)
+# MA_Length=c(16, 36)
+# RSI_RSI_MA_Diff_Min=seq(0, 3, by=1)
+# RSI_RSI_MA_Diff_Max=c(Inf, seq(5, 9, by=1))
+# Early_Execution_Gap=c(Inf, seq(10, 20, by=5))
+# RSI_n=c(10, 14)
+# Reverse=c(TRUE, FALSE)
+# Params=data.table(
+#   expand.grid(
+#     MA_Length,
+#     RSI_RSI_MA_Diff_Min,
+#     RSI_RSI_MA_Diff_Max,
+#     Early_Execution_Gap,
+#     RSI_n,
+#     Reverse
+#   )
+# )
+# Tuning_Parameters=c(
+#   "MA_Length",
+#   "RSI_RSI_MA_Diff_Min",
+#   "RSI_RSI_MA_Diff_Max",
+#   "Early_Execution_Gap",
+#   "RSI_n",
+#   "Reverse"
+# )
+Simple_BBands_1_Long_PctB=seq(0.2, 0.4, by=0.1)
+Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.1)
+Simple_BBands_2_Long_PctB=seq(0.3, 0.5, by=0.1)
+Simple_BBands_2_Short_PctB=seq(0.6, 0.8, by=0.1)
 RSI_n=c(10, 14, 18)
 Reverse=c(TRUE, FALSE)
 Params=data.table(
@@ -109,7 +118,7 @@ Tuning_Parameters=c(
 )
 colnames(Params)=Tuning_Parameters
 for(i in 1:nrow(Params)){
-  # i=1
+  # i=153
   if(Params[i, Simple_BBands_1_Long_PctB]==0 &
      Params[i, Simple_BBands_2_Short_PctB]==1){
     Params$Net_Profit_on_Training[i]=0
@@ -200,7 +209,7 @@ for(i in 1:nrow(Params)){
     if(i==1){
       Params[, paste0(Strategy_Name, "_NP_on_Training"):=-10000]
     }
-    if(Training_Results_Temp[["Net_Profit"]]>0){
+    if(!is.na(Training_Results_Temp[["Net_Profit"]]) & Training_Results_Temp[["Net_Profit"]]>0){
       # save results
       assign(paste0(Strategy_Name, "_Training_", "Setting_", i),
              list(T1_2,
@@ -221,7 +230,7 @@ for(i in 1:nrow(Params)){
     if(i==1){
       Params[, paste0(Strategy_Name, "_NP_on_Test"):=-10000]
     }
-    if(Test_Results_Temp[["Net_Profit"]]>0){
+    if(Test_Results_Temp[["Net_Profit"]] & Test_Results_Temp[["Net_Profit"]]>0){
       # save results
       assign(paste0(Strategy_Name, "_Test_", "Setting_", i),
              list(T2_2,
@@ -244,6 +253,7 @@ for(i in 1:nrow(Params)){
   # }
 }
 
+
 #****************************
 # calculate useful indicators
 #****************************
@@ -251,12 +261,16 @@ for(i in 1:nrow(Params)){
 Params[, Row:=.I]
 Profitable_Strategies=c()
 {
-  for(Strategy in Strategies){
+  for(Strategy in Strategies[!Strategies%in%c("RSI_Averages_Band_Strategy")]){
     Temp=copy(Params)
     Temp[, paste0("NP_on_Training"):=eval(parse(text=paste0(Strategy, "_NP_on_Training")))]
     Temp[, paste0("NP_on_Test"):=eval(parse(text=paste0(Strategy, "_NP_on_Test")))]
     
     for(i in 1:nrow(Temp)){
+      if(!(Temp$NP_on_Training[i]>0 &
+           Temp$NP_on_Test[i]>0)){
+        next
+      }
       # elapsed time
       Elapsed_Time=0
       Elapsed_Time=Elapsed_Time+get(paste0(Strategy, "_Training_", "Setting_", i))[[1]][3]
@@ -300,6 +314,9 @@ Profitable_Strategies=c()
       }
     }
     
+    if(is.null(Temp[["Elapsed_Time"]])){
+      next
+    }
     assign(
       paste0("Params_", Strategy),
       Temp[, .SD, .SDcols=c(Tuning_Parameters,
@@ -356,6 +373,7 @@ c(Training_Results_Temp$Net_Profit, Test_Results_Temp$Net_Profit)
 get(paste0(Strategy_Name, "_Training_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% plot
 get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% plot
 
+
 #**************
 # save and load
 #**************
@@ -371,50 +389,68 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 # 6. utilize switch()
 
 
-
-# revise the reverse part in Live_Trading.R
-# include the reverse parameter in model functions
-Restuls_Temp=rbind(Training_Results_Temp$Ind_Profit,
-                   Test_Results_Temp$Ind_Profit)
-
-Restuls_Temp[, Date:=as.Date(Time, tz="America/Los_Angeles")]
-Restuls_Temp[, Cum_Profit:=cumsum(Profit)]
-Restuls_Temp[, Daily_Cum_Profit:=Cum_Profit[Time==max(Time)], by="Date"]
-plot(unique(Restuls_Temp[, .SD, .SDcols=c("Date", "Daily_Cum_Profit")]),
-     type='o')
-
-
-
-#
-get(paste0(Strategy_Name, "_Training_Setting_", i))[[2]]$Ind_Profit
-
-#
-summary(as.numeric(abs(Collapse_Orders_Transmitted[, Sell_Time-Buy_Time])))
-
-#
 library(quantmod)
-# create a chart - 1
-system.time({
-  chartSeries(MNQ[which(as.POSIXlt(MNQ$Time, tz="UTC")>=as.POSIXlt("2021-07-02 07:45:00", tz="UTC") & 
-                          as.POSIXlt(MNQ$Time, tz="UTC")<=as.POSIXlt("2021-07-05 02:45:00", tz="UTC")), -1],
-              name="MNQ",
-              theme="white")
-})
 
-system.time({
-  chartSeries(MNQ[, -1],
-              name="MNQ",
-              theme="white")
-})
 
+#**************
 #
-MNQ[, Row:=.I]
-MNQ[which(as.POSIXlt(MNQ$Time, tz="UTC")>=as.POSIXlt("2021-07-02 07:45:00", tz="UTC") & 
-            as.POSIXlt(MNQ$Time, tz="UTC")<=as.POSIXlt("2021-07-05 02:45:00", tz="UTC")), -1]
+# Visualization
+#
+#**************
+Orders_Transmitted_Temp=rbind(get(paste0(Strategy_Name, "_Training_Setting_", i))[[2]]$Orders_Transmitted,
+                              get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Orders_Transmitted)
+
+Ind_Profit_Temp=rbind(get(paste0(Strategy_Name, "_Training_Setting_", i))[[2]]$Ind_Profit,
+                      get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit)
 
 
-# verify Profit:=2*(Sell_Price-Buy_Price)-2*Commission is always correct by comparing the profit/loss given Max_Orders > 1 in different scenarios
+
+# #
+# # create a chart - 1
+# system.time({
+#   chartSeries(MNQ[which(as.POSIXlt(MNQ$Time, tz="UTC")>=as.POSIXlt("2021-07-02 07:45:00", tz="UTC") & 
+#                           as.POSIXlt(MNQ$Time, tz="UTC")<=as.POSIXlt("2021-07-05 02:45:00", tz="UTC")), -1],
+#               name="MNQ",
+#               theme="white")
+# })
+
+#***********
+# Long graph
+Ind=232
+# elapsed time summary
+Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]]
+which.max(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]])
+summary(as.numeric(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]]))
 
 
+Orders_Transmitted_Temp[Detail=="BTO", ][Ind, ]
+Orders_Transmitted_Temp[Detail=="STC",][Ind, ]
+Ind_Profit_Temp[Time==Orders_Transmitted_Temp[Detail=="STC",][Ind, Filled_Time], ]
+chartSeries(MNQ[which(as.POSIXlt(MNQ$Time, tz="UTC")>=Orders_Transmitted_Temp[Detail=="BTO", ][Ind, Filled_Time] & 
+                        as.POSIXlt(MNQ$Time, tz="UTC")<=(Orders_Transmitted_Temp[Detail=="STC",][Ind, Filled_Time]-5*60)), -1],
+            name="MNQ",
+            theme="white")
 
+#************
+# Short graph
+Ind=46
+# elapsed time summary
+Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]]
+which.max(Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]])
+summary(as.numeric(Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]]))
+
+
+Orders_Transmitted_Temp[Detail=="STO", ][Ind, ]
+Orders_Transmitted_Temp[Detail=="BTC",][Ind, ]
+Ind_Profit_Temp[Time==Orders_Transmitted_Temp[Detail=="BTC",][Ind, Filled_Time], ]
+chartSeries(MNQ[which(as.POSIXlt(MNQ$Time, tz="UTC")>=Orders_Transmitted_Temp[Detail=="STO", ][Ind, Filled_Time] & 
+                        as.POSIXlt(MNQ$Time, tz="UTC")<=(Orders_Transmitted_Temp[Detail=="BTC",][Ind, Filled_Time]-5*60)), -1],
+            name="MNQ",
+            theme="white")
+
+# Ind for maximum profit
+# if it is short...
+Orders_Transmitted_Temp[Detail=="BTC",][, .I[Filled_Time==Ind_Profit_Temp[Profit==max(Profit), ][["Time"]]]]
+# if it is long...
+Orders_Transmitted_Temp[Detail=="STC",][, .I[Filled_Time==Ind_Profit_Temp[Profit==max(Profit), ][["Time"]]]]
 
