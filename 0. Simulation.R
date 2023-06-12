@@ -13,15 +13,23 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-# # desktop
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/"
-data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
-rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+Device="laptop" # or "desktop"
 
-# laptop
-# working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
-# data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
-# rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+if(Device=="desktop"){
+  # desktop
+  working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/"
+  data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+  rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+  
+  source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
+}else if(Device=="laptop"){
+  # laptop
+  working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
+  data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
+  rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+  
+  source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
+}
 
 #****************
 # data parameters
@@ -35,8 +43,6 @@ Symbols=c("MNQ")
 #*******************
 # load functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
-# source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R")) # laptop
 
 # import libraries
 for(pack in c("IBrokers",
@@ -54,8 +60,7 @@ for(pack in c("IBrokers",
 }
 
 # # import data
-# MNQ=fread("E:/Stock_Data/60mins/MNQ/MNQ.csv")
-MNQ=fread("C:/Users/jchoi02/Desktop/Data/30mins/MNQ/MNQ.csv")
+MNQ=fread(paste0(data.dir, "30mins/", Symbols, "/", Symbols, ".csv"))
 
 # MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 Training_BarData=copy(MNQ[1:round(nrow(MNQ)/2)])
