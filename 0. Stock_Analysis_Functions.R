@@ -999,8 +999,16 @@ Backtesting=function(BarData,
     BuyToOpen_Signals=Long_Signals_Sums>=BuyToOpen_Min_Sig_N
     SellToClose_Signals=Short_Signals_Sums>=SellToClose_Min_Sig_N
     
-    if(sum(BuyToOpen_Signals)==0 & 
-       sum(SellToClose_Signals)==0){
+    if(sum(BuyToOpen_Signals)==0){
+      return(list(Orders_Transmitted=NA,
+                  Ind_Profit=NA,
+                  Net_Profit=NA))
+      
+      break;
+      
+    }
+    
+    if(sum(SellToClose_Signals)==0){
       # warning("No position transmitted")
       
       return(list(Orders_Transmitted=NA,
@@ -1035,8 +1043,16 @@ Backtesting=function(BarData,
     SellToOpen_Signals=Short_Signals_Sums>=SellToOpen_Min_Sig_N
     BuyToClose_Signals=Long_Signals_Sums>=BuyToClose_Min_Sig_N
     
-    if(sum(SellToOpen_Signals)==0 & 
-       sum(BuyToClose_Signals)==0){
+    if(sum(SellToOpen_Signals)==0){
+      return(list(Orders_Transmitted=NA,
+                  Ind_Profit=NA,
+                  Net_Profit=NA))
+      
+      break;
+      
+    }
+    
+    if(sum(BuyToClose_Signals)==0){
       # warning("No position transmitted")
       
       return(list(Orders_Transmitted=NA,
@@ -2847,6 +2863,7 @@ lapply("Rcpp", checkpackages)
 #   return List::create(Quantity_, Net_Quantity_, Remove_, Both_Direction_);
 # }')
 sourceCpp("C:/Users/jchoi02/Desktop/C++/Order_Filled_C.cpp")
+# sourceCpp("C:/Users/JinCheol Choi/Desktop/C++/Order_Filled_C.cpp")
 
 
 #***************
