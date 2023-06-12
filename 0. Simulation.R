@@ -14,14 +14,14 @@ rm(list=ls())
 # working directory
 #******************
 # # desktop
-# working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/"
-# data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
-# rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/"
+data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
 
 # laptop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
-data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
-rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+# working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
+# data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
+# rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
 
 #****************
 # data parameters
@@ -35,8 +35,8 @@ Symbols=c("MNQ")
 #*******************
 # load functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-# source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
-source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R")) # laptop
+source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
+# source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R")) # laptop
 
 # import libraries
 for(pack in c("IBrokers",
@@ -68,43 +68,24 @@ Live_Trading=FALSE
 #************
 # grid search
 #************
-# MA_Length=c(16, 36)
-# RSI_RSI_MA_Diff_Min=seq(0, 3, by=1)
-# RSI_RSI_MA_Diff_Max=c(Inf, seq(5, 9, by=1))
-# Early_Execution_Gap=c(Inf, seq(10, 20, by=5))
-# RSI_n=c(10, 14)
-# Reverse=c(TRUE, FALSE)
-# Params=data.table(
-#   expand.grid(
-#     MA_Length,
-#     RSI_RSI_MA_Diff_Min,
-#     RSI_RSI_MA_Diff_Max,
-#     Early_Execution_Gap,
-#     RSI_n,
-#     Reverse
-#   )
-# )
-# Tuning_Parameters=c(
-#   "MA_Length",
-#   "RSI_RSI_MA_Diff_Min",
-#   "RSI_RSI_MA_Diff_Max",
-#   "Early_Execution_Gap",
-#   "RSI_n",
-#   "Reverse"
-# )
-Simple_BBands_1_Long_PctB=seq(0.2, 0.4, by=0.1)
-Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.1)
-Simple_BBands_2_Long_PctB=seq(0.3, 0.5, by=0.1)
-Simple_BBands_2_Short_PctB=seq(0.6, 0.8, by=0.1)
-RSI_n=c(10, 14, 18)
-Reverse=c(TRUE, FALSE)
+Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
+Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
+Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
+Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
+Open_Long_Consec_Times=c(3, 4)
+Open_Short_Consec_Times=c(3, 4)
+Multiplier=c(80, 100, 120)
+Reverse=c(TRUE)
+
 Params=data.table(
   expand.grid(
     Simple_BBands_1_Long_PctB,
     Simple_BBands_1_Short_PctB,
     Simple_BBands_2_Long_PctB,
     Simple_BBands_2_Short_PctB,
-    RSI_n,
+    Open_Long_Consec_Times,
+    Open_Short_Consec_Times,
+    Multiplier,
     Reverse
   )
 )
@@ -113,12 +94,14 @@ Tuning_Parameters=c(
   "Simple_BBands_1_Short_PctB",
   "Simple_BBands_2_Long_PctB",
   "Simple_BBands_2_Short_PctB",
-  "RSI_n",
+  "Open_Long_Consec_Times",
+  "Open_Short_Consec_Times",
+  "Multiplier",
   "Reverse"
 )
 colnames(Params)=Tuning_Parameters
 for(i in 1:nrow(Params)){
-  # i=153
+  # i=159
   if(Params[i, Simple_BBands_1_Long_PctB]==0 &
      Params[i, Simple_BBands_2_Short_PctB]==1){
     Params$Net_Profit_on_Training[i]=0
@@ -230,7 +213,7 @@ for(i in 1:nrow(Params)){
     if(i==1){
       Params[, paste0(Strategy_Name, "_NP_on_Test"):=-10000]
     }
-    if(Test_Results_Temp[["Net_Profit"]] & Test_Results_Temp[["Net_Profit"]]>0){
+    if(!is.na(Test_Results_Temp[["Net_Profit"]]) & Test_Results_Temp[["Net_Profit"]]>0){
       # save results
       assign(paste0(Strategy_Name, "_Test_", "Setting_", i),
              list(T2_2,
@@ -349,7 +332,7 @@ Profitable_Strategies=c()
 # all profitable strategies
 Profitable_Strategies[, .SD[NP==max(NP)]]
 Best_Profitable_Strategy=Profitable_Strategies[, .SD[NP==max(NP)]][1]
-Profitable_Strategies[NP_on_Training>2000&
+Profitable_Strategies[NP_on_Training>4000&
                         NP_on_Test>2000, ]
 
 Strategy_Name=Best_Profitable_Strategy[["Strategy"]] # strategy name
@@ -377,8 +360,8 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 #**************
 # save and load
 #**************
-#save.image(paste0(rdata.dir, "Futures_2023-06-08.Rdata"))
-#load(paste0(rdata.dir, "Futures_2023-06-08.Rdata"))
+#save.image(paste0(rdata.dir, "Futures_2023-06-12 - 5mins.Rdata"))
+#load(paste0(rdata.dir, "Futures_2023-06-09.Rdata"))
 
 #*********************************************************
 # 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
@@ -389,8 +372,10 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 # 6. utilize switch()
 
 
-library(quantmod)
-
+# revise the reverse part in Live_Trading.R
+# include the reverse parameter in model functions
+Restuls_Temp=rbind(Training_Results_Temp$Ind_Profit,
+                   Test_Results_Temp$Ind_Profit)
 
 #**************
 #
