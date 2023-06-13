@@ -22,7 +22,10 @@ OrderRules_Env$General=list(
   Stop_Order=10,
   Profit_Order=10,
   Maximum_Elapsed_Time=Inf, # This argument is to be defined for OrderType=="LMT"
-  Commission=0.25 # Commission per contract
+  Commission=0.25, # Commission per contract
+  Tick_Size=0.25, # the minimum tick size
+  Penalty=1, # the number of ticks away from the spot price when MKT is filled
+  Tick_Value=0.5 # value per tick
 )
 
 

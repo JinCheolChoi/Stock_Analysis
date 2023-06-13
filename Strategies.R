@@ -92,7 +92,10 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
                                    Stop_Order=Inf,
                                    Profit_Order=Inf,
                                    Maximum_Elapsed_Time=Inf,
-                                   Commission=0.25))
+                                   Commission=0.62,
+                                   Tick_Size=0.25, # the minimum tick size
+                                   Penalty=1,# the number of ticks away from the spot price when MKT is filled
+                                   Tick_Value=0.5)) # value per tick
 Add_OrderRule(Strategy="Long_Short_Strategy",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",

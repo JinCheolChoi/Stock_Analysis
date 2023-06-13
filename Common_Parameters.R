@@ -14,8 +14,18 @@ Strategy_Models=names(Models)
 Strategy_Models_Class=unlist(lapply(Models, class))
 General_Strategy="General"
 
-# Commission (US$) per contract
+# Commission (US$) per transition
 Commission=as.numeric(Order_Rules[["General"]][["Commission"]])
+
+# the minimum tick size
+Tick_Size=as.numeric(Order_Rules[["General"]][["Tick_Size"]])
+
+# the number of ticks away from the spot price when MKT is filled
+Penalty=as.numeric(Order_Rules[["General"]][["Penalty"]])
+
+# value per tick
+Tick_Value=as.numeric(Order_Rules[["General"]][["Tick_Value"]])
+
 
 #******************
 # preliminary steps
