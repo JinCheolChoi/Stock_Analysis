@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="desktop" # or "desktop"
+Device="laptop" # or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -369,8 +369,8 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 #**************
 # save and load
 #**************
-#save.image(paste0(rdata.dir, "Futures_2023-06-13 - 5secs.Rdata"))
-#load(paste0(rdata.dir, "Futures_2023-06-09.Rdata"))
+#save.image(paste0(rdata.dir, "Futures_2023-06-12 - 1min.Rdata"))
+#load(paste0(rdata.dir, "Futures_2023-06-12 - 1min.Rdata"))
 
 #*********************************************************
 # 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
