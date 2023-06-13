@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="laptop" # or "desktop"
+Device="desktop" # or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -60,7 +60,7 @@ for(pack in c("IBrokers",
 }
 
 # # import data
-MNQ=fread(paste0(data.dir, "30mins/", Symbols, "/", Symbols, ".csv"))
+MNQ=fread(paste0(data.dir, "5secs/", Symbols, "/", Symbols, ".csv"))
 
 # MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 Training_BarData=copy(MNQ[1:round(nrow(MNQ)/2)])
@@ -194,10 +194,10 @@ for(i in 1:nrow(Params)){
                                         Working_Dir=working.dir)
     })
     
-    if(i==1){
-      Params[, paste0(Strategy_Name, "_NP_on_Training"):=-10000]
-    }
-    if(!is.na(Training_Results_Temp[["Net_Profit"]]) & Training_Results_Temp[["Net_Profit"]]>0){
+    # if(i==1){
+    #   Params[, paste0(Strategy_Name, "_NP_on_Training"):=-10000]
+    # }
+    if(!is.na(Training_Results_Temp[["Net_Profit"]])){
       # save results
       assign(paste0(Strategy_Name, "_Training_", "Setting_", i),
              list(T1_2,
@@ -215,10 +215,10 @@ for(i in 1:nrow(Params)){
                                     Working_Dir=working.dir)
     })
     
-    if(i==1){
-      Params[, paste0(Strategy_Name, "_NP_on_Test"):=-10000]
-    }
-    if(!is.na(Test_Results_Temp[["Net_Profit"]]) & Test_Results_Temp[["Net_Profit"]]>0){
+    # if(i==1){
+    #   Params[, paste0(Strategy_Name, "_NP_on_Test"):=-10000]
+    # }
+    if(!is.na(Test_Results_Temp[["Net_Profit"]])){
       # save results
       assign(paste0(Strategy_Name, "_Test_", "Setting_", i),
              list(T2_2,
@@ -255,6 +255,10 @@ Profitable_Strategies=c()
     Temp[, paste0("NP_on_Test"):=eval(parse(text=paste0(Strategy, "_NP_on_Test")))]
     
     for(i in 1:nrow(Temp)){
+      if((is.na(Temp$NP_on_Training[i]) |
+           is.na(Temp$NP_on_Test[i]))){
+        next
+      }
       if(!(Temp$NP_on_Training[i]>0 &
            Temp$NP_on_Test[i]>0)){
         next
@@ -365,7 +369,7 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 #**************
 # save and load
 #**************
-#save.image(paste0(rdata.dir, "Futures_2023-06-12 - 5mins.Rdata"))
+#save.image(paste0(rdata.dir, "Futures_2023-06-13 - 5secs.Rdata"))
 #load(paste0(rdata.dir, "Futures_2023-06-09.Rdata"))
 
 #*********************************************************
@@ -406,7 +410,7 @@ Ind_Profit_Temp=rbind(get(paste0(Strategy_Name, "_Training_Setting_", i))[[2]]$I
 
 #***********
 # Long graph
-Ind=232
+Ind=281
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]])
@@ -423,7 +427,7 @@ chartSeries(MNQ[which(as.POSIXlt(MNQ$Time, tz="UTC")>=Orders_Transmitted_Temp[De
 
 #************
 # Short graph
-Ind=46
+Ind=179
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]])
