@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="laptop" # or "desktop"
+Device="desktop" # or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -60,7 +60,7 @@ for(pack in c("IBrokers",
 }
 
 # # import data
-MNQ=fread(paste0(data.dir, "5secs/", Symbols, "/", Symbols, ".csv"))
+MNQ=fread(paste0(data.dir, "5mins/", Symbols, "/", Symbols, ".csv"))
 
 # MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 Training_BarData=copy(MNQ[1:round(nrow(MNQ)/2)])
@@ -73,14 +73,22 @@ Live_Trading=FALSE
 #************
 # grid search
 #************
-Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
-Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
-Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
-Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
-Open_Long_Consec_Times=c(3, 4)
-Open_Short_Consec_Times=c(3, 4)
-Multiplier=c(80, 100, 120)
-Reverse=c(TRUE)
+# Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
+# Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
+# Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
+# Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
+# Open_Long_Consec_Times=c(3, 4)
+# Open_Short_Consec_Times=c(3, 4)
+# Multiplier=c(80, 100, 120)
+# Reverse=c(TRUE)
+Simple_BBands_1_Long_PctB=0.2
+Simple_BBands_1_Short_PctB=0.75
+Simple_BBands_2_Long_PctB=0.2
+Simple_BBands_2_Short_PctB=0.8
+Open_Long_Consec_Times=c(1, 2, 3, 4)
+Open_Short_Consec_Times=c(1, 2, 3, 4)
+Multiplier=100
+Reverse=TRUE
 
 Params=data.table(
   expand.grid(
@@ -338,11 +346,12 @@ Profitable_Strategies=c()
   Profitable_Strategies[, NP:=NP_on_Training+NP_on_Test]
 }
 
+
 # all profitable strategies
 Profitable_Strategies[, .SD[NP==max(NP)]]
 Best_Profitable_Strategy=Profitable_Strategies[, .SD[NP==max(NP)]][1]
-Profitable_Strategies[NP_on_Training>4000&
-                        NP_on_Test>2000, ]
+Profitable_Strategies[NP_on_Training>3000&
+                        NP_on_Test>3000, ]
 
 Strategy_Name=Best_Profitable_Strategy[["Strategy"]] # strategy name
 Strategy_Name
@@ -369,8 +378,8 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 #**************
 # save and load
 #**************
-#save.image(paste0(rdata.dir, "Futures_2023-06-12 - 1min.Rdata"))
-#load(paste0(rdata.dir, "Futures_2023-06-12 - 1min.Rdata"))
+#save.image(paste0(rdata.dir, "Futures_2023-06-13 - 5secs.Rdata"))
+#load(paste0(rdata.dir, "Futures_2023-06-13 - 30mins.Rdata"))
 
 #*********************************************************
 # 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
@@ -397,6 +406,7 @@ Orders_Transmitted_Temp=rbind(get(paste0(Strategy_Name, "_Training_Setting_", i)
 Ind_Profit_Temp=rbind(get(paste0(Strategy_Name, "_Training_Setting_", i))[[2]]$Ind_Profit,
                       get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit)
 
+Orders_Transmitted_Temp=Orders_Transmitted_Temp[Filled_Time<=max(Ind_Profit_Temp$Time), ]
 
 
 # #
@@ -410,7 +420,8 @@ Ind_Profit_Temp=rbind(get(paste0(Strategy_Name, "_Training_Setting_", i))[[2]]$I
 
 #***********
 # Long graph
-Ind=281
+library(quantmod)
+Ind=108
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]])
@@ -427,7 +438,7 @@ chartSeries(MNQ[which(as.POSIXlt(MNQ$Time, tz="UTC")>=Orders_Transmitted_Temp[De
 
 #************
 # Short graph
-Ind=179
+Ind=134
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]])
