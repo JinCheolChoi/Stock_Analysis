@@ -13,15 +13,23 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-# # desktop
-# working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/"
-# data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
-# rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+Device="desktop" # or "desktop"
 
-# laptop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
-data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
-rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+if(Device=="desktop"){
+  # desktop
+  working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/"
+  data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+  rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+  
+  source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
+}else if(Device=="laptop"){
+  # laptop
+  working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
+  data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
+  rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+  
+  source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
+}
 
 
 #****************
@@ -36,8 +44,6 @@ Symbols=c("MNQ")
 #*******************
 # load functions
 source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-# source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
-source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R")) # laptop
 
 # import libraries
 for(pack in c("IBrokers",
@@ -79,14 +85,17 @@ for(Barsize in Barsizes){
              Convert_Tz=T,
              Filter=T)
     
-    # laptop
-    fwrite(MNQ,
-           paste0("C:/Users/jchoi02/Desktop/Data/", folder_name, "/", Symbols, "/", Symbols, ".csv"))
+    if(Device=="desktop"){
+      # desktop
+      fwrite(MNQ,
+             paste0("E:/Stock_Data/", folder_name, "/", Symbols, "/", Symbols, ".csv"))
+      fwrite(MNQ,
+             paste0("C:/Users/JinCheol Choi/Desktop/Stock_Data/", folder_name, "/", Symbols, "/", Symbols, ".csv"))
+    }else if(Device=="laptop"){
+      # laptop
+      fwrite(MNQ,
+             paste0("C:/Users/jchoi02/Desktop/Data/", folder_name, "/", Symbols, "/", Symbols, ".csv"))
+    }
     
-    # # desktop
-    # fwrite(MNQ,
-    #        paste0("E:/Stock_Data/", folder_name, "/", Symbols, "/", Symbols, ".csv"))
-    # fwrite(MNQ,
-    #        paste0("C:/Users/JinCheol Choi/Desktop/Stock_Data/", folder_name, "/", Symbols, "/", Symbols, ".csv"))
   }
 }
