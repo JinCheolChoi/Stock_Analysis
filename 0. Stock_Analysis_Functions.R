@@ -990,16 +990,7 @@ Backtesting=function(BarData,
   #****************************
   Long_Which_Signals=c()
   Short_Which_Signals=c()
-  
-  if(sum(BuyToOpen_Signals)==0 &
-     sum(SellToClose_Signals)==0 &
-     sum(SellToOpen_Signals)==0 &
-     sum(BuyToClose_Signals)==0){
-    return(list(Orders_Transmitted=NA,
-                Ind_Profit=NA,
-                Net_Profit=NA))
-  }
-  
+
   if("Long"%in%Position_Names){
     BuyToOpen_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Min_Sig_N"]])
     # BuyToOpen_Min_Sig_N=1
@@ -1053,6 +1044,15 @@ Backtesting=function(BarData,
         )
       )
     }
+  }
+  
+  if(sum(BuyToOpen_Signals)==0 &
+     sum(SellToClose_Signals)==0 &
+     sum(SellToOpen_Signals)==0 &
+     sum(BuyToClose_Signals)==0){
+    return(list(Orders_Transmitted=NA,
+                Ind_Profit=NA,
+                Net_Profit=NA))
   }
   
   Which_Signals=rbind(

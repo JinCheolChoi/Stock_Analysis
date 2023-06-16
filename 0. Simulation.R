@@ -113,6 +113,7 @@ Tuning_Parameters=c(
   "Reverse"
 )
 colnames(Params)=Tuning_Parameters
+
 for(i in 1:nrow(Params)){
   # i=159
   if(Params[i, Simple_BBands_1_Long_PctB]==0 &
