@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="desktop" # or "desktop"
+Device="laptop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -60,7 +60,7 @@ for(pack in c("IBrokers",
 }
 
 # # import data
-MNQ=fread(paste0(data.dir, "5mins/", Symbols, "/", Symbols, ".csv"))
+MNQ=fread(paste0(data.dir, "15mins/", Symbols, "/", Symbols, ".csv"))
 
 # MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 Training_BarData=copy(MNQ[1:round(nrow(MNQ)/2)])
@@ -113,6 +113,7 @@ Tuning_Parameters=c(
   "Reverse"
 )
 colnames(Params)=Tuning_Parameters
+
 for(i in 1:nrow(Params)){
   # i=159
   if(Params[i, Simple_BBands_1_Long_PctB]==0 &
@@ -379,7 +380,7 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 # save and load
 #**************
 #save.image(paste0(rdata.dir, "Futures_2023-06-13 - 5secs.Rdata"))
-#load(paste0(rdata.dir, "Futures_2023-06-13 - 30mins.Rdata"))
+#load(paste0(rdata.dir, "Futures_2023-06-13 - 15mins.Rdata"))
 
 #*********************************************************
 # 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
