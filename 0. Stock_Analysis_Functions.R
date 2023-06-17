@@ -1249,7 +1249,8 @@ Backtesting=function(BarData,
     # Collapse_Orders_Transmitted[, Time:=as.POSIXct(format(as.POSIXct(max(Buy_Time, Sell_Time)),
     #                                                       tz="America/Los_Angeles")), by=1:nrow(Collapse_Orders_Transmitted)]
     Collapse_Orders_Transmitted[, Time:=max(Buy_Time, Sell_Time), by=1:nrow(Collapse_Orders_Transmitted)]
-    Collapse_Orders_Transmitted[, Date:=as.Date(Time, tz="America/Los_Angeles")]
+    # Collapse_Orders_Transmitted[, Date:=as.Date(Time, tz="America/Los_Angeles")]
+    Collapse_Orders_Transmitted[, Date:=as.Date(Time)]
     # Collapse_Orders_Transmitted[, Date:=Time]
     Collapse_Orders_Transmitted[, Daily_Cum_Profit:=Cum_Profit[Time==max(Time)], by="Date"]
     Collapse_Orders_Transmitted[, Daily_Profit:=sum(Profit), by="Date"]
