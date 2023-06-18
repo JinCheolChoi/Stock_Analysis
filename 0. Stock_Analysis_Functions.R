@@ -1088,8 +1088,6 @@ Backtesting=function(BarData,
     "2"={
       Which_Signals=Which_Signals[Trading_Time>="06:30:00" &
                                     Trading_Time<=format(as.POSIXct("1970-01-01 14:00:00")-Time_Unit, format="%H:%M:%S")]
-      
-      
     },
     
     "3"={
@@ -1100,7 +1098,8 @@ Backtesting=function(BarData,
   Which_Signals=Which_Signals[Ind>=min(Which_Signals[Detail=="BTO" |
                                                        Detail=="STO", Ind]), ]
   
-  
+  #***************
+  # Order_Filled_C
   Order_Filled_Results=Order_Filled_C(Which_Signals=Which_Signals,
                                       Max_Orders=Max_Orders)
   
