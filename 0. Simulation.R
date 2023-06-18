@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="desktop" # "laptop" or "desktop"
+Device="laptop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -132,13 +132,13 @@ Tuning_Parameters=c(
 colnames(Params)=Tuning_Parameters
 
 for(i in 1:nrow(Params)){
-  # # i=3299
-  # if(Params[i, Simple_BBands_1_Long_PctB]==0 &
-  #    Params[i, Simple_BBands_2_Short_PctB]==1){
-  #   Params$Net_Profit_on_Training[i]=0
-  #   Params$Net_Profit_on_Test[i]=0
-  #   next
-  # }
+  # i=1
+  if(Params[i, Simple_BBands_1_Long_PctB]==0 &
+     Params[i, Simple_BBands_2_Short_PctB]==1){
+    Params$Net_Profit_on_Training[i]=0
+    Params$Net_Profit_on_Test[i]=0
+    next
+  }
   
   # import strategies
   source(paste0(working.dir, "Strategies.R"))
