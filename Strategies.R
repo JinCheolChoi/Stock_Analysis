@@ -523,7 +523,7 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
 #               OrderRule="Short",
 #               OrderRuleParams=list(SellToOpen=list(OrderType="MKT",
 #                                                    Quantity=1,
-#                                                    Min_Sig_N=1), # minimum number of positive signals from models to transmit
+#                                                    Min_Sig_N=Params$Open_N[i]), # minimum number of positive signals from models to transmit
 #                                    BuyToClose=list(OrderType="MKT",
-#                                                    Quantity=Params$Open_N[i],
+#                                                    Quantity=1,
 #                                                    Min_Sig_N=Params$Close_N[i]))) # minimum number of positive signals from models to transmit
