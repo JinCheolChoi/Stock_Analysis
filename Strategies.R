@@ -94,9 +94,8 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
                                    Maximum_Elapsed_Time=Inf,
                                    Commission=0.62,
                                    Tick_Size=0.25, # the minimum tick size
-                                   Penalty=1, # the number of ticks away from the spot price when MKT is filled
-                                   Tick_Value=0.5, # value per tick
-                                   Market_Time=3)) # 1: both regular and pre-market trading time, 2: only regular trading time, 3: only pre-market trading time
+                                   Penalty=1,# the number of ticks away from the spot price when MKT is filled
+                                   Tick_Value=0.5)) # value per tick
 Add_OrderRule(Strategy="Long_Short_Strategy",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
@@ -113,11 +112,11 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
                                    BuyToClose=list(OrderType="MKT",
                                                    Quantity=1,
                                                    Min_Sig_N=1))) # minimum number of positive signals from models to transmit
-
-
-
-
-
+# 
+# 
+# 
+# 
+# 
 # #*******************
 # #
 # # Long_Strategy ----
@@ -202,7 +201,7 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
 #                                    Stop_Order=Inf,
 #                                    Profit_Order=Inf,
 #                                    Maximum_Elapsed_Time=Inf,
-#                                    Commission=0.25))
+#                                    Commission=0.62))
 # Add_OrderRule(Strategy="Long_Strategy",
 #               OrderRule="Long",
 #               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
@@ -307,7 +306,7 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
 #                                    Stop_Order=Inf,
 #                                    Profit_Order=Inf,
 #                                    Maximum_Elapsed_Time=Inf,
-#                                    Commission=0.25))
+#                                    Commission=0.62))
 # # Add_OrderRule(Strategy="Short_Strategy",
 # #               OrderRule="Long",
 # #               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
@@ -405,7 +404,7 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
 #                                    Stop_Order=Inf,
 #                                    Profit_Order=Inf,
 #                                    Maximum_Elapsed_Time=Inf,
-#                                    Commission=0.25))
+#                                    Commission=0.62))
 # Add_OrderRule(Strategy="Live_Strategy",
 #               OrderRule="Long",
 #               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
@@ -528,5 +527,3 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
 #                                    BuyToClose=list(OrderType="MKT",
 #                                                    Quantity=Params$Open_N[i],
 #                                                    Min_Sig_N=Params$Close_N[i]))) # minimum number of positive signals from models to transmit
-
-

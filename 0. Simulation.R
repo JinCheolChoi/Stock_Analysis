@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="laptop" # "laptop" or "desktop"
+Device="desktop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -60,7 +60,7 @@ for(pack in c("IBrokers",
 }
 
 # import data
-MNQ=fread(paste0(data.dir, "5mins/", Symbols, "/", Symbols, ".csv"))
+MNQ=fread(paste0(data.dir, "15mins/", Symbols, "/", Symbols, ".csv"))
 
 # MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 Training_BarData=copy(MNQ[1:round(nrow(MNQ)/2)])
@@ -81,14 +81,14 @@ Live_Trading=FALSE
 # Open_Short_Consec_Times=c(3, 4)
 # Multiplier=c(80, 100, 120)
 # Reverse=c(TRUE)
-Simple_BBands_1_Long_PctB=0.2
+Simple_BBands_1_Long_PctB=0.25
 Simple_BBands_1_Short_PctB=0.75
-Simple_BBands_2_Long_PctB=0.2
-Simple_BBands_2_Short_PctB=0.8
+Simple_BBands_2_Long_PctB=0.3
+Simple_BBands_2_Short_PctB=0.75
 Open_Long_Consec_Times=3
 Open_Short_Consec_Times=4
 Multiplier=100
-Reverse=c(TRUE)
+Reverse=TRUE
 Params=data.table(
   expand.grid(
     Simple_BBands_1_Long_PctB,
@@ -257,7 +257,7 @@ for(i in 1:nrow(Params)){
 Params[, Row:=.I]
 Profitable_Strategies=c()
 {
-  for(Strategy in Strategies[!Strategies%in%c("RSI_Averages_Band_Strategy")]){
+  for(Strategy in Strategies){
     Temp=copy(Params)
     Temp[, paste0("NP_on_Training"):=eval(parse(text=paste0(Strategy, "_NP_on_Training")))]
     Temp[, paste0("NP_on_Test"):=eval(parse(text=paste0(Strategy, "_NP_on_Test")))]
@@ -345,8 +345,10 @@ Profitable_Strategies=c()
   }
   Profitable_Strategies[, NP:=NP_on_Training+NP_on_Test]
 }
+Params[, NP:=RSI_Averages_Band_Strategy_NP_on_Training+RSI_Averages_Band_Strategy_NP_on_Test]
+Params[, .SD[NP==max(NP)]]
 
-
+Profitable_Strategies
 # all profitable strategies
 Profitable_Strategies[, .SD[NP==max(NP)]]
 Best_Profitable_Strategy=Profitable_Strategies[, .SD[NP==max(NP)]][1]
@@ -378,8 +380,8 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 #**************
 # save and load
 #**************
-#save.image(paste0(rdata.dir, "Futures_2023-06-16 - 30mins.Rdata"))
-#load(paste0(rdata.dir, "Futures_2023-06-16 - 15mins.Rdata"))
+#save.image(paste0(rdata.dir, "Futures_2023-06-13 - 15mins - RSI.Rdata"))
+#load(paste0(rdata.dir, "Futures_2023-06-13 - 15mins.Rdata"))
 
 #*********************************************************
 # 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)

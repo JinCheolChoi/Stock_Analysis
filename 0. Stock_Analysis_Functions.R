@@ -2894,7 +2894,7 @@ lapply("Rcpp", checkpackages)
 # }')
 if(Device=="desktop"){
   # desktop
-  sourceCpp("C:/Users/JinCheol Choi/Desktop/C++/Order_Filled_C.cpp")
+  sourceCpp("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/Rcpp/Order_Filled_C.cpp")
 }else if(Device=="laptop"){
   # laptop
   sourceCpp("C:/Users/jchoi02/Desktop/R/Stock_Analysis/Rcpp/Order_Filled_C.cpp")
@@ -2932,13 +2932,17 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
     }
     
     if(abs(Net_Quantity_[i-1]+Quantity_[i])>Max_Orders){
+      # if(Quantity_[i]<0){
+      #   Quantity_[i]=max(Quantity_[i], -(Max_Orders+Net_Quantity_[i-1]))
+      # }else if(Quantity_[i]>=0){
+      #   Quantity_[i]=min(Quantity_[i], Max_Orders-Net_Quantity_[i-1])
+      # }
       if(Quantity_[i]<0){
-        Quantity_[i]=max(Quantity_[i], -(Max_Orders+Net_Quantity_[i-1]))
+        Quantity_[i]=max(Quantity_[i], -(Max_Orders))
       }else if(Quantity_[i]>=0){
-        Quantity_[i]=min(Quantity_[i], Max_Orders-Net_Quantity_[i-1])
+        Quantity_[i]=min(Quantity_[i], Max_Orders)
       }
     }
-    
     
     # if abs(Net_Quantity_[i-1])>=Max_Orders
     if(abs(Net_Quantity_[i-1])>=Max_Orders){
@@ -3148,7 +3152,7 @@ apply_row_sum_C=\(){}
 # }')
 if(Device=="desktop"){
   # desktop
-  sourceCpp("C:/Users/JinCheol Choi/Desktop/C++/apply_row_sum_C.cpp")
+  sourceCpp("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/Rcpp/apply_row_sum_C.cpp")
 }else if(Device=="laptop"){
   # laptop
   sourceCpp("C:/Users/jchoi02/Desktop/R/Stock_Analysis/Rcpp/apply_row_sum_C.cpp")
