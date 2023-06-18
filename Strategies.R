@@ -426,7 +426,7 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
 # 
 # #********************************
 # #
-# # RSI_Averages_Band_Strategy ---- 
+# # RSI_Averages_Band_Strategy ----
 # #
 # #********************************
 # # initiate a strategy called "RSI_Averages_Band_Strategy"
@@ -444,7 +444,7 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
 # 
 # Add_Indicator(Strategy="RSI_Averages_Band_Strategy",
 #               Indicator="RSI",
-#               IndicatorParams=list(n=Params$RSI_n[i]))
+#               IndicatorParams=list(n=10))
 # 
 # Add_Indicator(Strategy="RSI_Averages_Band_Strategy",
 #               Indicator="Close")
@@ -457,9 +457,9 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
 #           Model="RSI_Averages_Band",
 #           Model_Name="RSI_Averages_Band_1",
 #           ModelParams=list(MA_Length=16,
-#                            RSI_RSI_MA_Diff_Min=0,
-#                            RSI_RSI_MA_Diff_Max=Inf,
-#                            Early_Execution_Gap=Inf,
+#                            RSI_RSI_MA_Diff_Min=Params$RSI_RSI_MA_Diff_Min[i],
+#                            RSI_RSI_MA_Diff_Max=Params$RSI_RSI_MA_Diff_Max[i],
+#                            Early_Execution_Gap=Params$Early_Execution_Gap[i],
 #                            Live_Trading=Live_Trading,
 #                            Reverse=Params$Reverse[i]))
 # Add_Model(Strategy="RSI_Averages_Band_Strategy",
@@ -493,20 +493,12 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
 #           Model="RSI_Averages_Band",
 #           Model_Name="RSI_Averages_Band_5",
 #           ModelParams=list(MA_Length=48,
-#                            RSI_RSI_MA_Diff_Min=0,
-#                            RSI_RSI_MA_Diff_Max=Inf,
-#                            Early_Execution_Gap=Inf,
+#                            RSI_RSI_MA_Diff_Min=Params$RSI_RSI_MA_Diff_Min[i],
+#                            RSI_RSI_MA_Diff_Max=Params$RSI_RSI_MA_Diff_Max[i],
+#                            Early_Execution_Gap=Params$Early_Execution_Gap[i],
 #                            Live_Trading=Live_Trading,
 #                            Reverse=Params$Reverse[i]))
-# Add_Model(Strategy="RSI_Averages_Band_Strategy",
-#           Model="RSI_Averages_Band",
-#           Model_Name="RSI_Averages_Band_6",
-#           ModelParams=list(MA_Length=32,
-#                            RSI_RSI_MA_Diff_Min=Inf,
-#                            RSI_RSI_MA_Diff_Max=0,
-#                            Early_Execution_Gap=30,
-#                            Live_Trading=Live_Trading,
-#                            Reverse=Params$Reverse[i]))
+# 
 # 
 # 
 # #***************
@@ -519,22 +511,22 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
 #                                    Stop_Order=Inf,
 #                                    Profit_Order=Inf,
 #                                    Maximum_Elapsed_Time=Inf,
-#                                    Commission=0.25))
+#                                    Commission=0.62))
 # Add_OrderRule(Strategy="RSI_Averages_Band_Strategy",
 #               OrderRule="Long",
 #               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
 #                                                   Quantity=1,
-#                                                   Min_Sig_N=3),
+#                                                   Min_Sig_N=Params$Open_N[i]),
 #                                    SellToClose=list(OrderType="MKT",
 #                                                     Quantity=1,
-#                                                     Min_Sig_N=5)))
+#                                                     Min_Sig_N=Params$Close_N[i])))
 # Add_OrderRule(Strategy="RSI_Averages_Band_Strategy",
 #               OrderRule="Short",
 #               OrderRuleParams=list(SellToOpen=list(OrderType="MKT",
 #                                                    Quantity=1,
-#                                                    Min_Sig_N=3), # minimum number of positive signals from models to transmit
+#                                                    Min_Sig_N=1), # minimum number of positive signals from models to transmit
 #                                    BuyToClose=list(OrderType="MKT",
-#                                                    Quantity=1,
-#                                                    Min_Sig_N=5))) # minimum number of positive signals from models to transmit
+#                                                    Quantity=Params$Open_N[i],
+#                                                    Min_Sig_N=Params$Close_N[i]))) # minimum number of positive signals from models to transmit
 
 
