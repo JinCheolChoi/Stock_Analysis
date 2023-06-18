@@ -26,6 +26,8 @@ Penalty=as.numeric(Order_Rules[["General"]][["Penalty"]])
 # value per tick
 Tick_Value=as.numeric(Order_Rules[["General"]][["Tick_Value"]])
 
+# Market_Time
+Market_Time=as.numeric(Order_Rules[["General"]][["Market_Time"]])
 
 #******************
 # preliminary steps
