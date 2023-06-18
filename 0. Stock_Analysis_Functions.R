@@ -2932,15 +2932,19 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
     }
     
     if(abs(Net_Quantity_[i-1]+Quantity_[i])>Max_Orders){
-      # if(Quantity_[i]<0){
-      #   Quantity_[i]=max(Quantity_[i], -(Max_Orders+Net_Quantity_[i-1]))
-      # }else if(Quantity_[i]>=0){
-      #   Quantity_[i]=min(Quantity_[i], Max_Orders-Net_Quantity_[i-1])
-      # }
-      if(Quantity_[i]<0){
-        Quantity_[i]=max(Quantity_[i], -(Max_Orders))
-      }else if(Quantity_[i]>=0){
-        Quantity_[i]=min(Quantity_[i], Max_Orders)
+      if(Detail_[i]=="BTC"|
+         Detail_[i]=="STC"){
+        if(Quantity_[i]<0){
+          Quantity_[i]=max(Quantity_[i], -(Max_Orders))
+        }else if(Quantity_[i]>=0){
+          Quantity_[i]=min(Quantity_[i], Max_Orders)
+        }
+      }else{
+        if(Quantity_[i]<0){
+          Quantity_[i]=max(Quantity_[i], -(Max_Orders+Net_Quantity_[i-1]))
+        }else if(Quantity_[i]>=0){
+          Quantity_[i]=min(Quantity_[i], Max_Orders-Net_Quantity_[i-1])
+        }
       }
     }
     

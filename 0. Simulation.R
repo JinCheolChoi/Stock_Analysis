@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="desktop" # "laptop" or "desktop"
+Device="laptop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -345,10 +345,7 @@ Profitable_Strategies=c()
   }
   Profitable_Strategies[, NP:=NP_on_Training+NP_on_Test]
 }
-Params[, NP:=RSI_Averages_Band_Strategy_NP_on_Training+RSI_Averages_Band_Strategy_NP_on_Test]
-Params[, .SD[NP==max(NP)]]
 
-Profitable_Strategies
 # all profitable strategies
 Profitable_Strategies[, .SD[NP==max(NP)]]
 Best_Profitable_Strategy=Profitable_Strategies[, .SD[NP==max(NP)]][1]
