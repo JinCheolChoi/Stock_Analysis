@@ -1078,6 +1078,8 @@ Backtesting=function(BarData,
   ################
   # work on here!!
   ################
+  # Market_Time
+  # 1: both regular and pre-market trading time, 2: only regular trading time, 3: only pre-market trading time
   switch(
     as.character(Market_Time),
     
@@ -1086,16 +1088,17 @@ Backtesting=function(BarData,
     },
     
     "2"={
-      Which_Signals[Trading_Time>="06:30:00" &
-                      Trading_Time<="13:15:00"]
+      Which_Signals=Which_Signals[Trading_Time>="06:30:00" &
+                                    Trading_Time<=format(as.POSIXct("1970-01-01 14:00:00")-Time_Unit, format="%H:%M:%S")]
+      
+      
     },
     
     "3"={
-      Which_Signals[Trading_Time<="06:30:00" &
-                      Trading_Time<="13:15:00"]
+      Which_Signals=Which_Signals[!(Trading_Time>="06:30:00" &
+                                      Trading_Time<=format(as.POSIXct("1970-01-01 14:00:00")-Time_Unit, format="%H:%M:%S"))]
     }
   )
-  
   
   Order_Filled_Results=Order_Filled_C(Which_Signals=Which_Signals,
                                       Max_Orders=Max_Orders)
@@ -1111,6 +1114,7 @@ Backtesting=function(BarData,
   STO_Orders=Which_Signals[Which_Signals[["Detail"]]=="STO", ]
   BTC_Orders=Which_Signals[Which_Signals[["Detail"]]=="BTC", ]
   
+  BarData[, Time:=as.POSIXct(Time)]
   if(sum(c("Long", "Short")%in%Position_Names)==2){
     # Orders_Transmitted
     Orders_Transmitted=rbind(
