@@ -2894,7 +2894,7 @@ lapply("Rcpp", checkpackages)
 # }')
 if(Device=="desktop"){
   # desktop
-  sourceCpp("C:/Users/JinCheol Choi/Desktop/C++/Order_Filled_C.cpp")
+  sourceCpp("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/Rcpp/Order_Filled_C.cpp")
 }else if(Device=="laptop"){
   # laptop
   sourceCpp("C:/Users/jchoi02/Desktop/R/Stock_Analysis/Rcpp/Order_Filled_C.cpp")
@@ -3152,7 +3152,7 @@ apply_row_sum_C=\(){}
 # }')
 if(Device=="desktop"){
   # desktop
-  sourceCpp("C:/Users/JinCheol Choi/Desktop/C++/apply_row_sum_C.cpp")
+  sourceCpp("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/Rcpp/apply_row_sum_C.cpp")
 }else if(Device=="laptop"){
   # laptop
   sourceCpp("C:/Users/jchoi02/Desktop/R/Stock_Analysis/Rcpp/apply_row_sum_C.cpp")

@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="laptop" # "laptop" or "desktop"
+Device="desktop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -60,7 +60,7 @@ for(pack in c("IBrokers",
 }
 
 # import data
-MNQ=fread(paste0(data.dir, "5mins/", Symbols, "/", Symbols, ".csv"))
+MNQ=fread(paste0(data.dir, "15mins/", Symbols, "/", Symbols, ".csv"))
 
 # MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 Training_BarData=copy(MNQ[1:round(nrow(MNQ)/2)])
@@ -81,53 +81,35 @@ Live_Trading=FALSE
 # Open_Short_Consec_Times=c(3, 4)
 # Multiplier=c(80, 100, 120)
 # Reverse=c(TRUE)
-# Params=data.table(
-#   expand.grid(
-#     Simple_BBands_1_Long_PctB,
-#     Simple_BBands_1_Short_PctB,
-#     Simple_BBands_2_Long_PctB,
-#     Simple_BBands_2_Short_PctB,
-#     Open_Long_Consec_Times,
-#     Open_Short_Consec_Times,
-#     Multiplier,
-#     Reverse
-#   )
-# )
-# Tuning_Parameters=c(
-#   "Simple_BBands_1_Long_PctB",
-#   "Simple_BBands_1_Short_PctB",
-#   "Simple_BBands_2_Long_PctB",
-#   "Simple_BBands_2_Short_PctB",
-#   "Open_Long_Consec_Times",
-#   "Open_Short_Consec_Times",
-#   "Multiplier",
-#   "Reverse"
-# )
-# colnames(Params)=Tuning_Parameters
-Reverse=c(FALSE, TRUE)
-Open_N=c(1:5)
-Close_N=c(1:5)
-RSI_RSI_MA_Diff_Min=c(1:5)
-RSI_RSI_MA_Diff_Max=c(6:10)
-Early_Execution_Gap=c(11:15)
-
+Simple_BBands_1_Long_PctB=0.25
+Simple_BBands_1_Short_PctB=0.75
+Simple_BBands_2_Long_PctB=0.3
+Simple_BBands_2_Short_PctB=0.75
+Open_Long_Consec_Times=3
+Open_Short_Consec_Times=4
+Multiplier=100
+Reverse=TRUE
 Params=data.table(
   expand.grid(
-    Reverse,
-    Open_N,
-    Close_N,
-    RSI_RSI_MA_Diff_Min,
-    RSI_RSI_MA_Diff_Max,
-    Early_Execution_Gap
+    Simple_BBands_1_Long_PctB,
+    Simple_BBands_1_Short_PctB,
+    Simple_BBands_2_Long_PctB,
+    Simple_BBands_2_Short_PctB,
+    Open_Long_Consec_Times,
+    Open_Short_Consec_Times,
+    Multiplier,
+    Reverse
   )
 )
 Tuning_Parameters=c(
-  "Reverse",
-  "Open_N",
-  "Close_N",
-  "RSI_RSI_MA_Diff_Min",
-  "RSI_RSI_MA_Diff_Max",
-  "Early_Execution_Gap"
+  "Simple_BBands_1_Long_PctB",
+  "Simple_BBands_1_Short_PctB",
+  "Simple_BBands_2_Long_PctB",
+  "Simple_BBands_2_Short_PctB",
+  "Open_Long_Consec_Times",
+  "Open_Short_Consec_Times",
+  "Multiplier",
+  "Reverse"
 )
 colnames(Params)=Tuning_Parameters
 
