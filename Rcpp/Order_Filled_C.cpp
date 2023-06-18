@@ -50,21 +50,28 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
 
     if (abs(Net_Quantity_[i - 1] + Quantity_[i]) > Max_Orders)
     {
-      // if (Quantity_[i] < 0)
-      // {
-      //   Quantity_[i] = max(Quantity_[i], -(Max_Orders + Net_Quantity_[i - 1]));
-      // }
-      // else if (Quantity_[i] >= 0)
-      // {
-      //   Quantity_[i] = min(Quantity_[i], Max_Orders - Net_Quantity_[i - 1]);
-      // }
-      if (Quantity_[i] < 0)
+      if (Detail_[i] == "BTC" ||
+          Detail_[i] == "STC")
       {
-        Quantity_[i] = max(Quantity_[i], -(Max_Orders));
+        if (Quantity_[i] < 0)
+        {
+          Quantity_[i] = max(Quantity_[i], -(Max_Orders));
+        }
+        else if (Quantity_[i] >= 0)
+        {
+          Quantity_[i] = min(Quantity_[i], Max_Orders);
+        }
       }
-      else if (Quantity_[i] >= 0)
+      else
       {
-        Quantity_[i] = min(Quantity_[i], Max_Orders);
+        if (Quantity_[i] < 0)
+        {
+          Quantity_[i] = max(Quantity_[i], -(Max_Orders + Net_Quantity_[i - 1]));
+        }
+        else if (Quantity_[i] >= 0)
+        {
+          Quantity_[i] = min(Quantity_[i], Max_Orders - Net_Quantity_[i - 1]);
+        }
       }
     }
 
@@ -83,7 +90,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
       switch (Both_Direction_[i])
       {
       case true:
-        if (Both_Direction_Ind==Ind_[i])
+        if (Both_Direction_Ind == Ind_[i])
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
           Both_Direction_Ind = Ind_[i];
