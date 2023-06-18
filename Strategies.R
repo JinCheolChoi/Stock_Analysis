@@ -94,8 +94,9 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
                                    Maximum_Elapsed_Time=Inf,
                                    Commission=0.62,
                                    Tick_Size=0.25, # the minimum tick size
-                                   Penalty=1,# the number of ticks away from the spot price when MKT is filled
-                                   Tick_Value=0.5)) # value per tick
+                                   Penalty=1, # the number of ticks away from the spot price when MKT is filled
+                                   Tick_Value=0.5, # value per tick
+                                   Market_Time=3)) # 1: both regular and pre-market trading time, 2: only regular trading time, 3: only pre-market trading time
 Add_OrderRule(Strategy="Long_Short_Strategy",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",

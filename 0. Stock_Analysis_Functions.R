@@ -43,26 +43,26 @@ System_Break=function(Rerun_Trading=0,
   
   #**********************
   # Daily temporary break
-  # if time is between 13:10:00 and 13:15:00 PDT
-  if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")&
-     (CurrentTime>=(as.ITime("13:10:00"))&
-      CurrentTime<=(as.ITime("13:15:00")))){
-    
-    # (1) for 23 mins from 13:10:00 to 13:33:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
-    Duration=60*23
-    
-    # put the system to sleep
-    message("market closed : 13:15:00 to 13:30:00 PDT")
-    
-  }
+  # # if time is between 13:14:00 and 13:15:00 PDT
+  # if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")&
+  #    (CurrentTime>=(as.ITime("13:14:00"))&
+  #     CurrentTime<=(as.ITime("13:15:00")))){
+  #   
+  #   # (1) for 16 mins from 13:14:00 to 13:30:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
+  #   Duration=60*16
+  #   
+  #   # put the system to sleep
+  #   message("market closed : 13:15:00 to 13:30:00 PDT")
+  #   
+  # }
   
-  # if time is between 13:50:00 and 14:00:00 PDT
+  # if time is between 13:59:00 and 14:00:00 PDT
   if(ToDay%in%c("Monday", "Tuesday", "Wednesday", "Thursday")&
-     (CurrentTime>=(as.ITime("13:50:00"))&
+     (CurrentTime>=(as.ITime("13:59:00"))&
       CurrentTime<=(as.ITime("14:00:00")))){
     
-    # (2) for 73 mins from 13:50:00 to 15:03:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
-    Duration=60*73
+    # (2) for 62 mins from 13:59:00 to 15:00:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
+    Duration=60*61
     
     # put the system to sleep
     message("market closed : 14:00:00 to 15:00:00 PDT")
@@ -84,9 +84,9 @@ System_Break=function(Rerun_Trading=0,
   
   #***********
   # Long break
-  if((ToDay=="Friday" & CurrentTime>=(as.ITime("13:50:00"))) | # the market closes at 14:00:00 PDT on Friday
+  if((ToDay=="Friday" & CurrentTime>=(as.ITime("13:59:00"))) | # the market closes at 14:00:00 PDT on Friday
      (ToDay=="Saturday") | # the market closes on Saturday
-     (ToDay=="Sunday" & CurrentTime<(as.ITime("15:05:00")))){ # the market opens at 15:00:00 PDT on Sunday
+     (ToDay=="Sunday" & CurrentTime<(as.ITime("15:01:00")))){ # the market opens at 15:00:00 PDT on Sunday
     
     # no need to re-run the live trading algorithm during weekends
     Rerun=0
@@ -111,7 +111,7 @@ System_Break=function(Rerun_Trading=0,
   
   # echo re-run message
   if(Rerun==1){
-    for(Secs_Left in 1:Duration){
+    for(Secs_Left in 1:(Duration-1)){
       message(paste0("Re-run live trading in ", Duration-Secs_Left+1, " seconds"))
       Sys.sleep(1)
     }
@@ -990,7 +990,7 @@ Backtesting=function(BarData,
   #****************************
   Long_Which_Signals=c()
   Short_Which_Signals=c()
-
+  
   if("Long"%in%Position_Names){
     BuyToOpen_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Min_Sig_N"]])
     # BuyToOpen_Min_Sig_N=1
@@ -1003,6 +1003,7 @@ Backtesting=function(BarData,
       Long_Which_Signals=rbind(
         data.table(
           Ind=which(BuyToOpen_Signals),
+          Time=BarData[BuyToOpen_Signals, Time],
           Signals=Long_Signals_Sums[which(BuyToOpen_Signals)],
           Action="Buy",
           Detail="BTO",
@@ -1010,6 +1011,7 @@ Backtesting=function(BarData,
         ),
         data.table(
           Ind=which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))],
+          Time=BarData[which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))], Time],
           Signals=Short_Signals_Sums[which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))]],
           Action="Sell",
           Detail="STC",
@@ -1030,6 +1032,7 @@ Backtesting=function(BarData,
       Short_Which_Signals=rbind(
         data.table(
           Ind=which(SellToOpen_Signals),
+          Time=BarData[SellToOpen_Signals, Time],
           Signals=Short_Signals_Sums[which(SellToOpen_Signals)],
           Action="Sell",
           Detail="STO",
@@ -1037,6 +1040,7 @@ Backtesting=function(BarData,
         ),
         data.table(
           Ind=which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))],
+          Time=BarData[which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))], Time],
           Signals=Long_Signals_Sums[which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))]],
           Action="Buy",
           Detail="BTC",
@@ -1061,6 +1065,37 @@ Backtesting=function(BarData,
   )
   Which_Signals[, Both_Direction:=duplicated(Which_Signals[["Ind"]], fromLast=T)|duplicated(Which_Signals[["Ind"]], fromLast=F)]
   Which_Signals=Which_Signals[order(Ind, Detail)] # make sure BTO comes ahead of STO given Both_Direction==TRUE
+  
+  #*******************
+  # Choose to consider
+  # (1) regular market trading time
+  # (2) pre-market (overnight) trading time
+  #****************************************
+  Which_Signals[, Submit_Time:=Time+Time_Unit]
+  Which_Signals[, Submit_Time:=format(Submit_Time, tz="America/Los_Angeles")]
+  Which_Signals[, Trading_Time:=format(as.POSIXct(Submit_Time), format="%H:%M:%S")]
+  
+  ################
+  # work on here!!
+  ################
+  switch(
+    as.character(Market_Time),
+    
+    "1"={
+      Which_Signals=Which_Signals
+    },
+    
+    "2"={
+      Which_Signals[Trading_Time>="06:30:00" &
+                      Trading_Time<="13:15:00"]
+    },
+    
+    "3"={
+      Which_Signals[Trading_Time<="06:30:00" &
+                      Trading_Time<="13:15:00"]
+    }
+  )
+  
   
   Order_Filled_Results=Order_Filled_C(Which_Signals=Which_Signals,
                                       Max_Orders=Max_Orders)
@@ -1227,6 +1262,9 @@ Backtesting=function(BarData,
     )
   }
   Orders_Transmitted=Orders_Transmitted[order(Submit_Time, Row_N), ]
+  
+  # remove regular trading time transactions
+  
   
   #**********************
   # calculate the balance

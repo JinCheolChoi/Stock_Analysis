@@ -64,12 +64,12 @@ lapply(
 # 
 # 
 # # manually set the triggers to
-# # (1)
-# # at 13:10:00
+# # (1) - this is no longer applicable since the futures are still in trading between 13:15:00 to 14:00:00
+# # at 13:14:00
 # # every "Monday", "Tuesday", "Wednesday", "Thursday", and "Friday",
 # #
 # # (2)
-# # at 13:50:00
+# # at 13:54:00
 # # every "Monday", "Tuesday", "Wednesday", "Thursday", and "Friday"; and
 # taskscheduler_create(taskname="Stop_Live_Trading",
 #                      rscript=paste0(working.dir, "Stop_Live_Trading.R"),

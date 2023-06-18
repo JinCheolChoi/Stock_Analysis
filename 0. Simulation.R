@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="laptop" # "laptop" or "desktop"
+Device="desktop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -59,8 +59,8 @@ for(pack in c("IBrokers",
   lapply(pack, checkpackages)
 }
 
-# # import data
-MNQ=fread(paste0(data.dir, "15mins/", Symbols, "/", Symbols, ".csv"))
+# import data
+MNQ=fread(paste0(data.dir, "5mins/", Symbols, "/", Symbols, ".csv"))
 
 # MNQ[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 Training_BarData=copy(MNQ[1:round(nrow(MNQ)/2)])
@@ -85,11 +85,10 @@ Simple_BBands_1_Long_PctB=0.2
 Simple_BBands_1_Short_PctB=0.75
 Simple_BBands_2_Long_PctB=0.2
 Simple_BBands_2_Short_PctB=0.8
-Open_Long_Consec_Times=c(1, 2, 3, 4)
-Open_Short_Consec_Times=c(1, 2, 3, 4)
+Open_Long_Consec_Times=3
+Open_Short_Consec_Times=4
 Multiplier=100
-Reverse=TRUE
-
+Reverse=c(TRUE)
 Params=data.table(
   expand.grid(
     Simple_BBands_1_Long_PctB,
@@ -379,8 +378,8 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 #**************
 # save and load
 #**************
-#save.image(paste0(rdata.dir, "Futures_2023-06-13 - 5secs.Rdata"))
-#load(paste0(rdata.dir, "Futures_2023-06-13 - 15mins.Rdata"))
+#save.image(paste0(rdata.dir, "Futures_2023-06-16 - 30mins.Rdata"))
+#load(paste0(rdata.dir, "Futures_2023-06-16 - 15mins.Rdata"))
 
 #*********************************************************
 # 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
