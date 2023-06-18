@@ -1075,9 +1075,7 @@ Backtesting=function(BarData,
   Which_Signals[, Submit_Time:=format(Submit_Time, tz="America/Los_Angeles")]
   Which_Signals[, Trading_Time:=format(as.POSIXct(Submit_Time), format="%H:%M:%S")]
   
-  ################
-  # work on here!!
-  ################
+  #************
   # Market_Time
   # 1: both regular and pre-market trading time, 2: only regular trading time, 3: only pre-market trading time
   switch(
@@ -1099,6 +1097,9 @@ Backtesting=function(BarData,
                                       Trading_Time<=format(as.POSIXct("1970-01-01 14:00:00")-Time_Unit, format="%H:%M:%S"))]
     }
   )
+  Which_Signals=Which_Signals[Ind>=min(Which_Signals[Detail=="BTO" |
+                                                       Detail=="STO", Ind]), ]
+  
   
   Order_Filled_Results=Order_Filled_C(Which_Signals=Which_Signals,
                                       Max_Orders=Max_Orders)

@@ -96,7 +96,7 @@ Add_OrderRule(Strategy="Long_Short_Strategy",
                                    Tick_Size=0.25, # the minimum tick size
                                    Penalty=1,# the number of ticks away from the spot price when MKT is filled
                                    Tick_Value=0.5, # value per tick
-                                   Market_Time=1))
+                                   Market_Time=Params$Market_Time[i]))
 Add_OrderRule(Strategy="Long_Short_Strategy",
               OrderRule="Long",
               OrderRuleParams=list(BuyToOpen=list(OrderType="MKT",
