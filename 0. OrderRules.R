@@ -25,7 +25,8 @@ OrderRules_Env$General=list(
   Commission=0.25, # Commission per contract
   Tick_Size=0.25, # the minimum tick size
   Penalty=1, # the number of ticks away from the spot price when MKT is filled
-  Tick_Value=0.5 # value per tick
+  Tick_Value=0.5, # value per tick
+  Market_Time=1 # 1: both regular and pre-market trading time, 2: only regular trading time, 3: only pre-market trading time
 )
 
 
