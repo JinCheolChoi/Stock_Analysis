@@ -81,46 +81,64 @@ Live_Trading=FALSE
 # Open_Short_Consec_Times=c(3, 4)
 # Multiplier=c(80, 100, 120)
 # Reverse=c(TRUE)
-Simple_BBands_1_Long_PctB=0.2
-Simple_BBands_1_Short_PctB=0.75
-Simple_BBands_2_Long_PctB=0.2
-Simple_BBands_2_Short_PctB=0.8
-Open_Long_Consec_Times=3
-Open_Short_Consec_Times=4
-Multiplier=100
-Reverse=c(TRUE)
+# Params=data.table(
+#   expand.grid(
+#     Simple_BBands_1_Long_PctB,
+#     Simple_BBands_1_Short_PctB,
+#     Simple_BBands_2_Long_PctB,
+#     Simple_BBands_2_Short_PctB,
+#     Open_Long_Consec_Times,
+#     Open_Short_Consec_Times,
+#     Multiplier,
+#     Reverse
+#   )
+# )
+# Tuning_Parameters=c(
+#   "Simple_BBands_1_Long_PctB",
+#   "Simple_BBands_1_Short_PctB",
+#   "Simple_BBands_2_Long_PctB",
+#   "Simple_BBands_2_Short_PctB",
+#   "Open_Long_Consec_Times",
+#   "Open_Short_Consec_Times",
+#   "Multiplier",
+#   "Reverse"
+# )
+# colnames(Params)=Tuning_Parameters
+Reverse=c(FALSE, TRUE)
+Open_N=c(1:5)
+Close_N=c(1:5)
+RSI_RSI_MA_Diff_Min=c(1:5)
+RSI_RSI_MA_Diff_Max=c(6:10)
+Early_Execution_Gap=c(11:15)
+
 Params=data.table(
   expand.grid(
-    Simple_BBands_1_Long_PctB,
-    Simple_BBands_1_Short_PctB,
-    Simple_BBands_2_Long_PctB,
-    Simple_BBands_2_Short_PctB,
-    Open_Long_Consec_Times,
-    Open_Short_Consec_Times,
-    Multiplier,
-    Reverse
+    Reverse,
+    Open_N,
+    Close_N,
+    RSI_RSI_MA_Diff_Min,
+    RSI_RSI_MA_Diff_Max,
+    Early_Execution_Gap
   )
 )
 Tuning_Parameters=c(
-  "Simple_BBands_1_Long_PctB",
-  "Simple_BBands_1_Short_PctB",
-  "Simple_BBands_2_Long_PctB",
-  "Simple_BBands_2_Short_PctB",
-  "Open_Long_Consec_Times",
-  "Open_Short_Consec_Times",
-  "Multiplier",
-  "Reverse"
+  "Reverse",
+  "Open_N",
+  "Close_N",
+  "RSI_RSI_MA_Diff_Min",
+  "RSI_RSI_MA_Diff_Max",
+  "Early_Execution_Gap"
 )
 colnames(Params)=Tuning_Parameters
 
 for(i in 1:nrow(Params)){
-  # i=159
-  if(Params[i, Simple_BBands_1_Long_PctB]==0 &
-     Params[i, Simple_BBands_2_Short_PctB]==1){
-    Params$Net_Profit_on_Training[i]=0
-    Params$Net_Profit_on_Test[i]=0
-    next
-  }
+  # # i=3299
+  # if(Params[i, Simple_BBands_1_Long_PctB]==0 &
+  #    Params[i, Simple_BBands_2_Short_PctB]==1){
+  #   Params$Net_Profit_on_Training[i]=0
+  #   Params$Net_Profit_on_Test[i]=0
+  #   next
+  # }
   
   # import strategies
   source(paste0(working.dir, "Strategies.R"))
@@ -257,7 +275,7 @@ for(i in 1:nrow(Params)){
 Params[, Row:=.I]
 Profitable_Strategies=c()
 {
-  for(Strategy in Strategies[!Strategies%in%c("RSI_Averages_Band_Strategy")]){
+  for(Strategy in Strategies){
     Temp=copy(Params)
     Temp[, paste0("NP_on_Training"):=eval(parse(text=paste0(Strategy, "_NP_on_Training")))]
     Temp[, paste0("NP_on_Test"):=eval(parse(text=paste0(Strategy, "_NP_on_Test")))]
@@ -345,8 +363,10 @@ Profitable_Strategies=c()
   }
   Profitable_Strategies[, NP:=NP_on_Training+NP_on_Test]
 }
+Params[, NP:=RSI_Averages_Band_Strategy_NP_on_Training+RSI_Averages_Band_Strategy_NP_on_Test]
+Params[, .SD[NP==max(NP)]]
 
-
+Profitable_Strategies
 # all profitable strategies
 Profitable_Strategies[, .SD[NP==max(NP)]]
 Best_Profitable_Strategy=Profitable_Strategies[, .SD[NP==max(NP)]][1]
@@ -378,8 +398,8 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 #**************
 # save and load
 #**************
-#save.image(paste0(rdata.dir, "Futures_2023-06-16 - 30mins.Rdata"))
-#load(paste0(rdata.dir, "Futures_2023-06-16 - 15mins.Rdata"))
+#save.image(paste0(rdata.dir, "Futures_2023-06-13 - 15mins - RSI.Rdata"))
+#load(paste0(rdata.dir, "Futures_2023-06-13 - 15mins.Rdata"))
 
 #*********************************************************
 # 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
