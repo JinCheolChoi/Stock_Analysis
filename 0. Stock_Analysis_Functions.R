@@ -332,16 +332,16 @@ Get_5SecsBarHistData=function(Symbol,
   
   # remove data while system is halted during temporary market close times
   if(Filter==T){
-    #(1) for 23 mins from 13:10:00 to 13:33:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
-    #(2) for 73 mins from 13:50:00 to 15:03:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
+    #(1) (not applicable) for 17 mins from 13:14:00 to 13:31:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
+    #(2) for 63 mins from 13:59:00 to 15:00:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
     # (ToDay=="Friday" & CurrentTime>=(as.ITime("13:50:00"))) | # the market closes at 14:00:00 PDT on Friday
     #   (ToDay=="Saturday") | # the market closes on Saturday
     #   (ToDay=="Sunday" & CurrentTime<(as.ITime("15:05:00")))
     `5SecsBarHistData`[, Daily_Time:=strftime(Time, format="%H:%M:%S", tz="America/Los_Angeles")]
-    `5SecsBarHistData`<<-`5SecsBarHistData`[!(Daily_Time>="13:10:00" &
-                                                Daily_Time<"13:35:00"), ]
-    `5SecsBarHistData`<<-`5SecsBarHistData`[!(Daily_Time>="13:50:00" &
-                                                Daily_Time<"15:05:00"), ]
+    # `5SecsBarHistData`<<-`5SecsBarHistData`[!(Daily_Time>="13:10:00" &
+    #                                             Daily_Time<"13:35:00"), ]
+    `5SecsBarHistData`<<-`5SecsBarHistData`[!(Daily_Time>="13:59:00" &
+                                                Daily_Time<"15:00:00"), ]
     `5SecsBarHistData`[, Daily_Time:=NULL]
   }
 }
@@ -1051,8 +1051,12 @@ Backtesting=function(BarData,
   }
   
   if(sum(BuyToOpen_Signals)==0 &
-     sum(SellToClose_Signals)==0 &
-     sum(SellToOpen_Signals)==0 &
+     sum(SellToOpen_Signals)==0){
+    return(list(Orders_Transmitted=NA,
+                Ind_Profit=NA,
+                Net_Profit=NA))
+  }
+  if(sum(SellToClose_Signals)==0 &
      sum(BuyToClose_Signals)==0){
     return(list(Orders_Transmitted=NA,
                 Ind_Profit=NA,
@@ -1078,6 +1082,8 @@ Backtesting=function(BarData,
   #************
   # Market_Time
   # 1: both regular and pre-market trading time, 2: only regular trading time, 3: only pre-market trading time
+  # last trading time prior to market close
+  Last_Trading_Time=format(as.POSIXct(paste0("1970-01-01 ", Market_Close_Time))-Time_Unit, format="%H:%M:%S")
   switch(
     as.character(Market_Time),
     
@@ -1086,15 +1092,22 @@ Backtesting=function(BarData,
     },
     
     "2"={
-      Which_Signals=Which_Signals[Trading_Time>="06:30:00" &
-                                    Trading_Time<=format(as.POSIXct("1970-01-01 14:00:00")-Time_Unit, format="%H:%M:%S")]
+      Which_Signals=Which_Signals[Trading_Time>=Market_Open_Time &
+                                    Trading_Time<=Last_Trading_Time]
     },
     
     "3"={
-      Which_Signals=Which_Signals[!(Trading_Time>="06:30:00" &
-                                      Trading_Time<=format(as.POSIXct("1970-01-01 14:00:00")-Time_Unit, format="%H:%M:%S"))]
+      Which_Signals=Which_Signals[!(Trading_Time>=Market_Open_Time &
+                                      Trading_Time<=Last_Trading_Time)]
     }
   )
+  
+  if(length(Which_Signals[Detail=="BTO" |
+                          Detail=="STO", Ind])==0){
+    return(list(Orders_Transmitted=NA,
+                Ind_Profit=NA,
+                Net_Profit=NA))
+  }
   Which_Signals=Which_Signals[Ind>=min(Which_Signals[Detail=="BTO" |
                                                        Detail=="STO", Ind]), ]
   
@@ -1108,6 +1121,57 @@ Backtesting=function(BarData,
                        Remove=Order_Filled_Results$Remove)]
   
   Which_Signals=Which_Signals[Remove==0, ]
+  
+  # ##############################
+  # # Market_Time==3
+  # Which_Signals[, Submit_Date:=as.Date(Submit_Time)]
+  # 
+  # # Pre_Market=Which_Signals[, .SD[Trading_Time<Market_Open_Time], by="Submit_Date"]
+  # # Post_Market=Which_Signals[, .SD[Trading_Time>Last_Trading_Time], by="Submit_Date"]
+  # 
+  # Which_Signals[(Trading_Time<Market_Open_Time),
+  #               Market_Ind:=as.numeric(Submit_Date-1),
+  #               by="Submit_Date"]
+  # 
+  # Which_Signals[(Trading_Time>Last_Trading_Time),
+  #               Market_Ind:=as.numeric(Submit_Date),
+  #               by="Submit_Date"]
+  # 
+  # 
+  # # Pre_Market[, Market_Ind:=as.numeric(Submit_Date-1), by="Submit_Date"]
+  # # Post_Market[, Market_Ind:=as.numeric(Submit_Date), by="Submit_Date"]
+  # # 
+  # # if(nrow(Which_Signals)!=(nrow(Pre_Market)+nrow(Post_Market))){
+  # #   break;
+  # # }
+  # # Which_Signals=rbind(Pre_Market,
+  # #                     Post_Market)
+  # # Which_Signals=Which_Signals[order(Ind)]
+  # 
+  # 
+  # Last_Tradings=Which_Signals[, .SD[Submit_Time==max(Submit_Time)], by="Market_Ind"] # last tradings
+  # 
+  # Force_Closing=Last_Tradings[Net_Quantity!=0, ]
+  # 
+  # Force_Closing[, Time:=as.POSIXct(paste0(Submit_Date, " ", Last_Trading_Time),
+  #                                  tz="America/Los_Angeles")]
+  # Force_Closing[, Submit_Time:=Time]
+  # Force_Closing[, Trading_Time:=Last_Trading_Time]
+  # Force_Closing[, Quantity:=-Net_Quantity]
+  # Force_Closing[Detail=="BTO", Detail:="STC"]
+  # Force_Closing[Detail=="STO", Detail:="BTC"]
+  # Force_Closing[Action=="Sell", Action_:="Buy"]
+  # Force_Closing[Action=="Buy", Action_:="Sell"]
+  # Force_Closing[, Action:=Action_]
+  # Force_Closing[, Action_:=NULL]
+  # 
+  # 
+  # First_Tradings=Which_Signals[, .SD[Submit_Time==min(Submit_Time)], by="Market_Ind"] # first tradings
+  # 
+  # First_Tradings[Detail=="STC", ]
+  # First_Tradings[Net_Quantity==0, ]
+  # 
+  # ##############################
   
   BTO_Orders=Which_Signals[Which_Signals[["Detail"]]=="BTO", ]
   STC_Orders=Which_Signals[Which_Signals[["Detail"]]=="STC", ]

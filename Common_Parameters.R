@@ -7,7 +7,11 @@ Models=Strategy[["Models"]]
 
 Max_Orders=as.numeric(Order_Rules[["General"]][["Max_Orders"]])
 Scenario=Order_Rules[["General"]][["Scenario"]]
+
+# the difference between the limit order price filled in and the price at which the position is closed to prevent further loss
 Stop_Order=as.numeric(Order_Rules[["General"]][["Stop_Order"]])
+
+# the difference between the limit order price filled in and the price at which the position is closed to make profit
 Profit_Order=as.numeric(Order_Rules[["General"]][["Profit_Order"]])
 Strategy_Indicators=names(Indicators)
 Strategy_Models=names(Models)
@@ -28,6 +32,11 @@ Tick_Value=as.numeric(Order_Rules[["General"]][["Tick_Value"]])
 
 # Market_Time
 Market_Time=as.numeric(Order_Rules[["General"]][["Market_Time"]])
+
+# market time
+Market_Open_Time="06:30:00"
+Market_Close_Time="14:00:00"
+
 
 #******************
 # preliminary steps

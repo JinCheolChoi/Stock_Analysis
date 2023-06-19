@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="desktop" # or "desktop"
+Device="laptop" # or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -82,8 +82,8 @@ for(Barsize in Barsizes){
     Get_Data(Symbols=Symbol,
              Data_Dir=data.dir,
              BarSize=Barsize,
-             Convert_Tz=T,
-             Filter=T)
+             Convert_Tz=F,
+             Filter=F)
     
     if(Device=="desktop"){
       # desktop
