@@ -247,9 +247,9 @@ for(i in 1:nrow(Params)){
     # }
     if(!is.na(Training_Results_Temp[["Net_Profit"]])){
       # save results
-      # assign(paste0(Strategy_Name, "_Training_", "Setting_", i),
-      #        list(T1_2,
-      #             Training_Results_Temp))
+      assign(paste0(Strategy_Name, "_Training_", "Setting_", i),
+             list(T1_2,
+                  Training_Results_Temp))
       
       # save net profits
       Params[i, paste0(Strategy_Name, "_NP_on_Training"):=Training_Results_Temp$Net_Profit]
@@ -268,9 +268,9 @@ for(i in 1:nrow(Params)){
     # }
     if(!is.na(Test_Results_Temp[["Net_Profit"]])){
       # # save results
-      # assign(paste0(Strategy_Name, "_Test_", "Setting_", i),
-      #        list(T2_2,
-      #             Test_Results_Temp))
+      assign(paste0(Strategy_Name, "_Test_", "Setting_", i),
+             list(T2_2,
+                  Test_Results_Temp))
       
       # save net profits
       Params[i, paste0(Strategy_Name, "_NP_on_Test"):=Test_Results_Temp$Net_Profit]
