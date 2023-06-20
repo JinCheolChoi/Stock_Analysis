@@ -425,8 +425,10 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 #**************
 # save and load
 #**************
-#save.image(paste0(rdata.dir, "Futures_2023-06-19 - ", BarSize, " - RSI.Rdata"))
-#load(paste0(rdata.dir, "Futures_2023-06-19 - ", BarSize, ".Rdata"))
+# save.image(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, " - RSI.Rdata"))
+# load(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
+
+
 
 #*********************************************************
 # 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
