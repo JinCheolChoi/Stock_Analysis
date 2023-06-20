@@ -72,29 +72,33 @@ Test_BarData=copy(MNQ[(round(nrow(MNQ)/2)+1):nrow(MNQ)])
 # Live_Trading
 Live_Trading=FALSE
 
+# repetitive simultation parameters
+Sim_N=500
+Sample_Size=nrow(Test_BarData)
+Simulation_Results=c()
 
 #************
 # grid search
 #************
-# Market_Time=c(1, 2, 3)
-# Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
-# Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
-# Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
-# Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
-# Open_Long_Consec_Times=c(4)
-# Open_Short_Consec_Times=c(4)
-# Multiplier=100
-# Reverse=c(FALSE)
-
-Market_Time=2
-Simple_BBands_1_Long_PctB=0.3
-Simple_BBands_1_Short_PctB=0.7
-Simple_BBands_2_Long_PctB=0.25
-Simple_BBands_2_Short_PctB=0.75
-Open_Long_Consec_Times=4
-Open_Short_Consec_Times=4
+Market_Time=c(1, 2, 3)
+Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
+Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
+Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
+Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
+Open_Long_Consec_Times=c(4)
+Open_Short_Consec_Times=c(4)
 Multiplier=100
-Reverse=TRUE
+Reverse=c(FALSE)
+
+# Market_Time=2
+# Simple_BBands_1_Long_PctB=0.3
+# Simple_BBands_1_Short_PctB=0.7
+# Simple_BBands_2_Long_PctB=0.25
+# Simple_BBands_2_Short_PctB=0.75
+# Open_Long_Consec_Times=4
+# Open_Short_Consec_Times=4
+# Multiplier=100
+# Reverse=TRUE
 Params=data.table(
   expand.grid(
     Market_Time,
@@ -147,15 +151,16 @@ Tuning_Parameters=c(
 #   "Reverse"
 # )
 colnames(Params)=Tuning_Parameters
-
 for(i in 1:nrow(Params)){
-  # i=439
-  # if(Params[i, Simple_BBands_1_Long_PctB]==0 &
-  #    Params[i, Simple_BBands_2_Short_PctB]==1){
-  #   Params$Net_Profit_on_Training[i]=0
-  #   Params$Net_Profit_on_Test[i]=0
-  #   next
-  # }
+  # i=1
+  if(!is.null(Params$Simple_BBands_1_Long_PctB)){
+    if(Params[i, Simple_BBands_1_Long_PctB]==0 &
+       Params[i, Simple_BBands_2_Short_PctB]==1){
+      Params$Net_Profit_on_Training[i]=0
+      Params$Net_Profit_on_Test[i]=0
+      next
+    }
+  }
   
   # import strategies
   source(paste0(working.dir, "Strategies.R"))
@@ -242,12 +247,12 @@ for(i in 1:nrow(Params)){
     # }
     if(!is.na(Training_Results_Temp[["Net_Profit"]])){
       # save results
-      assign(paste0(Strategy_Name, "_Training_", "Setting_", i),
-             list(T1_2,
-                  Training_Results_Temp))
+      # assign(paste0(Strategy_Name, "_Training_", "Setting_", i),
+      #        list(T1_2,
+      #             Training_Results_Temp))
       
       # save net profits
-      Params[i, paste0(Strategy_Name, "_NP_on_Training"):=get(paste0(Strategy_Name, "_Training_", "Setting_", i))[[2]]$Net_Profit]
+      Params[i, paste0(Strategy_Name, "_NP_on_Training"):=Training_Results_Temp$Net_Profit]
     }
     
     #******************
@@ -262,13 +267,13 @@ for(i in 1:nrow(Params)){
     #   Params[, paste0(Strategy_Name, "_NP_on_Test"):=-10000]
     # }
     if(!is.na(Test_Results_Temp[["Net_Profit"]])){
-      # save results
-      assign(paste0(Strategy_Name, "_Test_", "Setting_", i),
-             list(T2_2,
-                  Test_Results_Temp))
+      # # save results
+      # assign(paste0(Strategy_Name, "_Test_", "Setting_", i),
+      #        list(T2_2,
+      #             Test_Results_Temp))
       
       # save net profits
-      Params[i, paste0(Strategy_Name, "_NP_on_Test"):=get(paste0(Strategy_Name, "_Test_", "Setting_", i))[[2]]$Net_Profit]
+      Params[i, paste0(Strategy_Name, "_NP_on_Test"):=Test_Results_Temp$Net_Profit]
     }
   }
   #############################################################################################################
@@ -421,7 +426,7 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 # save and load
 #**************
 #save.image(paste0(rdata.dir, "Futures_2023-06-19 - ", BarSize, " - RSI.Rdata"))
-#load(paste0(rdata.dir, "Futures_2023-06-18 - ", BarSize, ".Rdata"))
+#load(paste0(rdata.dir, "Futures_2023-06-19 - ", BarSize, ".Rdata"))
 
 #*********************************************************
 # 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
@@ -436,6 +441,89 @@ get(paste0(Strategy_Name, "_Test_Setting_", i))[[2]]$Ind_Profit$Cum_Profit %>% p
 # include the reverse parameter in model functions
 Restuls_Temp=rbind(Training_Results_Temp$Ind_Profit,
                    Test_Results_Temp$Ind_Profit)
+
+# 2*(MNQ[nrow(MNQ), Close]-MNQ[1, Close])
+
+#**********************
+#
+# repetitive simulation
+#
+#**********************
+Top_Ten_Models=Profitable_Strategies[order(NP, decreasing=TRUE), ][1:10, ]
+for(I in 1:nrow(Top_Ten_Models)){
+  i=Top_Ten_Models$Row[I]
+  # i=1
+  if(!is.null(Params$Simple_BBands_1_Long_PctB)){
+    if(Params[i, Simple_BBands_1_Long_PctB]==0 &
+       Params[i, Simple_BBands_2_Short_PctB]==1){
+      Params$Net_Profit_on_Training[i]=0
+      Params$Net_Profit_on_Test[i]=0
+      next
+    }
+  }
+  
+  # import strategies
+  source(paste0(working.dir, "Strategies.R"))
+  
+  #*********************
+  # simulation algorithm
+  #***********************************************
+  # all strategies saved in the global environment
+  Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
+  
+  #############################################################################################################
+  # Strategies="Long_Short_Strategy"
+  # create profit variables for strategies
+  if(i==1){
+    Additional_Cols=apply(expand.grid(Strategies, c("_NP_on_Training", "_NP_on_Test")), 1, paste, collapse="")
+    Temp=setNames(data.table(matrix(nrow=0, ncol=length(Additional_Cols))), Additional_Cols)
+    Temp[, (Additional_Cols):=lapply(.SD, as.numeric), .SDcols=Additional_Cols]
+    Top_Ten_Models=cbind(Top_Ten_Models,
+                         Temp)
+  }
+  
+  for(Strategy_Name in Strategies){
+    #***********
+    # simulation
+    Simulation_Results_Temp=c()
+    for(sim_n in 1:Sim_N){
+      Starting_Point=sample(1:(nrow(MNQ)-Sample_Size), 1)
+      Ending_Point=Starting_Point+Sample_Size
+      
+      Simulation_Results_Temp=c(Simulation_Results_Temp,
+                                Backtesting(BarData=MNQ[Starting_Point:Ending_Point, ],
+                                            Strategy_Name=Strategy_Name,
+                                            Working_Dir=working.dir)$Net_Profit)
+    }
+    Simulation_Results=rbind(Simulation_Results,
+                             Simulation_Results_Temp)
+  }
+  
+  #***************
+  # print messages
+  #***************
+  # progress
+  print(paste0(I, " / ", nrow(Top_Ten_Models), " (", round(I/nrow(Top_Ten_Models)*100, 2), "%)"))
+  
+  # if(i%%20==0){
+  #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-23.Rdata")
+  # }
+}
+
+# summary
+apply(Simulation_Results,
+      1,
+      function(x){
+        quantile(x, c(0, 0.05, 0.1))})
+apply(Simulation_Results,
+      1,
+      function(x){
+        summary(x)})
+apply(Simulation_Results,
+      1,
+      function(x){
+        hist(x, breaks=50)})
+
 
 
 #**************
@@ -452,6 +540,10 @@ Ind_Profit_Temp=All_Results_Temp$Ind_Profit
 
 Orders_Transmitted_Temp=Orders_Transmitted_Temp[Filled_Time<=max(Ind_Profit_Temp$Time), ]
 Orders_Transmitted_Temp[, Ind:=.I]
+
+
+
+
 
 # #
 # # create a chart - 1
@@ -486,7 +578,7 @@ chartSeries(MNQ[which(as.POSIXlt(MNQ$Time, tz="UTC")>=Orders_Transmitted_Temp[De
 
 #************
 # Short graph
-Ind=66
+Ind=80
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]])
