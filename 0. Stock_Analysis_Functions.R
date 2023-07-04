@@ -1111,6 +1111,13 @@ Backtesting=function(BarData,
   Which_Signals=Which_Signals[Ind>=min(Which_Signals[Detail=="BTO" |
                                                        Detail=="STO", Ind]), ]
   
+  # the first row must be either BTO or STO
+  while(Which_Signals[1, Detail]=="BTC"|
+        Which_Signals[1, Detail]=="STC"){
+    Which_Signals=Which_Signals[-1, ]
+  }
+  
+  
   #***************
   # Order_Filled_C
   Order_Filled_Results=Order_Filled_C(Which_Signals=Which_Signals,
