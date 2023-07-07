@@ -990,7 +990,10 @@ Backtesting=function(BarData,
   #****************************
   Long_Which_Signals=c()
   Short_Which_Signals=c()
-  
+  BuyToOpen_Signals=c()
+  SellToOpen_Signals=c()
+  SellToClose_Signals=c()
+  BuyToClose_Signals=c()
   if("Long"%in%Position_Names){
     BuyToOpen_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Min_Sig_N"]])
     # BuyToOpen_Min_Sig_N=1
