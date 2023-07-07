@@ -59,6 +59,7 @@ for(pack in c("IBrokers",
               "tseries")){ 
   lapply(pack, checkpackages)
 }
+
 # bar size
 BarSize="15mins"
 
@@ -68,7 +69,7 @@ BarData=fread(paste0(data.dir, BarSize, "/", Symbols, "/", Symbols, ".csv"))
 # BarData[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 
 # the number of sub-datasets splited from the original data set
-k=5
+k=15
 
 # divide data into k subsets
 for(k_ind in 1:k){
@@ -92,58 +93,15 @@ Simulation_Results=c()
 #************
 # grid search
 #************
-Market_Time=c(2)
-Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
-Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
-Simple_BBands_2_Long_PctB=1
-Simple_BBands_2_Short_PctB=1
-Open_Long_Consec_Times=c(4)
-Open_Short_Consec_Times=c(4)
-Multiplier=100
-Reverse=c(TRUE)
-# Market_Time=2
-# Simple_BBands_1_Long_PctB=0.3
-# Simple_BBands_1_Short_PctB=0.7
-# Simple_BBands_2_Long_PctB=0.25
-# Simple_BBands_2_Short_PctB=0.75
-# Open_Long_Consec_Times=4
-# Open_Short_Consec_Times=4
-# Multiplier=100
-# Reverse=TRUE
-Params=data.table(
-  expand.grid(
-    Market_Time,
-    Simple_BBands_1_Long_PctB,
-    Simple_BBands_1_Short_PctB,
-    Simple_BBands_2_Long_PctB,
-    Simple_BBands_2_Short_PctB,
-    Open_Long_Consec_Times,
-    Open_Short_Consec_Times,
-    Multiplier,
-    Reverse
-  )
-)
-Tuning_Parameters=c(
-  "Market_Time",
-  "Simple_BBands_1_Long_PctB",
-  "Simple_BBands_1_Short_PctB",
-  "Simple_BBands_2_Long_PctB",
-  "Simple_BBands_2_Short_PctB",
-  "Open_Long_Consec_Times",
-  "Open_Short_Consec_Times",
-  "Multiplier",
-  "Reverse"
-)
-
-# Market_Time=c(1, 2, 3)
+# Market_Time=c(2)
 # Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
 # Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
-# Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
-# Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
+# Simple_BBands_2_Long_PctB=1
+# Simple_BBands_2_Short_PctB=1
 # Open_Long_Consec_Times=c(4)
 # Open_Short_Consec_Times=c(4)
 # Multiplier=100
-# Reverse=c(FALSE)
+# Reverse=c(TRUE)
 # # Market_Time=2
 # # Simple_BBands_1_Long_PctB=0.3
 # # Simple_BBands_1_Short_PctB=0.7
@@ -177,6 +135,49 @@ Tuning_Parameters=c(
 #   "Multiplier",
 #   "Reverse"
 # )
+
+Market_Time=c(1, 2, 3)
+Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
+Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
+Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
+Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
+Open_Long_Consec_Times=c(4)
+Open_Short_Consec_Times=c(4)
+Multiplier=100
+Reverse=c(TRUE, FALSE)
+# Market_Time=2
+# Simple_BBands_1_Long_PctB=0.3
+# Simple_BBands_1_Short_PctB=0.7
+# Simple_BBands_2_Long_PctB=0.25
+# Simple_BBands_2_Short_PctB=0.75
+# Open_Long_Consec_Times=4
+# Open_Short_Consec_Times=4
+# Multiplier=100
+# Reverse=TRUE
+Params=data.table(
+  expand.grid(
+    Market_Time,
+    Simple_BBands_1_Long_PctB,
+    Simple_BBands_1_Short_PctB,
+    Simple_BBands_2_Long_PctB,
+    Simple_BBands_2_Short_PctB,
+    Open_Long_Consec_Times,
+    Open_Short_Consec_Times,
+    Multiplier,
+    Reverse
+  )
+)
+Tuning_Parameters=c(
+  "Market_Time",
+  "Simple_BBands_1_Long_PctB",
+  "Simple_BBands_1_Short_PctB",
+  "Simple_BBands_2_Long_PctB",
+  "Simple_BBands_2_Short_PctB",
+  "Open_Long_Consec_Times",
+  "Open_Short_Consec_Times",
+  "Multiplier",
+  "Reverse"
+)
 
 # Market_Time=c(1, 2, 3)
 # RSI_RSI_MA_Diff_Min=c(1, 2, 3)
@@ -220,22 +221,39 @@ for(i in 1:nrow(Params)){
   # all strategies saved in the global environment
   Strategies=ls()[sapply(ls(), function(x) any(class(get(x))=='Strategy'))]
   
-  
   #****************
   # run Backtesting
   #****************
   # Strategies="Long_Short_Strategy"
   # create profit variables for strategies
   if(i==1){
-    Additional_Cols=apply(expand.grid(Strategies, paste0("_NP_on_", 1:k)), 1, paste, collapse="")
-    Temp=setNames(data.table(matrix(nrow=0, ncol=length(Additional_Cols))), Additional_Cols)
+    Additional_Cols=c("Row",
+                      "Elapsed_Time",
+                      paste0("NP_on_", 1:k),
+                      paste0("SD_on_", 1:k),
+                      paste0("MDD_on_", 1:k),
+                      paste0("MCP_on_", 1:k),
+                      "Profitable",
+                      "NP",
+                      "K")
+    Temp=setNames(data.table(matrix(nrow=nrow(Params), ncol=length(Additional_Cols))), Additional_Cols)
     Temp[, (Additional_Cols):=lapply(.SD, as.numeric), .SDcols=Additional_Cols]
-    Params=cbind(Params,
-                 Temp)
+    Temp[, Row:=.I]
+    # Params=cbind(Params,
+    #              Temp)
+    for(Strategy_Name in Strategies){
+      assign(
+        paste0("Results_", Strategy_Name),
+        Temp
+      )
+    }
   }
   
   for(Strategy_Name in Strategies){
-    # Strategy_Name="Long_Short_Strategy"
+    # Strategy_Name=Strategies[2]
+    assign("Temp",
+           get(paste0("Results_", Strategy_Name)))
+    
     for(k_ind in 1:k){
       Time_Elapsed=system.time({
         Results_Temp=Backtesting(BarData=get(paste0("BarData_", k_ind)),
@@ -245,14 +263,52 @@ for(i in 1:nrow(Params)){
       
       if(!is.na(Results_Temp[["Net_Profit"]])){
         # save results
-        assign(paste0(Strategy_Name, "_", k_ind, "_", i),
-               list(Time_Elapsed,
-                    Results_Temp))
+        # assign(paste0(Strategy_Name, "_", k_ind, "_", i),
+        #        list(Time_Elapsed,
+        #             Results_Temp))
         
-        # save net profits
-        Params[i, paste0(Strategy_Name, paste0("_NP_on_", k_ind)):=Results_Temp$Net_Profit]
+        # Net_Profit
+        Temp[i, paste0("NP_on_", k_ind):=Results_Temp$Net_Profit]
+        
+        # standard deviation
+        Temp[i, paste0("SD_on_", k_ind):=sd(get(paste0(Strategy_Name, "_", k_ind, "_", i))[[2]]$Ind_Profit$Daily_Profit)]
+        
+        # MDD
+        Data_Temp=get(paste0(Strategy_Name, "_", k_ind, "_", i))[[2]]$Ind_Profit
+        if(nrow(Data_Temp[!is.na(Cum_Profit)])>0){
+          # Max_Loss (same as MDD, but just not percentage)
+          # Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
+          #                                         function(x) Data_Temp[, min(Cum_Profit[.I>=x])])]
+          # Temp[i, paste0(Strategy, "_Training_", "Max_Loss"):=-max(Data_Temp$Max_Loss)]
+          Temp[i, paste0("MDD_on_", k_ind):=-maxdrawdown(Data_Temp$Cum_Profit)$maxdrawdown]
+          
+          # minimum Cum_Profit (MCP)
+          Temp[i, paste0("MCP_on_", k_ind):=min(Data_Temp$Cum_Profit)]
+        }
       }
     }
+    
+    # elapsed time
+    Temp$Elapsed_Time[i]=0
+    for(k_ind in 1:k){
+      Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+get(paste0(Strategy_Name, "_", k_ind, "_", i))[[1]][3]
+    }
+    
+    # NP
+    Temp[i, NP:=sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)], na.rm=T)]
+    
+    # K
+    Temp[i, K:=sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)]>0, na.rm=T)]
+    
+    # Profitable
+    if(Temp[i, NP]>0){ # if NPs are positive from all subsets
+      Temp[i, paste0("Profitable"):=1] # Yes
+    }else{
+      Temp[i, paste0("Profitable"):=0] # No
+    }
+    
+    assign(paste0("Results_", Strategy_Name),
+           get("Temp"))
   }
   
   #***************
@@ -266,125 +322,124 @@ for(i in 1:nrow(Params)){
   # }
 }
 
-#****************************
-# calculate useful indicators
-#****************************
-# row index
-Params[, Row:=.I]
-Profitable_Strategies=c()
-{
-  for(Strategy in Strategies){
-    # Strategy=Strategies
-    Temp=copy(Params)
-    
-    setnames(Temp,
-             paste0(Strategy, paste0("_NP_on_", 1:k)),
-             paste0("NP_on_", 1:k))
-    
-    Temp$Elapsed_Time=0
-    
-    for(i in 1:nrow(Temp)){
-      if(is.na(sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)]))){ # if there is at least one NA, skip
-        next
-      }
-      if(sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)]>0, na.rm=T)==0){ # if all NPs are negative, skip
-        next
-      }
-      
-      for(k_ind in 1:k){
-        # elapsed time
-        Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+get(paste0(Strategy_Name, "_", k_ind, "_", i))[[1]][3]
-        
-        # standard deviation
-        Temp[i, paste0("SD_on_", k_ind):=sd(get(paste0(Strategy_Name, "_", k_ind, "_", i))[[2]]$Ind_Profit$Daily_Profit)]
-        
-        #
-        Data_Temp=get(paste0(Strategy_Name, "_", k_ind, "_", i))[[2]]$Ind_Profit
-        if(nrow(Data_Temp[!is.na(Cum_Profit)])>0){
-          # Max_Loss (same as MDD, but just not percentage)
-          # Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
-          #                                         function(x) Data_Temp[, min(Cum_Profit[.I>=x])])]
-          # Temp[i, paste0(Strategy, "_Training_", "Max_Loss"):=-max(Data_Temp$Max_Loss)]
-          Temp[i, paste0("MDD_on_", k_ind):=-maxdrawdown(Data_Temp$Cum_Profit)$maxdrawdown]
-          
-          # minimum Cum_Profit (MCP)
-          Temp[i, paste0("MCP_on_", k_ind):=min(Data_Temp$Cum_Profit)]
-        }
-      }
-      
-      # NP
-      Temp[i, NP:=sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)], na.rm=T)]
-      
-      Temp[i, K:=sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)]>0, na.rm=T)]
-      
-      # Profitable
-      if(Temp[i, NP]>0){ # if NPs are positive from all subsets
-        Temp[i, paste0("Profitable"):=1] # Yes
-      }else{
-        Temp[i, paste0("Profitable"):=0] # No
-      }
-    }
-    
-    if(is.null(Temp[["Elapsed_Time"]])){
-      next
-    }
-    assign(
-      paste0("Params_", Strategy),
-      Temp[, .SD, .SDcols=c(Tuning_Parameters,
-                            "Row",
-                            "Elapsed_Time",
-                            paste0("NP_on_", 1:k),
-                            paste0("SD_on_", 1:k),
-                            paste0("MDD_on_", 1:k),
-                            paste0("MCP_on_", 1:k),
-                            "Profitable",
-                            "NP",
-                            "K")])
-    Temp=get(paste0("Params_", Strategy))
-    
-    # models profitable on all sub-datasets
-    if(nrow(Temp[apply(Temp[, .SD, .SDcols=paste0("Profitable")], 1, sum)>0, ])>0){
-      Profitable_Strategies=rbind(
-        Profitable_Strategies,
-        data.table(
-          Strategy=Strategy,
-          Temp[apply(Temp[, .SD, .SDcols=paste0("Profitable")], 1, sum)>0, ]
-        )
-      )
-    }
-  }
-}
-# # export Params
-# fwrite(Params,
-#        paste0(rdata.dir, as.Date(Sys.time()), "_", Symbols, "_", BarSize, ".csv"))
-# assign(
-#   "Params",
-#   fread(paste0(rdata.dir, as.Date(Sys.time()), "_", Symbols, "_", BarSize, ".csv"))
-# )
+#**************
+# save and load
+#**************
+# save.image(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
+# load(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
+
+
+
+
+# #****************************
+# # calculate useful indicators
+# #****************************
+# # row index
+# Params[, Row:=.I]
+# Profitable_Strategies=c()
+# {
+#   for(Strategy in Strategies){
+#     # Strategy=Strategies
+#     Temp=copy(Params)
+#     
+#     setnames(Temp,
+#              paste0(Strategy, paste0("_NP_on_", 1:k)),
+#              paste0("NP_on_", 1:k))
+#     
+#     Temp$Elapsed_Time=0
+#     
+#     for(i in 1:nrow(Temp)){
+#       if(is.na(sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)]))){ # if there is at least one NA, skip
+#         next
+#       }
+#       if(sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)]>0, na.rm=T)==0){ # if all NPs are negative, skip
+#         next
+#       }
+#       
+#       for(k_ind in 1:k){
+#         # elapsed time
+#         Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+get(paste0(Strategy_Name, "_", k_ind, "_", i))[[1]][3]
+#         
+#         # standard deviation
+#         Temp[i, paste0("SD_on_", k_ind):=sd(get(paste0(Strategy_Name, "_", k_ind, "_", i))[[2]]$Ind_Profit$Daily_Profit)]
+#         
+#         #
+#         Data_Temp=get(paste0(Strategy_Name, "_", k_ind, "_", i))[[2]]$Ind_Profit
+#         if(nrow(Data_Temp[!is.na(Cum_Profit)])>0){
+#           # Max_Loss (same as MDD, but just not percentage)
+#           # Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
+#           #                                         function(x) Data_Temp[, min(Cum_Profit[.I>=x])])]
+#           # Temp[i, paste0(Strategy, "_Training_", "Max_Loss"):=-max(Data_Temp$Max_Loss)]
+#           Temp[i, paste0("MDD_on_", k_ind):=-maxdrawdown(Data_Temp$Cum_Profit)$maxdrawdown]
+#           
+#           # minimum Cum_Profit (MCP)
+#           Temp[i, paste0("MCP_on_", k_ind):=min(Data_Temp$Cum_Profit)]
+#         }
+#       }
+#       
+#       # NP
+#       Temp[i, NP:=sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)], na.rm=T)]
+#       
+#       # K
+#       Temp[i, K:=sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)]>0, na.rm=T)]
+#       
+#       # Profitable
+#       if(Temp[i, NP]>0){ # if NPs are positive from all subsets
+#         Temp[i, paste0("Profitable"):=1] # Yes
+#       }else{
+#         Temp[i, paste0("Profitable"):=0] # No
+#       }
+#     }
+#     
+#     if(is.null(Temp[["Elapsed_Time"]])){
+#       next
+#     }
+#     assign(
+#       paste0("Results_", Strategy),
+#       Temp[, .SD, .SDcols=c(Tuning_Parameters,
+#                             "Row",
+#                             "Elapsed_Time",
+#                             paste0("NP_on_", 1:k),
+#                             paste0("SD_on_", 1:k),
+#                             paste0("MDD_on_", 1:k),
+#                             paste0("MCP_on_", 1:k),
+#                             "Profitable",
+#                             "NP",
+#                             "K")])
+#     Temp=get(paste0("Results_", Strategy))
+#     
+#     # models profitable on all sub-datasets
+#     if(nrow(Temp[apply(Temp[, .SD, .SDcols=paste0("Profitable")], 1, sum)>0, ])>0){
+#       Profitable_Strategies=rbind(
+#         Profitable_Strategies,
+#         data.table(
+#           Strategy=Strategy,
+#           Temp[apply(Temp[, .SD, .SDcols=paste0("Profitable")], 1, sum)>0, ]
+#         )
+#       )
+#     }
+#   }
+# }
 
 # NP
-Strategy="RSI_Averages_Band_Strategy"
-setnames(Params,
+setnames(Results_Long_Short_Strategy,
          paste0(Strategy, paste0("_NP_on_", 1:k)),
          paste0("NP_on_", 1:k))
-for(i in 1:nrow(Params)){
-  Params[i, NP:=sum(Params[i, .SD, .SDcols=paste0("NP_on_", 1:k)], na.rm=T)]
-  Params[i, K:=sum(Params[i, .SD, .SDcols=paste0("NP_on_", 1:k)]>0, na.rm=T)]
+for(i in 1:nrow(Results_Long_Short_Strategy)){
+  Results_Long_Short_Strategy[i, NP:=sum(Results_Long_Short_Strategy[i, .SD, .SDcols=paste0("NP_on_", 1:k)], na.rm=T)]
+  Results_Long_Short_Strategy[i, K:=sum(Results_Long_Short_Strategy[i, .SD, .SDcols=paste0("NP_on_", 1:k)]>0, na.rm=T)]
 }
-Profitable_Strategies=Params[NP>0,]
-Profitable_Strategies[order(NP, decreasing=T)]
+Profitable_Strategies=Results_Long_Short_Strategy[NP>0,]
 
 # all profitable strategies
 # Best_Profitable_Strategy=data.table(
 #   Strategy=Strategy,
-#   Params_RSI_Averages_Band_Strategy[order(NP, decreasing=TRUE), ][1, ]
+#   Results_RSI_Averages_Band_Strategy[order(NP, decreasing=TRUE), ][1, ]
 # )
 Profitable_Strategies=Profitable_Strategies[order(NP, decreasing=TRUE), ]
 Profitable_Strategies[1:20, ]
 Profitable_Strategies[, .SD[NP==max(NP)]]
 Best_Profitable_Strategy=Profitable_Strategies[, .SD[NP==max(NP)]][1]
-
-Strategy_Name=Best_Profitable_Strategy[["Strategy"]] # strategy name
 
 Best_Profitable_Strategy[, .SD, .SDcols=c(Tuning_Parameters)] # tuning parameters
 
@@ -392,6 +447,7 @@ Best_Profitable_Strategy[, .SD, .SDcols=c(Tuning_Parameters)] # tuning parameter
 i=Best_Profitable_Strategy[["Row"]]
 source(paste0(working.dir, "Strategies.R"))
 Strategy_Name=Best_Profitable_Strategy[["Strategy"]]
+Strategy_Name="Long_Short_Strategy"
 Results_Temp=c()
 for(k_ind in 1:k){
   Results_Temp=c(Results_Temp,
@@ -415,11 +471,6 @@ apply(
 )
 
 
-#**************
-# save and load
-#**************
-# save.image(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, " - RSI.Rdata"))
-# load(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
 
 #*********************************************************
 # 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
@@ -578,80 +629,3 @@ Orders_Transmitted_Temp[Detail=="BTC",][, .I[Filled_Time==Ind_Profit_Temp[Profit
 
 # 1. try to utilize the Kelly criterion again (apply a condition to construct a probability distribution)...
 # 2. combine RSI_Averages_Band with others
-
-Kelly_Criterion=function(p, b){
-  return(p-(1-p)/b)
-}
-
-hist(BarData[, Close-Open], breaks=600, xlim=c(-100, 100))
-hist(BarData[1:17000, Close-Open], breaks=500, xlim=c(-100, 100))
-hist(BarData[17001:40000, Close-Open], breaks=600, xlim=c(-100, 100))
-hist(BarData[40001:52803, Close-Open], breaks=500, xlim=c(-100, 100))
-
-BarData[1:17000, Close-Open] %>% summary
-BarData[17001:40000, Close-Open] %>% summary
-BarData[40001:52803, Close-Open] %>% summary
-
-plot(BarData[1:17000]$Close)
-plot(BarData[17001:40000]$Close)
-plot(BarData[40001:52803]$Close)
-
-qqplot(BarData[40001:52803, Close-Open])
-qqline(BarData[40001:52803, Close-Open])
-
-
-###############################################
-Conditional_P=function(Profit, Stop){
-  if(Position=="Long"){
-    return(mean((BarData[, High-Open]>=Profit) & (abs(BarData[, Low-Open])>Stop)))
-  }else if(Position=="Short"){
-    return(mean((BarData[, High-Open]>=Profit) & (abs(BarData[, Low-Open])>Stop)))
-  }
-}
-Position="Long"
-Stops=seq(0.5, 30, by=0.5)
-Profits=seq(0.5, 30, by=0.5)
-Params=as.data.table(
-  expand.grid(
-    Stops,
-    Profits
-  )
-)
-names(Params)=c("Stops", "Profits")
-for(i in 1:nrow(Params)){
-  Stop=Params[i, "Stops"]
-  Profit=Params[i, "Profits"]
-  Params[i, Kelly_Criterion:=Kelly_Criterion(Conditional_P(Profit, Stop), Profit/Stop)]
-}
-
-###############################################
-
-Sample=BarData[, Close-Open]
-shapiro.test(scale(Sample))
-hist(scale(Sample), breaks=200, freq=F)
-lines(x=seq(-5, 5, by=0.01),
-      y=dnorm(seq(-5, 5, by=0.01), mean=0),
-      col="red")
-
-scale(Sample) %>% summary
-scale(Sample) %>% sd
-scale(Sample) %>% kurtosis
-
-n=100
-
-Batch=sapply(
-  c(1:10000),
-  function(x){
-    mean(sample(Sample, n))
-  }
-)
-
-# shapiro.test(scale(Batch))
-hist(scale(Batch), breaks=200, freq=F)
-lines(x=seq(-5, 5, by=0.01),
-      y=dnorm(seq(-5, 5, by=0.01), mean=0),
-      col="red")
-
-qqnorm(scale(Batch))
-qqline(scale(Batch), col="red")
-
