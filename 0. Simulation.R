@@ -250,7 +250,7 @@ for(i in 1:nrow(Params)){
   }
   
   for(Strategy_Name in Strategies){
-    # Strategy_Name=Strategies[2]
+    # Strategy_Name=Strategies[1]
     assign("Temp",
            get(paste0("Results_", Strategy_Name)))
     
@@ -263,18 +263,18 @@ for(i in 1:nrow(Params)){
       
       if(!is.na(Results_Temp[["Net_Profit"]])){
         # save results
-        # assign(paste0(Strategy_Name, "_", k_ind, "_", i),
-        #        list(Time_Elapsed,
-        #             Results_Temp))
+        assign("Results_Temp",
+               list(Time_Elapsed,
+                    Results_Temp))
         
         # Net_Profit
-        Temp[i, paste0("NP_on_", k_ind):=Results_Temp$Net_Profit]
+        Temp[i, paste0("NP_on_", k_ind):=Results_Temp[[2]]$Net_Profit]
         
         # standard deviation
-        Temp[i, paste0("SD_on_", k_ind):=sd(get(paste0(Strategy_Name, "_", k_ind, "_", i))[[2]]$Ind_Profit$Daily_Profit)]
+        Temp[i, paste0("SD_on_", k_ind):=sd(Results_Temp[[2]]$Ind_Profit$Daily_Profit)]
         
         # MDD
-        Data_Temp=get(paste0(Strategy_Name, "_", k_ind, "_", i))[[2]]$Ind_Profit
+        Data_Temp=Results_Temp[[2]]$Ind_Profit
         if(nrow(Data_Temp[!is.na(Cum_Profit)])>0){
           # Max_Loss (same as MDD, but just not percentage)
           # Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
@@ -291,7 +291,7 @@ for(i in 1:nrow(Params)){
     # elapsed time
     Temp$Elapsed_Time[i]=0
     for(k_ind in 1:k){
-      Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+get(paste0(Strategy_Name, "_", k_ind, "_", i))[[1]][3]
+      Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+Results_Temp[[1]][3]
     }
     
     # NP
@@ -309,6 +309,9 @@ for(i in 1:nrow(Params)){
     
     assign(paste0("Results_", Strategy_Name),
            get("Temp"))
+    
+    # remove
+    rm(Data_Temp, Temp)
   }
   
   #***************
