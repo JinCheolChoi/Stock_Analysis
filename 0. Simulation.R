@@ -311,7 +311,7 @@ for(i in 1:nrow(Params)){
            get("Temp"))
     
     # remove
-    rm(Data_Temp, Temp)
+    rm(Data_Temp, Temp, Results_Temp)
   }
   
   #***************
@@ -424,33 +424,13 @@ for(i in 1:nrow(Params)){
 #   }
 # }
 
-# NP
-setnames(Results_Long_Short_Strategy,
-         paste0(Strategy, paste0("_NP_on_", 1:k)),
-         paste0("NP_on_", 1:k))
-for(i in 1:nrow(Results_Long_Short_Strategy)){
-  Results_Long_Short_Strategy[i, NP:=sum(Results_Long_Short_Strategy[i, .SD, .SDcols=paste0("NP_on_", 1:k)], na.rm=T)]
-  Results_Long_Short_Strategy[i, K:=sum(Results_Long_Short_Strategy[i, .SD, .SDcols=paste0("NP_on_", 1:k)]>0, na.rm=T)]
-}
-Profitable_Strategies=Results_Long_Short_Strategy[NP>0,]
-
-# all profitable strategies
-# Best_Profitable_Strategy=data.table(
-#   Strategy=Strategy,
-#   Results_RSI_Averages_Band_Strategy[order(NP, decreasing=TRUE), ][1, ]
-# )
-Profitable_Strategies=Profitable_Strategies[order(NP, decreasing=TRUE), ]
-Profitable_Strategies[1:20, ]
-Profitable_Strategies[, .SD[NP==max(NP)]]
-Best_Profitable_Strategy=Profitable_Strategies[, .SD[NP==max(NP)]][1]
-
-Best_Profitable_Strategy[, .SD, .SDcols=c(Tuning_Parameters)] # tuning parameters
-
 # double-check
-i=Best_Profitable_Strategy[["Row"]]
-source(paste0(working.dir, "Strategies.R"))
-Strategy_Name=Best_Profitable_Strategy[["Strategy"]]
-Strategy_Name="Long_Short_Strategy"
+for(Strategy_Name in Strategies){
+  i=get(paste0("Results_",
+               Strategy_Name))[order(NP, decreasing=TRUE)][["Row"]][1]
+  source(paste0(working.dir, "Strategies.R"))
+  
+}
 Results_Temp=c()
 for(k_ind in 1:k){
   Results_Temp=c(Results_Temp,
@@ -458,15 +438,20 @@ for(k_ind in 1:k){
                              Strategy_Name=Strategy_Name,
                              Working_Dir=working.dir)$Net_Profit)
 }
-Best_Profitable_Strategy[, .SD, .SDcols=paste0("NP_on_", 1:k)]
+get(paste0("Results_",
+           Strategy_Name))[order(NP, decreasing=TRUE)][, .SD, .SDcols=paste0("NP_on_", 1:k)][1, ]
 Results_Temp
 
 apply(
   matrix(1:k),
   1,
   function(x){
-    plot(get(paste0(Strategy_Name, "_", x, "_", i))[[2]]$Ind_Profit$Time,
-         get(paste0(Strategy_Name, "_", x, "_", i))[[2]]$Ind_Profit$Cum_Profit,
+    plot(Backtesting(BarData=get(paste0("BarData_", x)),
+                     Strategy_Name=Strategy_Name,
+                     Working_Dir=working.dir)$Ind_Profit$Time,
+         Backtesting(BarData=get(paste0("BarData_", x)),
+                     Strategy_Name=Strategy_Name,
+                     Working_Dir=working.dir)$Ind_Profit$Cum_Profit,
          main=paste0("Subset_", x),
          xlab="Time",
          ylab="Profit")
@@ -489,7 +474,8 @@ apply(
 # repetitive simulation
 #
 #**********************
-Top_Ten_Models=Profitable_Strategies[order(NP, decreasing=TRUE), ][1:10, ]
+Top_Ten_Models=get(paste0("Results_",
+                          Strategy_Name))[order(NP, decreasing=TRUE)][1:10, ]
 for(ind in 1:nrow(Top_Ten_Models)){
   i=Top_Ten_Models$Row[ind]
   # i=1
@@ -588,7 +574,7 @@ as.numeric(c(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Tra
 #***********
 # Long graph
 library(quantmod)
-Ind=27
+Ind=145
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]])
@@ -604,7 +590,7 @@ chartSeries(BarData[which(as.POSIXlt(BarData$Time, tz="UTC")>=Orders_Transmitted
 
 #************
 # Short graph
-Ind=87
+Ind=161
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]])
