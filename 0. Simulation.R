@@ -363,7 +363,6 @@ Profitable_Strategies=c()
 # )
 
 # NP
-k=15
 Strategy="RSI_Averages_Band_Strategy"
 setnames(Params,
          paste0(Strategy, paste0("_NP_on_", 1:k)),
