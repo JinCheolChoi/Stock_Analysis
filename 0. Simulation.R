@@ -60,7 +60,7 @@ for(pack in c("IBrokers",
   lapply(pack, checkpackages)
 }
 # bar size
-BarSize="5mins"
+BarSize="15mins"
 
 # import data
 BarData=fread(paste0(data.dir, BarSize, "/", Symbols, "/", Symbols, ".csv"))
@@ -312,7 +312,13 @@ Profitable_Strategies=c()
         }
       }
       
-      if(sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)]>0, na.rm=T)==k){ # if NPs are positive from all subsets
+      # NP
+      Temp[i, NP:=sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)], na.rm=T)]
+      
+      Temp[i, K:=sum(Temp[i, .SD, .SDcols=paste0("NP_on_", 1:k)]>0, na.rm=T)]
+      
+      # Profitable
+      if(Temp[i, NP]>0){ # if NPs are positive from all subsets
         Temp[i, paste0("Profitable"):=1] # Yes
       }else{
         Temp[i, paste0("Profitable"):=0] # No
@@ -327,23 +333,13 @@ Profitable_Strategies=c()
       Temp[, .SD, .SDcols=c(Tuning_Parameters,
                             "Row",
                             "Elapsed_Time",
-                            paste0(
-                              "NP_on_",
-                              1:k
-                            ),
-                            paste0(
-                              "SD_on_",
-                              1:k
-                            ),
-                            paste0(
-                              "MDD_on_",
-                              1:k
-                            ),
-                            paste0(
-                              "MCP_on_",
-                              1:k
-                            ),
-                            "Profitable")])
+                            paste0("NP_on_", 1:k),
+                            paste0("SD_on_", 1:k),
+                            paste0("MDD_on_", 1:k),
+                            paste0("MCP_on_", 1:k),
+                            "Profitable",
+                            "NP",
+                            "K")])
     Temp=get(paste0("Params_", Strategy))
     
     # models profitable on all sub-datasets
@@ -357,7 +353,6 @@ Profitable_Strategies=c()
       )
     }
   }
-  Profitable_Strategies[, NP:=apply(.SD, 1, sum), .SDcols=c(paste0("NP_on_", 1:k))]
 }
 # # export Params
 # fwrite(Params,
@@ -367,8 +362,26 @@ Profitable_Strategies=c()
 #   fread(paste0(rdata.dir, as.Date(Sys.time()), "_", Symbols, "_", BarSize, ".csv"))
 # )
 
+# NP
+k=15
+Strategy="RSI_Averages_Band_Strategy"
+setnames(Params,
+         paste0(Strategy, paste0("_NP_on_", 1:k)),
+         paste0("NP_on_", 1:k))
+for(i in 1:nrow(Params)){
+  Params[i, NP:=sum(Params[i, .SD, .SDcols=paste0("NP_on_", 1:k)], na.rm=T)]
+  Params[i, K:=sum(Params[i, .SD, .SDcols=paste0("NP_on_", 1:k)]>0, na.rm=T)]
+}
+Profitable_Strategies=Params[NP>0,]
+Profitable_Strategies[order(NP, decreasing=T)]
+
 # all profitable strategies
-Profitable_Strategies[order(NP, decreasing=TRUE), ][1:20, ]
+# Best_Profitable_Strategy=data.table(
+#   Strategy=Strategy,
+#   Params_RSI_Averages_Band_Strategy[order(NP, decreasing=TRUE), ][1, ]
+# )
+Profitable_Strategies=Profitable_Strategies[order(NP, decreasing=TRUE), ]
+Profitable_Strategies[1:20, ]
 Profitable_Strategies[, .SD[NP==max(NP)]]
 Best_Profitable_Strategy=Profitable_Strategies[, .SD[NP==max(NP)]][1]
 
@@ -480,7 +493,6 @@ apply(Simulation_Results,
         hist(x, breaks=50)})
 
 
-
 #**************
 #
 # Visualization
@@ -500,7 +512,8 @@ Ind_Profit_Temp=All_Results_Temp$Ind_Profit
 Orders_Transmitted_Temp=Orders_Transmitted_Temp[Filled_Time<=max(Ind_Profit_Temp$Time), ]
 Orders_Transmitted_Temp[, Ind:=.I]
 
-plot(All_Results_Temp$Ind_Profit$Cum_Profit)
+plot(All_Results_Temp$Ind_Profit$Time,
+     All_Results_Temp$Ind_Profit$Cum_Profit)
 
 # #
 # # create a chart - 1
@@ -522,7 +535,7 @@ as.numeric(c(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Tra
 #***********
 # Long graph
 library(quantmod)
-Ind=99
+Ind=27
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]])
