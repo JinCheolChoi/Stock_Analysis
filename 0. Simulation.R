@@ -254,12 +254,17 @@ for(i in 1:nrow(Params)){
     assign("Temp",
            get(paste0("Results_", Strategy_Name)))
     
+    # elapsed time
+    Temp$Elapsed_Time[i]=0
+    
     for(k_ind in 1:k){
       Time_Elapsed=system.time({
         Results_Temp=Backtesting(BarData=get(paste0("BarData_", k_ind)),
                                  Strategy_Name=Strategy_Name,
                                  Working_Dir=working.dir)
       })
+      
+      Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+Time_Elapsed[3]
       
       if(!is.na(Results_Temp[["Net_Profit"]])){
         # save results
@@ -286,12 +291,6 @@ for(i in 1:nrow(Params)){
           Temp[i, paste0("MCP_on_", k_ind):=min(Data_Temp$Cum_Profit)]
         }
       }
-    }
-    
-    # elapsed time
-    Temp$Elapsed_Time[i]=0
-    for(k_ind in 1:k){
-      Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+Results_Temp[[1]][3]
     }
     
     # NP
