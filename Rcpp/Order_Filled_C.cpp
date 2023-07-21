@@ -7,7 +7,7 @@ using namespace std;
 List Order_Filled_C(List Which_Signals, int Max_Orders)
 {
 
-  // create vectors from Which_Signals
+    // create vectors from Which_Signals
   IntegerVector Ind_ = as<IntegerVector>(Which_Signals["Ind"]);
 
   CharacterVector Action_ = as<CharacterVector>(Which_Signals["Action"]);
@@ -23,14 +23,28 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
   // create output vectors
   IntegerVector Net_Quantity_(n);
   std::fill(Net_Quantity_.begin(), Net_Quantity_.end(), 0);
-  Net_Quantity_[0] = Quantity_[0];
+  //Net_Quantity_[0] = Quantity_[0];
 
   IntegerVector Remove_(n);
   std::fill(Remove_.begin(), Remove_.end(), 0);
 
   int Both_Direction_Ind = 0;
 
-  for (int i = 1; i < n; ++i)
+  int ind = 0;
+  int while_i = 0;
+  while(while_i==0){
+    if(Detail_[ind]=="BTC" ||
+       Detail_[ind]=="STC"){
+      Net_Quantity_[ind]=0;
+      Remove_[ind]=1;
+    }else{
+      while_i++;
+      Net_Quantity_[ind]=Quantity_[ind];
+    }
+    ind++;
+  }
+
+  for (int i = ind; i < n; ++i)
   {
     // adjust Quantity[i]
     if (
@@ -92,8 +106,8 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
       case true:
         if (Both_Direction_Ind == Ind_[i])
         {
-          Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i];
+          Net_Quantity_[i] = Net_Quantity_[i - 1];
+          Remove_[i] = 1;
 
           continue;
         }
