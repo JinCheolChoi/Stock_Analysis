@@ -670,48 +670,46 @@ for(Strategy_Name in Strategies){
     #   )
     # }
     # elapsed time
-    Temp$Elapsed_Time[i]=0
+    Temp$Elapsed_Time=0
     
-    Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+Time_Elapsed[3]
+    Temp$Elapsed_Time=Temp$Elapsed_Time+Time_Elapsed[3]
     
     Orders_Transmitted_Temp=do.call(rbind,
                                     c(do.call(rbind,
                                               Results_Temp)[, "Orders_Transmitted"],
                                       fill=TRUE))
+    Ind_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Ind_Profit"]]
+    Net_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Net_Profit"]]
     
+    assign(
+      paste0("Ind_Profit_", k_ind),
+      Ind_Profit_Temp
+    )
     
-    if(ncol(Orders_Transmitted_Temp)>1 & !sum(apply(Orders_Transmitted_Temp,
-                                                    2,
-                                                    function(x){is.na(x)}))==nrow(Orders_Transmitted_Temp)){
-      
-      Ind_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Ind_Profit"]]
-      Net_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Net_Profit"]]
-      
+    if(!sum(apply(Orders_Transmitted_Temp,
+                  2,
+                  function(x){is.na(x)}))==nrow(Orders_Transmitted_Temp)){
       # save results
       assign("Results_Temp",
              list(Time_Elapsed,
-                  list(
-                    Orders_Transmitted=Orders_Transmitted_Temp,
-                    Ind_Profit=Ind_Profit_Temp,
-                    Net_Profit=Net_Profit_Temp
-                  )))
+                  Results_Temp))
       
       # Net_Profit
-      Temp[i, paste0("NP_on_", k_ind):=Net_Profit_Temp]
+      Temp[, paste0("NP_on_", k_ind):=Net_Profit_Temp]
       
       # standard deviation
-      Temp[i, paste0("SD_on_", k_ind):=sd(Ind_Profit_Temp[["Daily_Profit"]])]
+      Temp[, paste0("SD_on_", k_ind):=sd(Ind_Profit_Temp[["Daily_Profit"]])]
       
       # MDD
       if(nrow(Ind_Profit_Temp[!is.na(Cum_Profit)])>0){
         # Max_Loss (same as MDD, but just not percentage)
         # Ind_Profit_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Ind_Profit_Temp),
         #                                         function(x) Ind_Profit_Temp[, min(Cum_Profit[.I>=x])])]
-        # Temp[i, paste0(Strategy, "_Training_", "Max_Loss"):=-max(Ind_Profit_Temp$Max_Loss)]
-        Temp[i, paste0("MDD_on_", k_ind):=-maxdrawdown(Ind_Profit_Temp[["Cum_Profit"]])[["maxdrawdown"]]]
+        # Temp[, paste0(Strategy, "_Training_", "Max_Loss"):=-max(Ind_Profit_Temp$Max_Loss)]
+        Temp[, paste0("MDD_on_", k_ind):=-maxdrawdown(Ind_Profit_Temp[["Cum_Profit"]])[["maxdrawdown"]]]
         
         # minimum Cum_Profit (MCP)
-        Temp[i, paste0("MCP_on_", k_ind):=min(Ind_Profit_Temp[["Cum_Profit"]])]
+        Temp[, paste0("MCP_on_", k_ind):=min(Ind_Profit_Temp[["Cum_Profit"]])]
       }
     }
   }
@@ -719,6 +717,7 @@ for(Strategy_Name in Strategies){
   # remove
   rm(Orders_Transmitted_Temp, Ind_Profit_Temp, Net_Profit_Temp, Results_Temp)
 }
+
 
 get(paste0("Results_",
            Strategy_Name))[order(NP, decreasing=TRUE)][, .SD, .SDcols=paste0("NP_on_", 1:k)][1, ]
