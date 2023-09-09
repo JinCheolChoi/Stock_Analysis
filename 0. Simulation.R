@@ -1,3 +1,11 @@
+#**************
+# save and load
+#**************
+# save.image(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
+# load(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
+# load(paste0(rdata.dir, "Futures_2023-07-08 - 5mins.Rdata"))
+
+
 #********************
 #
 # empty the workspace
@@ -61,10 +69,12 @@ for(pack in c("IBrokers",
 }
 
 # bar size
-BarSize="15mins"
+BarSize="5mins"
 
 # import data
 BarData=fread(paste0(data.dir, BarSize, "/", Symbols, "/", Symbols, ".csv"))
+BarData[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"),
+                           tz="America/Los_Angeles")]
 
 # BarData[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 
@@ -136,48 +146,48 @@ Simulation_Results=c()
 #   "Reverse"
 # )
 
-Market_Time=c(1, 2, 3)
-Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
-Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
-Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
-Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
-Open_Long_Consec_Times=c(4)
-Open_Short_Consec_Times=c(4)
-Multiplier=100
-Reverse=c(TRUE, FALSE)
-# Market_Time=2
-# Simple_BBands_1_Long_PctB=0.3
-# Simple_BBands_1_Short_PctB=0.7
-# Simple_BBands_2_Long_PctB=0.25
-# Simple_BBands_2_Short_PctB=0.75
-# Open_Long_Consec_Times=4
-# Open_Short_Consec_Times=4
+# Market_Time=c(1, 2, 3)
+# Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
+# Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
+# Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
+# Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
+# Open_Long_Consec_Times=c(4)
+# Open_Short_Consec_Times=c(4)
 # Multiplier=100
-# Reverse=TRUE
-Params=data.table(
-  expand.grid(
-    Market_Time,
-    Simple_BBands_1_Long_PctB,
-    Simple_BBands_1_Short_PctB,
-    Simple_BBands_2_Long_PctB,
-    Simple_BBands_2_Short_PctB,
-    Open_Long_Consec_Times,
-    Open_Short_Consec_Times,
-    Multiplier,
-    Reverse
-  )
-)
-Tuning_Parameters=c(
-  "Market_Time",
-  "Simple_BBands_1_Long_PctB",
-  "Simple_BBands_1_Short_PctB",
-  "Simple_BBands_2_Long_PctB",
-  "Simple_BBands_2_Short_PctB",
-  "Open_Long_Consec_Times",
-  "Open_Short_Consec_Times",
-  "Multiplier",
-  "Reverse"
-)
+# Reverse=c(TRUE, FALSE)
+# # Market_Time=2
+# # Simple_BBands_1_Long_PctB=0.3
+# # Simple_BBands_1_Short_PctB=0.7
+# # Simple_BBands_2_Long_PctB=0.25
+# # Simple_BBands_2_Short_PctB=0.75
+# # Open_Long_Consec_Times=4
+# # Open_Short_Consec_Times=4
+# # Multiplier=100
+# # Reverse=TRUE
+# Params=data.table(
+#   expand.grid(
+#     Market_Time,
+#     Simple_BBands_1_Long_PctB,
+#     Simple_BBands_1_Short_PctB,
+#     Simple_BBands_2_Long_PctB,
+#     Simple_BBands_2_Short_PctB,
+#     Open_Long_Consec_Times,
+#     Open_Short_Consec_Times,
+#     Multiplier,
+#     Reverse
+#   )
+# )
+# Tuning_Parameters=c(
+#   "Market_Time",
+#   "Simple_BBands_1_Long_PctB",
+#   "Simple_BBands_1_Short_PctB",
+#   "Simple_BBands_2_Long_PctB",
+#   "Simple_BBands_2_Short_PctB",
+#   "Open_Long_Consec_Times",
+#   "Open_Short_Consec_Times",
+#   "Multiplier",
+#   "Reverse"
+# )
 
 # Market_Time=c(1, 2, 3)
 # RSI_RSI_MA_Diff_Min=c(1, 2, 3)
@@ -206,6 +216,61 @@ Tuning_Parameters=c(
 #   "Close_N",
 #   "Reverse"
 # )
+
+Market_Time=3
+Simple_BBands_1_Long_PctB=0.25
+Simple_BBands_1_Short_PctB=0.7
+Simple_BBands_2_Long_PctB=0.2
+Simple_BBands_2_Short_PctB=0.75
+Open_Long_Consec_Times=4
+Open_Short_Consec_Times=4
+Multiplier=100
+
+RSI_RSI_MA_Diff_Min=3
+RSI_RSI_MA_Diff_Max=6
+Early_Execution_Gap=7
+Open_N=c(1:9)
+Close_N=c(1:9)
+
+Reverse=TRUE
+Params=data.table(
+  expand.grid(
+    Market_Time,
+    Simple_BBands_1_Long_PctB,
+    Simple_BBands_1_Short_PctB,
+    Simple_BBands_2_Long_PctB,
+    Simple_BBands_2_Short_PctB,
+    Open_Long_Consec_Times,
+    Open_Short_Consec_Times,
+    Multiplier,
+    
+    RSI_RSI_MA_Diff_Min,
+    RSI_RSI_MA_Diff_Max,
+    Early_Execution_Gap,
+    Open_N,
+    Close_N,
+    
+    Reverse
+  )
+)
+Tuning_Parameters=c(
+  "Market_Time",
+  "Simple_BBands_1_Long_PctB",
+  "Simple_BBands_1_Short_PctB",
+  "Simple_BBands_2_Long_PctB",
+  "Simple_BBands_2_Short_PctB",
+  "Open_Long_Consec_Times",
+  "Open_Short_Consec_Times",
+  "Multiplier",
+  
+  "RSI_RSI_MA_Diff_Min",
+  "RSI_RSI_MA_Diff_Max",
+  "Early_Execution_Gap",
+  "Open_N",
+  "Close_N",
+  
+  "Reverse"
+)
 colnames(Params)=Tuning_Parameters
 for(i in 1:nrow(Params)){
   # i=1
@@ -258,37 +323,112 @@ for(i in 1:nrow(Params)){
     Temp$Elapsed_Time[i]=0
     
     for(k_ind in 1:k){
-      Time_Elapsed=system.time({
-        Results_Temp=Backtesting(BarData=get(paste0("BarData_", k_ind)),
-                                 Strategy_Name=Strategy_Name,
-                                 Working_Dir=working.dir)
-      })
+      # k_ind=1
+      BarData_Temp=get(paste0("BarData_", k_ind))
+      Trading_Dates=unique(as.Date(BarData_Temp$Time))
+      
+      source(paste0(working.dir, "/Common_Parameters.R"))
+      
+      # Market_Time=1
+      
+      switch(
+        as.character(Market_Time),
+        
+        "1"={
+          Time_Elapsed=system.time({
+            BarData_Temp=BarData_Temp
+            
+            BarData_Temp[, Ind:=.I]
+            
+            Results_Temp=list(Backtesting(BarData=BarData_Temp,
+                                          Strategy_Name=Strategy_Name,
+                                          Working_Dir=working.dir))
+          })
+        },
+        
+        "2"={
+          Time_Elapsed=system.time({
+            Results_Temp=lapply(Trading_Dates[-1],
+                                #x=Trading_Dates[3]
+                                function(x){
+                                  x=as.Date(x)
+                                  
+                                  BarData_Temp=BarData_Temp[Time>=paste0(x-1, " ", Market_Close_Time)&
+                                                              Time<paste0(x, " ", Market_Close_Time), ]
+                                  BarData_Temp=BarData_Temp[Time>=paste0(x, " ", Market_Open_Time)&
+                                                              Time<paste0(x, " ", Market_Close_Time), ]
+                                  
+                                  BarData_Temp[, Ind:=.I]
+                                  
+                                  Backtesting(BarData=BarData_Temp,
+                                              Strategy_Name=Strategy_Name,
+                                              Working_Dir=working.dir)
+                                  
+                                })
+          })
+        },
+        
+        "3"={
+          Time_Elapsed=system.time({
+            Results_Temp=lapply(Trading_Dates[-1],
+                                #x=Trading_Dates[3]
+                                function(x){
+                                  x=as.Date(x)
+                                  
+                                  BarData_Temp=BarData_Temp[Time>=paste0(x-1, " ", Market_Close_Time)&
+                                                              Time<paste0(x, " ", Market_Close_Time), ]
+                                  BarData_Temp=BarData_Temp[!(Time>=paste0(x, " ", Market_Open_Time)&
+                                                                Time<paste0(x, " ", Market_Close_Time)), ]
+                                  
+                                  BarData_Temp[, Ind:=.I]
+                                  
+                                  Backtesting(BarData=BarData_Temp,
+                                              Strategy_Name=Strategy_Name,
+                                              Working_Dir=working.dir)
+                                  
+                                })
+          })
+        }
+      )
       
       Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+Time_Elapsed[3]
       
-      if(!is.na(Results_Temp[["Net_Profit"]])){
+      
+      Orders_Transmitted_Temp=do.call(rbind,
+                                      c(do.call(rbind,
+                                                Results_Temp)[, "Orders_Transmitted"],
+                                        fill=TRUE))
+      Ind_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Ind_Profit"]]
+      Net_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Net_Profit"]]
+      
+      if(!sum(apply(Orders_Transmitted_Temp,
+                    2,
+                    function(x){is.na(x)}))==nrow(Orders_Transmitted_Temp)){
         # save results
         assign("Results_Temp",
                list(Time_Elapsed,
-                    Results_Temp))
+                    list(
+                      Orders_Transmitted=Orders_Transmitted_Temp,
+                      Ind_Profit=Ind_Profit_Temp,
+                      Net_Profit=Net_Profit_Temp
+                    )))
         
         # Net_Profit
-        Temp[i, paste0("NP_on_", k_ind):=Results_Temp[[2]]$Net_Profit]
+        Temp[i, paste0("NP_on_", k_ind):=Net_Profit_Temp]
         
         # standard deviation
-        Temp[i, paste0("SD_on_", k_ind):=sd(Results_Temp[[2]]$Ind_Profit$Daily_Profit)]
+        Temp[i, paste0("SD_on_", k_ind):=sd(Ind_Profit_Temp[["Daily_Profit"]])]
         
         # MDD
-        Data_Temp=Results_Temp[[2]]$Ind_Profit
-        if(nrow(Data_Temp[!is.na(Cum_Profit)])>0){
+        if(nrow(Ind_Profit_Temp[!is.na(Cum_Profit)])>0){
           # Max_Loss (same as MDD, but just not percentage)
-          # Data_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Data_Temp),
-          #                                         function(x) Data_Temp[, min(Cum_Profit[.I>=x])])]
-          # Temp[i, paste0(Strategy, "_Training_", "Max_Loss"):=-max(Data_Temp$Max_Loss)]
-          Temp[i, paste0("MDD_on_", k_ind):=-maxdrawdown(Data_Temp$Cum_Profit)$maxdrawdown]
+          # Ind_Profit_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Ind_Profit_Temp),
+          #                                         function(x) Ind_Profit_Temp[, min(Cum_Profit[.I>=x])])]
+          # Temp[i, paste0(Strategy, "_Training_", "Max_Loss"):=-max(Ind_Profit_Temp$Max_Loss)]
+          Temp[i, paste0("MDD_on_", k_ind):=-maxdrawdown(Ind_Profit_Temp[["Cum_Profit"]])[["maxdrawdown"]]]
           
           # minimum Cum_Profit (MCP)
-          Temp[i, paste0("MCP_on_", k_ind):=min(Data_Temp$Cum_Profit)]
+          Temp[i, paste0("MCP_on_", k_ind):=min(Ind_Profit_Temp[["Cum_Profit"]])]
         }
       }
     }
@@ -310,7 +450,7 @@ for(i in 1:nrow(Params)){
            get("Temp"))
     
     # remove
-    rm(Data_Temp, Temp, Results_Temp)
+    rm(Orders_Transmitted_Temp, Ind_Profit_Temp, Net_Profit_Temp, Temp, Results_Temp)
   }
   
   #***************
@@ -329,8 +469,6 @@ for(i in 1:nrow(Params)){
 #**************
 # save.image(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
 # load(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
-
-
 
 
 # #****************************
@@ -430,43 +568,181 @@ for(Strategy_Name in Strategies){
   source(paste0(working.dir, "Strategies.R"))
   
 }
-Results_Temp=c()
-for(k_ind in 1:k){
-  Results_Temp=c(Results_Temp,
-                 Backtesting(BarData=get(paste0("BarData_", k_ind)),
-                             Strategy_Name=Strategy_Name,
-                             Working_Dir=working.dir)$Net_Profit)
+
+# Results_Temp=c()
+# for(k_ind in 1:k){
+#   Results_Temp=c(Results_Temp,
+#                  Backtesting(BarData=get(paste0("BarData_", k_ind)),
+#                              Strategy_Name=Strategy_Name,
+#                              Working_Dir=working.dir)$Net_Profit)
+# }
+
+
+{
+  Additional_Cols=c("Row",
+                    "Elapsed_Time",
+                    paste0("NP_on_", 1:k),
+                    paste0("SD_on_", 1:k),
+                    paste0("MDD_on_", 1:k),
+                    paste0("MCP_on_", 1:k),
+                    "Profitable",
+                    "NP",
+                    "K")
+  Temp=setNames(data.table(matrix(nrow=1, ncol=length(Additional_Cols))), Additional_Cols)
+  Temp[, (Additional_Cols):=lapply(.SD, as.numeric), .SDcols=Additional_Cols]
+  Temp[, Row:=.I]
+  
+  for(k_ind in 1:k){
+    # k_ind=1
+    BarData_Temp=get(paste0("BarData_", k_ind))
+    Trading_Dates=unique(as.Date(BarData_Temp$Time))
+    
+    source(paste0(working.dir, "/Common_Parameters.R"))
+    
+    # Market_Time=1
+    
+    switch(
+      as.character(Market_Time),
+      
+      "1"={
+        Time_Elapsed=system.time({
+          BarData_Temp=BarData_Temp
+          
+          BarData_Temp[, Ind:=.I]
+          
+          Results_Temp=list(Backtesting(BarData=BarData_Temp,
+                                        Strategy_Name=Strategy_Name,
+                                        Working_Dir=working.dir))
+        })
+      },
+      
+      "2"={
+        Time_Elapsed=system.time({
+          Results_Temp=lapply(Trading_Dates[-1],
+                              #x=Trading_Dates[3]
+                              function(x){
+                                x=as.Date(x)
+                                
+                                BarData_Temp=BarData_Temp[Time>=paste0(x-1, " ", Market_Close_Time)&
+                                                            Time<paste0(x, " ", Market_Close_Time), ]
+                                BarData_Temp=BarData_Temp[Time>=paste0(x, " ", Market_Open_Time)&
+                                                            Time<paste0(x, " ", Market_Close_Time), ]
+                                
+                                BarData_Temp[, Ind:=.I]
+                                
+                                Backtesting(BarData=BarData_Temp,
+                                            Strategy_Name=Strategy_Name,
+                                            Working_Dir=working.dir)
+                                
+                              })
+        })
+      },
+      
+      "3"={
+        Time_Elapsed=system.time({
+          Results_Temp=lapply(Trading_Dates[-1],
+                              #x=Trading_Dates[3]
+                              function(x){
+                                x=as.Date(x)
+                                
+                                BarData_Temp=BarData_Temp[Time>=paste0(x-1, " ", Market_Close_Time)&
+                                                            Time<paste0(x, " ", Market_Close_Time), ]
+                                BarData_Temp=BarData_Temp[!(Time>=paste0(x, " ", Market_Open_Time)&
+                                                              Time<paste0(x, " ", Market_Close_Time)), ]
+                                
+                                BarData_Temp[, Ind:=.I]
+                                
+                                Backtesting(BarData=BarData_Temp,
+                                            Strategy_Name=Strategy_Name,
+                                            Working_Dir=working.dir)
+                                
+                              })
+        })
+      }
+    )
+    
+    # Params=cbind(Params,
+    #              Temp)
+    # for(Strategy_Name in Strategies){
+    #   assign(
+    #     paste0("Results_", Strategy_Name),
+    #     Temp
+    #   )
+    # }
+    # elapsed time
+    Temp$Elapsed_Time[i]=0
+    
+    Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+Time_Elapsed[3]
+    
+    Orders_Transmitted_Temp=do.call(rbind,
+                                    c(do.call(rbind,
+                                              Results_Temp)[, "Orders_Transmitted"],
+                                      fill=TRUE))
+    Ind_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Ind_Profit"]]
+    Net_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Net_Profit"]]
+    
+    assign(
+      paste0("Ind_Profit_", k_ind),
+      Ind_Profit_Temp
+    )
+    
+    if(!sum(apply(Orders_Transmitted_Temp,
+                  2,
+                  function(x){is.na(x)}))==nrow(Orders_Transmitted_Temp)){
+      # save results
+      assign("Results_Temp",
+             list(Time_Elapsed,
+                  Results_Temp))
+      
+      # Net_Profit
+      Temp[i, paste0("NP_on_", k_ind):=Net_Profit_Temp]
+      
+      # standard deviation
+      Temp[i, paste0("SD_on_", k_ind):=sd(Ind_Profit_Temp[["Daily_Profit"]])]
+      
+      # MDD
+      if(nrow(Ind_Profit_Temp[!is.na(Cum_Profit)])>0){
+        # Max_Loss (same as MDD, but just not percentage)
+        # Ind_Profit_Temp[, Max_Loss:=Cum_Profit-sapply(1:nrow(Ind_Profit_Temp),
+        #                                         function(x) Ind_Profit_Temp[, min(Cum_Profit[.I>=x])])]
+        # Temp[i, paste0(Strategy, "_Training_", "Max_Loss"):=-max(Ind_Profit_Temp$Max_Loss)]
+        Temp[i, paste0("MDD_on_", k_ind):=-maxdrawdown(Ind_Profit_Temp[["Cum_Profit"]])[["maxdrawdown"]]]
+        
+        # minimum Cum_Profit (MCP)
+        Temp[i, paste0("MCP_on_", k_ind):=min(Ind_Profit_Temp[["Cum_Profit"]])]
+      }
+    }
+  }
+  
+  # remove
+  rm(Orders_Transmitted_Temp, Ind_Profit_Temp, Net_Profit_Temp, Results_Temp)
 }
+
 get(paste0("Results_",
            Strategy_Name))[order(NP, decreasing=TRUE)][, .SD, .SDcols=paste0("NP_on_", 1:k)][1, ]
-Results_Temp
+Temp[, .SD, .SDcols=paste0("NP_on_", 1:k)][1, ]
 
 apply(
   matrix(1:k),
   1,
   function(x){
-    plot(Backtesting(BarData=get(paste0("BarData_", x)),
-                     Strategy_Name=Strategy_Name,
-                     Working_Dir=working.dir)$Ind_Profit$Time,
-         Backtesting(BarData=get(paste0("BarData_", x)),
-                     Strategy_Name=Strategy_Name,
-                     Working_Dir=working.dir)$Ind_Profit$Cum_Profit,
+    plot(get(paste0("Ind_Profit_", x))[["Time"]],
+         get(paste0("Ind_Profit_", x))[["Cum_Profit"]],
          main=paste0("Subset_", x),
          xlab="Time",
          ylab="Profit")
   }
-)
-
-
+) 
 
 #*********************************************************
-# 1. make trend-based models (ex. Simple_RSI_1 -> Trend_Simple_RSI_1)
 # 2. apply Stop_Order & Profit_Order to Backtesting()
-# 3. work on "remove redundant long & short signals that are not supposed to be filled" in Backtesting()
 # 4. calculate indicators only once prior to fitting models for different parameter settings
 # 5. output expense for commissions in Orders_Transmitted
 # 6. utilize switch()
 
+##########################################################################
+####################### work from here - 2023-09-08 ######################
+##########################################################################
 
 #**********************
 #
@@ -509,7 +785,7 @@ for(ind in 1:nrow(Top_Ten_Models)){
   # print messages
   #***************
   # progress
-  print(paste0(I, " / ", nrow(Top_Ten_Models), " (", round(I/nrow(Top_Ten_Models)*100, 2), "%)"))
+  print(paste0(ind, " / ", nrow(Top_Ten_Models), " (", round(I/nrow(Top_Ten_Models)*100, 2), "%)"))
   
   # if(i%%20==0){
   #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-23.Rdata")
@@ -581,15 +857,15 @@ summary(as.numeric(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orde
 Orders_Transmitted_Temp[Detail=="BTO", ][Ind, ]
 Orders_Transmitted_Temp[Detail=="STC",][Ind, ]
 Ind_Profit_Temp[Time==Orders_Transmitted_Temp[Detail=="STC",][Ind, Filled_Time], ]
-chartSeries(BarData[which(as.POSIXlt(BarData$Time, tz="UTC")>=Orders_Transmitted_Temp[Detail=="BTO", ][Ind, Filled_Time] & 
-                            as.POSIXlt(BarData$Time, tz="UTC")<=(Orders_Transmitted_Temp[Detail=="STC",][Ind, Filled_Time]-15*60)), -1],
+chartSeries(BarData[which(as.POSIXlt(BarData$Time, tz="America/Los_Angeles")>=Orders_Transmitted_Temp[Detail=="BTO", ][Ind, Filled_Time] & 
+                            as.POSIXlt(BarData$Time, tz="America/Los_Angeles")<=(Orders_Transmitted_Temp[Detail=="STC",][Ind, Filled_Time]-15*60)), -1],
             name="BarData",
             theme="white")
 
 
 #************
 # Short graph
-Ind=161
+Ind=8
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]])
@@ -597,8 +873,8 @@ summary(as.numeric(Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orde
 Orders_Transmitted_Temp[Detail=="STO", ][Ind, ]
 Orders_Transmitted_Temp[Detail=="BTC",][Ind, ]
 Ind_Profit_Temp[Time==Orders_Transmitted_Temp[Detail=="BTC",][Ind, Filled_Time], ]
-chartSeries(BarData[which(as.POSIXlt(BarData$Time, tz="UTC")>=Orders_Transmitted_Temp[Detail=="STO", ][Ind, Filled_Time] & 
-                            as.POSIXlt(BarData$Time, tz="UTC")<=(Orders_Transmitted_Temp[Detail=="BTC",][Ind, Filled_Time]-15*60)), -1],
+chartSeries(BarData[which(as.POSIXlt(BarData$Time, tz="America/Los_Angeles")>=Orders_Transmitted_Temp[Detail=="STO", ][Ind, Filled_Time] & 
+                            as.POSIXlt(BarData$Time, tz="America/Los_Angeles")<=(Orders_Transmitted_Temp[Detail=="BTC",][Ind, Filled_Time]-15*60)), -1],
             name="BarData",
             theme="white")
 
