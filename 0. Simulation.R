@@ -12,7 +12,7 @@
 #
 #********************
 rm(list=ls())
- 
+
 
 #***********
 #
@@ -678,21 +678,23 @@ for(Strategy_Name in Strategies){
                                     c(do.call(rbind,
                                               Results_Temp)[, "Orders_Transmitted"],
                                       fill=TRUE))
-    Ind_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Ind_Profit"]]
-    Net_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Net_Profit"]]
     
-    assign(
-      paste0("Ind_Profit_", k_ind),
-      Ind_Profit_Temp
-    )
     
-    if(!sum(apply(Orders_Transmitted_Temp,
-                  2,
-                  function(x){is.na(x)}))==nrow(Orders_Transmitted_Temp)){
+    if(ncol(Orders_Transmitted_Temp)>1 & !sum(apply(Orders_Transmitted_Temp,
+                                                    2,
+                                                    function(x){is.na(x)}))==nrow(Orders_Transmitted_Temp)){
+      
+      Ind_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Ind_Profit"]]
+      Net_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Net_Profit"]]
+      
       # save results
       assign("Results_Temp",
              list(Time_Elapsed,
-                  Results_Temp))
+                  list(
+                    Orders_Transmitted=Orders_Transmitted_Temp,
+                    Ind_Profit=Ind_Profit_Temp,
+                    Net_Profit=Net_Profit_Temp
+                  )))
       
       # Net_Profit
       Temp[i, paste0("NP_on_", k_ind):=Net_Profit_Temp]
