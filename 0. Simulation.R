@@ -69,7 +69,7 @@ for(pack in c("IBrokers",
 }
 
 # bar size
-BarSize="5mins"
+BarSize="1min"
 
 # import data
 BarData=fread(paste0(data.dir, BarSize, "/", Symbols, "/", Symbols, ".csv"))
@@ -146,48 +146,48 @@ Simulation_Results=c()
 #   "Reverse"
 # )
 
-# Market_Time=c(1, 2, 3)
-# Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
-# Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
-# Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
-# Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
-# Open_Long_Consec_Times=c(4)
-# Open_Short_Consec_Times=c(4)
+Market_Time=c(1, 2, 3)
+Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
+Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
+Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
+Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
+Open_Long_Consec_Times=c(4)
+Open_Short_Consec_Times=c(4)
+Multiplier=100
+Reverse=c(TRUE, FALSE)
+# Market_Time=2
+# Simple_BBands_1_Long_PctB=0.3
+# Simple_BBands_1_Short_PctB=0.7
+# Simple_BBands_2_Long_PctB=0.25
+# Simple_BBands_2_Short_PctB=0.75
+# Open_Long_Consec_Times=4
+# Open_Short_Consec_Times=4
 # Multiplier=100
-# Reverse=c(TRUE, FALSE)
-# # Market_Time=2
-# # Simple_BBands_1_Long_PctB=0.3
-# # Simple_BBands_1_Short_PctB=0.7
-# # Simple_BBands_2_Long_PctB=0.25
-# # Simple_BBands_2_Short_PctB=0.75
-# # Open_Long_Consec_Times=4
-# # Open_Short_Consec_Times=4
-# # Multiplier=100
-# # Reverse=TRUE
-# Params=data.table(
-#   expand.grid(
-#     Market_Time,
-#     Simple_BBands_1_Long_PctB,
-#     Simple_BBands_1_Short_PctB,
-#     Simple_BBands_2_Long_PctB,
-#     Simple_BBands_2_Short_PctB,
-#     Open_Long_Consec_Times,
-#     Open_Short_Consec_Times,
-#     Multiplier,
-#     Reverse
-#   )
-# )
-# Tuning_Parameters=c(
-#   "Market_Time",
-#   "Simple_BBands_1_Long_PctB",
-#   "Simple_BBands_1_Short_PctB",
-#   "Simple_BBands_2_Long_PctB",
-#   "Simple_BBands_2_Short_PctB",
-#   "Open_Long_Consec_Times",
-#   "Open_Short_Consec_Times",
-#   "Multiplier",
-#   "Reverse"
-# )
+# Reverse=TRUE
+Params=data.table(
+  expand.grid(
+    Market_Time,
+    Simple_BBands_1_Long_PctB,
+    Simple_BBands_1_Short_PctB,
+    Simple_BBands_2_Long_PctB,
+    Simple_BBands_2_Short_PctB,
+    Open_Long_Consec_Times,
+    Open_Short_Consec_Times,
+    Multiplier,
+    Reverse
+  )
+)
+Tuning_Parameters=c(
+  "Market_Time",
+  "Simple_BBands_1_Long_PctB",
+  "Simple_BBands_1_Short_PctB",
+  "Simple_BBands_2_Long_PctB",
+  "Simple_BBands_2_Short_PctB",
+  "Open_Long_Consec_Times",
+  "Open_Short_Consec_Times",
+  "Multiplier",
+  "Reverse"
+)
 
 # Market_Time=c(1, 2, 3)
 # RSI_RSI_MA_Diff_Min=c(1, 2, 3)
@@ -217,60 +217,60 @@ Simulation_Results=c()
 #   "Reverse"
 # )
 
-Market_Time=3
-Simple_BBands_1_Long_PctB=0.25
-Simple_BBands_1_Short_PctB=0.7
-Simple_BBands_2_Long_PctB=0.2
-Simple_BBands_2_Short_PctB=0.75
-Open_Long_Consec_Times=4
-Open_Short_Consec_Times=4
-Multiplier=100
-
-RSI_RSI_MA_Diff_Min=3
-RSI_RSI_MA_Diff_Max=6
-Early_Execution_Gap=7
-Open_N=c(1:9)
-Close_N=c(1:9)
-
-Reverse=TRUE
-Params=data.table(
-  expand.grid(
-    Market_Time,
-    Simple_BBands_1_Long_PctB,
-    Simple_BBands_1_Short_PctB,
-    Simple_BBands_2_Long_PctB,
-    Simple_BBands_2_Short_PctB,
-    Open_Long_Consec_Times,
-    Open_Short_Consec_Times,
-    Multiplier,
-    
-    RSI_RSI_MA_Diff_Min,
-    RSI_RSI_MA_Diff_Max,
-    Early_Execution_Gap,
-    Open_N,
-    Close_N,
-    
-    Reverse
-  )
-)
-Tuning_Parameters=c(
-  "Market_Time",
-  "Simple_BBands_1_Long_PctB",
-  "Simple_BBands_1_Short_PctB",
-  "Simple_BBands_2_Long_PctB",
-  "Simple_BBands_2_Short_PctB",
-  "Open_Long_Consec_Times",
-  "Open_Short_Consec_Times",
-  "Multiplier",
-  
-  "RSI_RSI_MA_Diff_Min",
-  "RSI_RSI_MA_Diff_Max",
-  "Early_Execution_Gap",
-  "Open_N",
-  "Close_N",
-  
-  "Reverse"
-)
+# Market_Time=3
+# Simple_BBands_1_Long_PctB=0.25
+# Simple_BBands_1_Short_PctB=0.7
+# Simple_BBands_2_Long_PctB=0.2
+# Simple_BBands_2_Short_PctB=0.75
+# Open_Long_Consec_Times=4
+# Open_Short_Consec_Times=4
+# Multiplier=100
+# 
+# RSI_RSI_MA_Diff_Min=3
+# RSI_RSI_MA_Diff_Max=6
+# Early_Execution_Gap=7
+# Open_N=c(1:9)
+# Close_N=c(1:9)
+# 
+# Reverse=TRUE
+# Params=data.table(
+#   expand.grid(
+#     Market_Time,
+#     Simple_BBands_1_Long_PctB,
+#     Simple_BBands_1_Short_PctB,
+#     Simple_BBands_2_Long_PctB,
+#     Simple_BBands_2_Short_PctB,
+#     Open_Long_Consec_Times,
+#     Open_Short_Consec_Times,
+#     Multiplier,
+#     
+#     RSI_RSI_MA_Diff_Min,
+#     RSI_RSI_MA_Diff_Max,
+#     Early_Execution_Gap,
+#     Open_N,
+#     Close_N,
+#     
+#     Reverse
+#   )
+# )
+# Tuning_Parameters=c(
+#   "Market_Time",
+#   "Simple_BBands_1_Long_PctB",
+#   "Simple_BBands_1_Short_PctB",
+#   "Simple_BBands_2_Long_PctB",
+#   "Simple_BBands_2_Short_PctB",
+#   "Open_Long_Consec_Times",
+#   "Open_Short_Consec_Times",
+#   "Multiplier",
+#   
+#   "RSI_RSI_MA_Diff_Min",
+#   "RSI_RSI_MA_Diff_Max",
+#   "Early_Execution_Gap",
+#   "Open_N",
+#   "Close_N",
+#   
+#   "Reverse"
+# )
 colnames(Params)=Tuning_Parameters
 for(i in 1:nrow(Params)){
   # i=1
@@ -398,12 +398,15 @@ for(i in 1:nrow(Params)){
                                       c(do.call(rbind,
                                                 Results_Temp)[, "Orders_Transmitted"],
                                         fill=TRUE))
-      Ind_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Ind_Profit"]]
-      Net_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Net_Profit"]]
       
-      if(!sum(apply(Orders_Transmitted_Temp,
-                    2,
-                    function(x){is.na(x)}))==nrow(Orders_Transmitted_Temp)){
+      
+      if(ncol(Orders_Transmitted_Temp)>1 & !sum(apply(Orders_Transmitted_Temp,
+                                                      2,
+                                                      function(x){is.na(x)}))==nrow(Orders_Transmitted_Temp)){
+        
+        Ind_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Ind_Profit"]]
+        Net_Profit_Temp=Balance_Calculator(Orders_Transmitted_Temp)[["Net_Profit"]]
+        
         # save results
         assign("Results_Temp",
                list(Time_Elapsed,
