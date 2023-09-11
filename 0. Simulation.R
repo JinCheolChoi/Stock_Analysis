@@ -69,7 +69,7 @@ for(pack in c("IBrokers",
 }
 
 # bar size
-BarSize="1min"
+BarSize="15mins"
 
 # import data
 BarData=fread(paste0(data.dir, BarSize, "/", Symbols, "/", Symbols, ".csv"))
@@ -594,6 +594,7 @@ for(Strategy_Name in Strategies){
   Temp=setNames(data.table(matrix(nrow=1, ncol=length(Additional_Cols))), Additional_Cols)
   Temp[, (Additional_Cols):=lapply(.SD, as.numeric), .SDcols=Additional_Cols]
   Temp[, Row:=.I]
+  Orders_Transmitted=c()
   
   for(k_ind in 1:k){
     # k_ind=1
@@ -682,6 +683,8 @@ for(Strategy_Name in Strategies){
                                               Results_Temp)[, "Orders_Transmitted"],
                                       fill=TRUE))
     
+    Orders_Transmitted=rbind(Orders_Transmitted,
+                             Orders_Transmitted_Temp)
     
     if(ncol(Orders_Transmitted_Temp)>1 & !sum(apply(Orders_Transmitted_Temp,
                                                     2,
@@ -738,7 +741,11 @@ apply(
          xlab="Time",
          ylab="Profit")
   }
-) 
+)
+
+# overall plot
+plot(Balance_Calculator(Orders_Transmitted)[["Ind_Profit"]]$Time,
+     Balance_Calculator(Orders_Transmitted)[["Ind_Profit"]]$Cum_Profit)
 
 #*********************************************************
 # 2. apply Stop_Order & Profit_Order to Backtesting()
