@@ -720,7 +720,7 @@ for(Strategy_Name in Strategies){
   }
   
   # remove
-  rm(Orders_Transmitted_Temp, Ind_Profit_Temp, Net_Profit_Temp)
+  # rm(Orders_Transmitted_Temp, Ind_Profit_Temp, Net_Profit_Temp, Results_Temp)
 }
 
 
