@@ -334,6 +334,7 @@ for(i in 1:nrow(Params)){
       
       Backtesting_Output=Run_Backtesting(Market_Time=Market_Time,
                                          BarData=BarData_Temp,
+                                         Trading_Dates=Trading_Dates,
                                          Strategy_Name=Strategy_Name,
                                          Working_Dir=working.dir)
       Results_Temp=Backtesting_Output$Results
@@ -564,6 +565,7 @@ for(i in 1:nrow(Params)){
     
     Backtesting_Output=Run_Backtesting(Market_Time=Market_Time,
                                        BarData=BarData_Temp,
+                                       Trading_Dates=Trading_Dates,
                                        Strategy_Name=Strategy_Name,
                                        Working_Dir=working.dir)
     Results_Temp=Backtesting_Output$Results
@@ -716,8 +718,12 @@ for(ind in 1:length(Top_Ten_Models$i)){
     Starting_Point=sample(1:(nrow(BarData)-Sample_Size), 1)
     Ending_Point=Starting_Point+Sample_Size
     
+    BarData_Temp=BarData[Starting_Point:Ending_Point, ]
+    Trading_Dates=unique(as.Date(BarData_Temp$Time))
+    
     Results_Temp=Run_Backtesting(Market_Time=Market_Time,
-                                 BarData=BarData[Starting_Point:Ending_Point, ],
+                                 BarData=BarData_Temp,
+                                 Trading_Dates=Trading_Dates,
                                  Strategy_Name=Strategy_Name,
                                  Working_Dir=working.dir)$Results
     
@@ -783,9 +789,12 @@ Strategy_Name=Top_Ten_Models$Strategy_Name[1]
 # common parameters
 source(paste0(working.dir, "/Common_Parameters.R"))
 
-Strategy_Name
+BarData_Temp=BarData
+Trading_Dates=unique(as.Date(BarData_Temp$Time))
+
 All_Results_Temp=Run_Backtesting(Market_Time=Market_Time,
                                  BarData=BarData,
+                                 Trading_Dates=Trading_Dates,
                                  Strategy=get(Strategies[which(Strategies==Strategy_Name)]),
                                  Working_Dir=working.dir)
 Orders_Transmitted_Temp=do.call(rbind,

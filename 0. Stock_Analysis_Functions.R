@@ -1232,6 +1232,7 @@ Backtesting=function(BarData,
 #************************************
 Run_Backtesting=function(Market_Time,
                          BarData,
+                         Trading_Dates,
                          Strategy_Name,
                          Working_Dir){
   
