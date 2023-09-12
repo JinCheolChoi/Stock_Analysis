@@ -971,12 +971,12 @@ Backtesting=function(BarData,
                                     function(x){
                                       Signals[[x]][[1]]
                                     }))
-  Long_Signals[nrow(Long_Signals), ]=FALSE # this part is to not trasnfer orders at the very last time
+  # Long_Signals[nrow(Long_Signals), ]=FALSE # this part is to not transfer orders at the very last time
   Short_Signals=as.data.table(sapply(Strategy_Models,
                                      function(x){
                                        Signals[[x]][[2]]
                                      }))
-  Short_Signals[nrow(Short_Signals), ]=FALSE # this part is to not trasnfer orders at the very last time
+  # Short_Signals[nrow(Short_Signals), ]=FALSE # this part is to not transfer orders at the very last time
   
   Long_Signals=Long_Signals[, lapply(.SD, as.numeric)]
   Short_Signals=Short_Signals[, lapply(.SD, as.numeric)]
@@ -1001,6 +1001,7 @@ Backtesting=function(BarData,
     SellToClose_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Min_Sig_N"]])
     
     BuyToOpen_Signals=Long_Signals_Sums>=BuyToOpen_Min_Sig_N
+    BuyToOpen_Signals[length(BuyToOpen_Signals)]=FALSE # this part is to not transfer open orders at the very last time
     SellToClose_Signals=Short_Signals_Sums>=SellToClose_Min_Sig_N
     
     if(sum(BuyToOpen_Signals)>0 & sum(SellToClose_Signals)>0){
@@ -1030,6 +1031,7 @@ Backtesting=function(BarData,
     BuyToClose_Min_Sig_N=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Min_Sig_N"]])
     
     SellToOpen_Signals=Short_Signals_Sums>=SellToOpen_Min_Sig_N
+    SellToOpen_Signals[length(SellToOpen_Signals)]=FALSE # this part is to not transfer open orders at the very last time
     BuyToClose_Signals=Long_Signals_Sums>=BuyToClose_Min_Sig_N
     
     if(sum(SellToOpen_Signals)>0 & sum(BuyToClose_Signals)>0){
