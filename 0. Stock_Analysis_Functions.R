@@ -1225,6 +1225,82 @@ Backtesting=function(BarData,
 # }
 
 
+#****************
+# Run_Backtesting
+#************************************
+# run Backtesting() given Market_Time
+#************************************
+Run_Backtesting=function(Market_Time,
+                         BarData,
+                         Strategy_Name,
+                         Working_Dir){
+  
+  switch(
+    as.character(Market_Time),
+    
+    "1"={
+      Time_Elapsed=system.time({
+        BarData=BarData
+        
+        BarData[, Ind:=.I]
+        
+        Results=list(Backtesting(BarData=BarData,
+                                 Strategy_Name=Strategy_Name,
+                                 Working_Dir=Working_Dir))
+      })
+    },
+    
+    "2"={
+      Time_Elapsed=system.time({
+        Results=lapply(Trading_Dates[-1],
+                       #x=Trading_Dates[3]
+                       function(x){
+                         x=as.Date(x)
+                         
+                         BarData=BarData[Time>=paste0(x-1, " ", Market_Close_Time)&
+                                           Time<paste0(x, " ", Market_Close_Time), ]
+                         BarData=BarData[Time>=paste0(x, " ", Market_Open_Time)&
+                                           Time<paste0(x, " ", Market_Close_Time), ]
+                         
+                         BarData[, Ind:=.I]
+                         
+                         Backtesting(BarData=BarData,
+                                     Strategy_Name=Strategy_Name,
+                                     Working_Dir=Working_Dir)
+                         
+                       })
+      })
+    },
+    
+    "3"={
+      Time_Elapsed=system.time({
+        Results=lapply(Trading_Dates[-1],
+                       #x=Trading_Dates[3]
+                       function(x){
+                         x=as.Date(x)
+                         
+                         BarData=BarData[Time>=paste0(x-1, " ", Market_Close_Time)&
+                                           Time<paste0(x, " ", Market_Close_Time), ]
+                         BarData=BarData[!(Time>=paste0(x, " ", Market_Open_Time)&
+                                             Time<paste0(x, " ", Market_Close_Time)), ]
+                         
+                         BarData[, Ind:=.I]
+                         
+                         Backtesting(BarData=BarData,
+                                     Strategy_Name=Strategy_Name,
+                                     Working_Dir=Working_Dir)
+                         
+                       })
+      })
+    }
+  )
+  
+  return(
+    list(Time_Elapsed=Time_Elapsed,
+         Results=Results)
+  )
+  
+}
 
 
 #****************************
