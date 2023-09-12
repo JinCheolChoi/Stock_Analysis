@@ -1147,6 +1147,7 @@ Backtesting=function(BarData,
                              tail(Orders_Transmitted, 1))
     
     Orders_Transmitted[nrow(Orders_Transmitted), Submit_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
+    Orders_Transmitted[nrow(Orders_Transmitted), Filled_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
     Orders_Transmitted[nrow(Orders_Transmitted), Action:="Sell"]
     Orders_Transmitted[nrow(Orders_Transmitted), Detail:="STC"]
     Orders_Transmitted[nrow(Orders_Transmitted), TotalQuantity:=abs(tail(Which_Signals[["Net_Quantity"]], 1))]
@@ -1157,6 +1158,7 @@ Backtesting=function(BarData,
                              tail(Orders_Transmitted, 1))
     
     Orders_Transmitted[nrow(Orders_Transmitted), Submit_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
+    Orders_Transmitted[nrow(Orders_Transmitted), Filled_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
     Orders_Transmitted[nrow(Orders_Transmitted), Action:="Buy"]
     Orders_Transmitted[nrow(Orders_Transmitted), Detail:="BTC"]
     Orders_Transmitted[nrow(Orders_Transmitted), TotalQuantity:=abs(tail(Which_Signals[["Net_Quantity"]], 1))]
