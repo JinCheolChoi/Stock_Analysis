@@ -976,7 +976,7 @@ Backtesting=function(BarData,
                                      function(x){
                                        Signals[[x]][[2]]
                                      }))
-  Short_Signals[nrow(Long_Signals), ]=FALSE # this part is to not trasnfer orders at the very last time
+  Short_Signals[nrow(Short_Signals), ]=FALSE # this part is to not trasnfer orders at the very last time
   
   Long_Signals=Long_Signals[, lapply(.SD, as.numeric)]
   Short_Signals=Short_Signals[, lapply(.SD, as.numeric)]

@@ -642,9 +642,9 @@ for(i in 1:nrow(Params)){
      Results_Temp)
   
   
-  get(paste0("Results_",
-             Strategy_Name))[order(NP, decreasing=TRUE)][, .SD, .SDcols=paste0("NP_on_", 1:k)][1, ]
-  Temp[, .SD, .SDcols=paste0("NP_on_", 1:k)][1, ]
+  (get(paste0("Results_",
+              Strategy_Name))[order(NP, decreasing=TRUE)][, .SD, .SDcols=paste0("NP_on_", 1:k)][1, ])
+  (Temp[, .SD, .SDcols=paste0("NP_on_", 1:k)][1, ])
   
   #
   apply(
@@ -830,7 +830,7 @@ as.numeric(c(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Tra
 #***********
 # Long graph
 library(quantmod)
-Ind=241
+Ind=6
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]])
