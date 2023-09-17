@@ -671,10 +671,7 @@ for(i in 1:nrow(Params)){
 # 4. calculate indicators only once prior to fitting models for different parameter settings
 # 5. output expense for commissions in Orders_Transmitted
 # 6. utilize switch()
-
-##########################################################################
-####################### work from here - 2023-09-08 ######################
-##########################################################################
+# 7. use R squared to measure the variance of cumulative profit
 
 #**********************
 #
