@@ -971,11 +971,12 @@ Backtesting=function(BarData,
                                     function(x){
                                       Signals[[x]][[1]]
                                     }))
-  
+  # Long_Signals[nrow(Long_Signals), ]=FALSE # this part is to not transfer orders at the very last time
   Short_Signals=as.data.table(sapply(Strategy_Models,
                                      function(x){
                                        Signals[[x]][[2]]
                                      }))
+  # Short_Signals[nrow(Short_Signals), ]=FALSE # this part is to not transfer orders at the very last time
   
   Long_Signals=Long_Signals[, lapply(.SD, as.numeric)]
   Short_Signals=Short_Signals[, lapply(.SD, as.numeric)]
@@ -1000,6 +1001,7 @@ Backtesting=function(BarData,
     SellToClose_Min_Sig_N=as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Min_Sig_N"]])
     
     BuyToOpen_Signals=Long_Signals_Sums>=BuyToOpen_Min_Sig_N
+    BuyToOpen_Signals[length(BuyToOpen_Signals)]=FALSE # this part is to not transfer open orders at the very last time
     SellToClose_Signals=Short_Signals_Sums>=SellToClose_Min_Sig_N
     
     if(sum(BuyToOpen_Signals)>0 & sum(SellToClose_Signals)>0){
@@ -1029,6 +1031,7 @@ Backtesting=function(BarData,
     BuyToClose_Min_Sig_N=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Min_Sig_N"]])
     
     SellToOpen_Signals=Short_Signals_Sums>=SellToOpen_Min_Sig_N
+    SellToOpen_Signals[length(SellToOpen_Signals)]=FALSE # this part is to not transfer open orders at the very last time
     BuyToClose_Signals=Long_Signals_Sums>=BuyToClose_Min_Sig_N
     
     if(sum(SellToOpen_Signals)>0 & sum(BuyToClose_Signals)>0){
@@ -1147,6 +1150,7 @@ Backtesting=function(BarData,
                              tail(Orders_Transmitted, 1))
     
     Orders_Transmitted[nrow(Orders_Transmitted), Submit_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
+    Orders_Transmitted[nrow(Orders_Transmitted), Filled_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
     Orders_Transmitted[nrow(Orders_Transmitted), Action:="Sell"]
     Orders_Transmitted[nrow(Orders_Transmitted), Detail:="STC"]
     Orders_Transmitted[nrow(Orders_Transmitted), TotalQuantity:=abs(tail(Which_Signals[["Net_Quantity"]], 1))]
@@ -1157,6 +1161,7 @@ Backtesting=function(BarData,
                              tail(Orders_Transmitted, 1))
     
     Orders_Transmitted[nrow(Orders_Transmitted), Submit_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
+    Orders_Transmitted[nrow(Orders_Transmitted), Filled_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
     Orders_Transmitted[nrow(Orders_Transmitted), Action:="Buy"]
     Orders_Transmitted[nrow(Orders_Transmitted), Detail:="BTC"]
     Orders_Transmitted[nrow(Orders_Transmitted), TotalQuantity:=abs(tail(Which_Signals[["Net_Quantity"]], 1))]
@@ -1232,6 +1237,7 @@ Backtesting=function(BarData,
 #************************************
 Run_Backtesting=function(Market_Time,
                          BarData,
+                         Trading_Dates,
                          Strategy_Name,
                          Working_Dir){
   
@@ -1239,14 +1245,31 @@ Run_Backtesting=function(Market_Time,
     as.character(Market_Time),
     
     "1"={
+      # Time_Elapsed=system.time({
+      #   BarData=BarData
+      #   
+      #   BarData[, Ind:=.I]
+      #   
+      #   Results=list(Backtesting(BarData=BarData,
+      #                            Strategy_Name=Strategy_Name,
+      #                            Working_Dir=Working_Dir))
+      # })
       Time_Elapsed=system.time({
-        BarData=BarData
-        
-        BarData[, Ind:=.I]
-        
-        Results=list(Backtesting(BarData=BarData,
-                                 Strategy_Name=Strategy_Name,
-                                 Working_Dir=Working_Dir))
+        Results=lapply(Trading_Dates[-1],
+                       #x=Trading_Dates[3]
+                       function(x){
+                         x=as.Date(x)
+                         
+                         BarData=BarData[Time>=paste0(x-1, " ", Market_Close_Time)&
+                                           Time<paste0(x, " ", Market_Close_Time), ]
+                         
+                         BarData[, Ind:=.I]
+                         
+                         Backtesting(BarData=BarData,
+                                     Strategy_Name=Strategy_Name,
+                                     Working_Dir=Working_Dir)
+                         
+                       })
       })
     },
     
