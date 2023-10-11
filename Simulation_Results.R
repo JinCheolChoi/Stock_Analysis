@@ -279,10 +279,6 @@ Simulation_Results=c()
 # 5. output expense for commissions in Orders_Transmitted
 # 6. utilize switch()
 
-##########################################################################
-####################### work from here - 2023-09-08 ######################
-##########################################################################
-
 # #**********************
 # #
 # # repetitive simulation
@@ -381,7 +377,6 @@ Simulation_Results=c()
 #       1,
 #       function(x){
 #         hist(x, breaks=50)})
-
 
 #**************
 #
@@ -506,3 +501,4 @@ Orders_Transmitted_Temp[Detail=="BTC",][, .I[Filled_Time==Ind_Profit_Temp[Profit
 
 Ind_Profit_Temp[order(Profit, decreasing = T)]
 Ind_Profit_Temp
+
