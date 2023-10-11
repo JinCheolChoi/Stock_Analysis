@@ -5,7 +5,6 @@
 # load(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
 # load(paste0(rdata.dir, "Futures_2023-07-08 - 5mins.Rdata"))
 
-
 #********************
 #
 # empty the workspace
@@ -21,7 +20,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="laptop" # "laptop" or "desktop"
+Device="desktop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -530,6 +529,7 @@ for(i in 1:nrow(Params)){
   }
   
   i=All_Results[order(NP, decreasing=TRUE)][["Row"]][1]
+  # i=All_Results[order(K, decreasing=TRUE)][["Row"]][1]
   
   source(paste0(working.dir, "Strategies.R"))
   
@@ -778,6 +778,12 @@ apply(Simulation_Results,
 # Visualization
 #
 #**************
+Top_Ten_Models=c()
+All_Results$Market_Time=Params$Market_Time
+All_Results=All_Results[Market_Time==3,]
+Top_Ten_Models$i=All_Results[order(NP, decreasing=TRUE)][["Row"]][1:10]
+Top_Ten_Models$Strategy_Name=All_Results[order(NP, decreasing=TRUE)][["Strategy"]][1:10]
+
 i=Top_Ten_Models$i[1]
 # import strategies
 source(paste0(working.dir, "Strategies.R"))
@@ -843,7 +849,7 @@ chartSeries(BarData[Row_Ind, -1],
 
 #************
 # Short graph
-Ind=3
+Ind=118
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]])
@@ -856,7 +862,8 @@ Row_Ind=which(as.POSIXlt(BarData$Time, tz="America/Los_Angeles")>=Orders_Transmi
 chartSeries(BarData[Row_Ind, -1],
             name="BarData",
             theme="white")
-
+which(as.POSIXlt(BarData$Time, tz="America/Los_Angeles")>=Orders_Transmitted_Temp[Detail=="STO", ][Ind, Filled_Time]) %>% min
+which(as.POSIXlt(BarData$Time, tz="America/Los_Angeles")<=(Orders_Transmitted_Temp[Detail=="BTC",][Ind, Filled_Time]-15*60)) %>% max
 # Ind for maximum profit
 # if it is long...
 Orders_Transmitted_Temp[Detail=="STC",][, .I[Filled_Time==Ind_Profit_Temp[Profit==max(Profit), ][["Time"]]]]

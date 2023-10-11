@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="laptop" # or "desktop"
+Device="desktop" # or "desktop"
 
 if(Device=="desktop"){
   # desktop
