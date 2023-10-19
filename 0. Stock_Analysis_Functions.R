@@ -920,6 +920,11 @@ Live_Trading_Imitator=function(BarData,
 Backtesting=function(BarData,
                      Strategy_Name,
                      Working_Dir){
+  # BarData is not allowed to be empty
+  if(nrow(BarData)==0){
+    return(NULL)
+  }
+  
   #****************
   # import packages
   #****************
@@ -1092,24 +1097,7 @@ Backtesting=function(BarData,
   Which_Signals[, Trading_Time:=format(as.POSIXct(Submit_Time), format="%H:%M:%S")]
   
   Last_Trading_Time=format(as.POSIXct(paste0("1970-01-01 ", Market_Close_Time))-Time_Unit, format="%H:%M:%S")
-  # switch(
-  #   as.character(Market_Time),
-  #   
-  #   "1"={
-  #     Which_Signals=Which_Signals
-  #   },
-  #   
-  #   "2"={
-  #     Which_Signals=Which_Signals[Trading_Time>=paste0(min(unique(as.Date(Which_Signals$Time))), " ", Market_Open_Time) &
-  #                                   Trading_Time<=paste0(max(unique(as.Date(Which_Signals$Time))), " ", Last_Trading_Time)]
-  #   },
-  #   
-  #   "3"={
-  #     Which_Signals=Which_Signals[!(Trading_Time>=paste0(min(unique(as.Date(Which_Signals$Time))), " ", Market_Open_Time) &
-  #                                     Trading_Time<=paste0(max(unique(as.Date(Which_Signals$Time))), " ", Last_Trading_Time))]
-  #   }
-  # )
-  
+
   if(length(Which_Signals[Detail=="BTO" |
                           Detail=="STO", Ind])==0){
     return(list(Orders_Transmitted=NA,
@@ -1245,17 +1233,9 @@ Run_Backtesting=function(Market_Time,
     as.character(Market_Time),
     
     "1"={
-      # Time_Elapsed=system.time({
-      #   BarData=BarData
-      #   
-      #   BarData[, Ind:=.I]
-      #   
-      #   Results=list(Backtesting(BarData=BarData,
-      #                            Strategy_Name=Strategy_Name,
-      #                            Working_Dir=Working_Dir))
-      # })
+      # both regular and pre-market trading time
       Time_Elapsed=system.time({
-        Results=lapply(Trading_Dates[-1],
+        Results=lapply(Trading_Dates,
                        #x=Trading_Dates[3]
                        function(x){
                          x=as.Date(x)
@@ -1274,8 +1254,9 @@ Run_Backtesting=function(Market_Time,
     },
     
     "2"={
+      # only regular trading time
       Time_Elapsed=system.time({
-        Results=lapply(Trading_Dates[-1],
+        Results=lapply(Trading_Dates,
                        #x=Trading_Dates[3]
                        function(x){
                          x=as.Date(x)
@@ -1290,14 +1271,14 @@ Run_Backtesting=function(Market_Time,
                          Backtesting(BarData=BarData,
                                      Strategy_Name=Strategy_Name,
                                      Working_Dir=Working_Dir)
-                         
                        })
       })
     },
     
     "3"={
+      # only pre-market trading time
       Time_Elapsed=system.time({
-        Results=lapply(Trading_Dates[-1],
+        Results=lapply(Trading_Dates,
                        #x=Trading_Dates[3]
                        function(x){
                          x=as.Date(x)
@@ -1312,7 +1293,6 @@ Run_Backtesting=function(Market_Time,
                          Backtesting(BarData=BarData,
                                      Strategy_Name=Strategy_Name,
                                      Working_Dir=Working_Dir)
-                         
                        })
       })
     }
