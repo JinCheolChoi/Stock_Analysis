@@ -20,7 +20,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="desktop" # "laptop" or "desktop"
+Device="laptop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -68,7 +68,7 @@ for(pack in c("IBrokers",
 }
 
 # bar size
-BarSize="15mins"
+BarSize="1min"
 
 # import data
 BarData=fread(paste0(data.dir, BarSize, "/", Symbols, "/", Symbols, ".csv"))
@@ -80,9 +80,28 @@ BarData[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"),
 # the number of sub-datasets splited from the original data set
 k=15
 
+# regular market time to analyze
+Market_Open_Time="05:30:00"
+Market_Close_Time="14:00:00"
+
 # divide data into k subsets
+Unique_Dates=unique(as.Date(BarData$Time))
 for(k_ind in 1:k){
-  Temp=BarData[which(rep(c(1:k), each=round(nrow(BarData)/k))==k_ind), ]
+  Target_Date=Unique_Dates[rep(c(1:k), each=ceiling(length(Unique_Dates)/k))==k_ind]
+  Target_Date=Target_Date[!is.na(Target_Date)]
+  Temp=do.call(rbind,
+               lapply(Target_Date,
+                      #x=Unique_Dates[804]
+                      function(x){
+                        x=as.Date(x)
+                        BarData=BarData[Time>=paste0(x-1, " ", Market_Close_Time)&
+                                          Time<paste0(x, " ", Market_Close_Time), ]
+                        BarData=BarData[!(Time>=paste0(x, " ", Market_Open_Time)&
+                                            Time<paste0(x, " ", Market_Close_Time)), ]
+                        
+                        BarData[, Ind:=.I]
+                      })
+  )
   Temp=na.omit(Temp)
   assign(
     paste0("BarData_", k_ind),
@@ -93,11 +112,6 @@ for(k_ind in 1:k){
 
 # Live_Trading
 Live_Trading=FALSE
-
-# repetitive simultation parameters
-Sim_N=500
-Sample_Size=round(nrow(BarData)/k)
-Simulation_Results=c()
 
 #************
 # grid search
@@ -295,6 +309,7 @@ for(i in 1:nrow(Params)){
                       "Elapsed_Time",
                       paste0("NP_on_", 1:k),
                       paste0("SD_on_", 1:k),
+                      paste0("adjR2_on_", 1:k),
                       paste0("MDD_on_", 1:k),
                       paste0("MCP_on_", 1:k),
                       "Profitable",
@@ -330,7 +345,6 @@ for(i in 1:nrow(Params)){
       Trading_Dates=unique(as.Date(BarData_Temp$Time))
       
       # Market_Time=1
-      
       Backtesting_Output=Run_Backtesting(Market_Time=Market_Time,
                                          BarData=BarData_Temp,
                                          Trading_Dates=Trading_Dates,
@@ -340,7 +354,6 @@ for(i in 1:nrow(Params)){
       Time_Elapsed=Backtesting_Output$Time_Elapsed
       
       Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+Time_Elapsed[3]
-      
       
       Orders_Transmitted_Temp=do.call(rbind,
                                       c(do.call(rbind,
@@ -369,6 +382,11 @@ for(i in 1:nrow(Params)){
         
         # standard deviation
         Temp[i, paste0("SD_on_", k_ind):=sd(Ind_Profit_Temp[["Daily_Profit"]])]
+        
+        # adjusted R-squared
+        lm_fit=lm(Profit~Time, Ind_Profit_Temp)
+        lm_fit_summ=summary(lm_fit)
+        Temp[i, paste0("adjR2_on_", k_ind):=lm_fit_summ$adj.r.squared]
         
         # MDD
         if(nrow(Ind_Profit_Temp[!is.na(Cum_Profit)])>0){
@@ -419,6 +437,8 @@ for(i in 1:nrow(Params)){
   #   save.image("C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/Futures_2022-01-23.Rdata")
   # }
 }
+
+
 
 #**************
 # save and load

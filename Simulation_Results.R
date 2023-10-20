@@ -104,8 +104,23 @@ BarData[, Time:=as.POSIXct(format(as.POSIXct(Time),
 k=15
 
 # divide data into k subsets
+Unique_Dates=unique(as.Date(BarData$Time))
 for(k_ind in 1:k){
-  Temp=BarData[which(rep(c(1:k), each=round(nrow(BarData)/k))==k_ind), ]
+  Target_Date=Unique_Dates[rep(c(1:k), each=ceiling(length(Unique_Dates)/k))==k_ind]
+  Target_Date=Target_Date[!is.na(Target_Date)]
+  Temp=do.call(rbind,
+               lapply(Target_Date,
+                      #x=Unique_Dates[804]
+                      function(x){
+                        x=as.Date(x)
+                        BarData=BarData[Time>=paste0(x-1, " ", Market_Close_Time)&
+                                          Time<paste0(x, " ", Market_Close_Time), ]
+                        BarData=BarData[!(Time>=paste0(x, " ", Market_Open_Time)&
+                                            Time<paste0(x, " ", Market_Close_Time)), ]
+                        
+                        BarData[, Ind:=.I]
+                      })
+  )
   Temp=na.omit(Temp)
   assign(
     paste0("BarData_", k_ind),

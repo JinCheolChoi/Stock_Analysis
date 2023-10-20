@@ -1132,7 +1132,7 @@ Backtesting=function(BarData,
                                         Long_Signals_Sums,
                                         Short_Signals_Sums)
   
-  
+  # if there are orders that haven't been closed at at the end, submit the closing positions at the end
   if(tail(Which_Signals[["Net_Quantity"]], 1)>0){
     Orders_Transmitted=rbind(Orders_Transmitted,
                              tail(Orders_Transmitted, 1))
