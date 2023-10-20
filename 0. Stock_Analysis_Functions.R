@@ -3329,3 +3329,49 @@ Balance_Calculator=function(Orders_Transmitted){
               Net_Profit=Net_Profit))
 }
 
+
+#*********************
+#
+# [ --- Etc --- ] ----
+#
+#*********************
+# Value_Difference_Normalizer
+#****************************
+Value_Difference_Normalizer=function(BarData_Temp,
+                                     Width=10){
+
+Temp=do.call(rbind,
+             lapply(0:Width,
+                    function(x){
+                      Temp=BarData_to_Use[Ind%in%(BarData_Temp$Ind+x)]
+                      
+                      Temp[, Order_Ind:=x]
+                    }))
+
+Temp[, Normalized_Close:=unlist(lapply(0:Width,
+                                       function(x){
+                                         mapply(
+                                           function(a, b){
+                                             b-a
+                                           },
+                                           BarData_to_Use[Ind%in%(BarData_Temp$Ind+1), Open],
+                                           BarData_to_Use[Ind%in%(BarData_Temp$Ind+x+1), Open]
+                                         )
+                                       }))]
+
+Trading_Dates=unique(as.Date(Temp$Time))
+
+return(do.call(rbind,
+               lapply(Trading_Dates,
+                      #x=Trading_Dates[2]
+                      function(x){
+                        x=as.Date(x)
+                        
+                        # consider the pre-market trading time
+                        Temp=Temp[Time>=paste0(x-1, " ", Market_Close_Time)&
+                                    Time<(as.POSIXct(paste0(x, " ", Market_Close_Time))-Time_Unit), ]
+                        Temp=Temp[!(Time>=paste0(x, " ", Market_Open_Time)&
+                                      Time<(as.POSIXct(paste0(x, " ", Market_Close_Time))-Time_Unit)), ]
+                      }
+               )))
+}
