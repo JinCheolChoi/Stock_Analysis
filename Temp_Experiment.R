@@ -1,9 +1,8 @@
 #**************
 # save and load
 #**************
-# save.image(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
-# load(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
-# load(paste0(rdata.dir, "Futures_2023-07-08 - 5mins.Rdata"))
+# save.image(paste0(rdata.dir, "Temp_Experiment.Rdata"))
+# load(paste0(rdata.dir, "Temp_Experiment.Rdata"))
 
 #********************
 #
@@ -98,7 +97,7 @@ Trading_Dates=unique(as.Date(BarData$Time))
 # Time_Unit
 Time_Unit=BarData$Time[2]-BarData$Time[1]
 
-
+#
 BarData_to_Use=BarData[
   data.table(
     Symbol=Symbols[1],
@@ -229,27 +228,31 @@ for(ind in 1:nrow(Output)){
 # Output[RSI_Threshold==30 &
 #          Consec_N==1, ]
 
-
 for(ind in 1:nrow(Output)){
   assign(
-    paste0("BarData_Temp_", ind),
+    paste0("BarData_Normalized_", ind),
     Value_Difference_Normalizer(get(paste0("BarData_Temp_", ind)),
-                                Width=30)
+                                Width<-30,
+                                Time_Unit)
   )
   # summary(Temp[Order_Ind==10, Normalized_Close])
-  plot(get(paste0("BarData_Temp_", ind))[, mean(Normalized_Close), by="Order_Ind"])
+  plot(get(paste0("BarData_Normalized_", ind))[, mean(Normalized_Close), by="Order_Ind"])
 }
 
-BarData_Temp_1[Order_Ind==0|
-                 Order_Ind==1, ]
+
+lapply(
+  1:nrow(Output),
+  function(ind){
+    Temp=get(paste0("BarData_Normalized_", ind))
+    sapply(c(10),
+           function(x){
+             sum(Temp[order(Ind)][Order_Ind==x, Normalized_Close])
+           })
+  }
+)
 
 
-sapply(c(1:10),
-       function(x){
-         sum([order(Ind)][Order_Ind==x, Normalized_Close])
-       })
+Commission=0.62
 
 
 # plot(Temp[, median(Normalized_Close), by="Order_Ind"])
-
-
