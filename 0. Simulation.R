@@ -354,12 +354,16 @@ for(i in 1:nrow(Params)){
       Time_Elapsed=Backtesting_Output$Time_Elapsed
       
       Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+Time_Elapsed[3]
-      
-      Orders_Transmitted_Temp=do.call(rbind,
-                                      c(do.call(rbind,
-                                                Results_Temp)[, "Orders_Transmitted"],
-                                        fill=TRUE))
-      
+
+      if(!is.null(do.call(rbind,
+                          Results_Temp))){
+        Orders_Transmitted_Temp=do.call(rbind,
+                                        c(do.call(rbind,
+                                                  Results_Temp)[, "Orders_Transmitted"],
+                                          fill=TRUE))
+      }else{
+        Orders_Transmitted_Temp=data.table()
+      }
       
       if(ncol(Orders_Transmitted_Temp)>1 & !sum(apply(Orders_Transmitted_Temp,
                                                       2,
