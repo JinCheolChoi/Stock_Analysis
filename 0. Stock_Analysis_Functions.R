@@ -3040,9 +3040,9 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
   
   return(
     list(
-      Quantity=Quantity_,
-      Net_Quantity=Net_Quantity_,
-      Remove=Remove_
+      Quantity=as.integer(Quantity_),
+      Net_Quantity=as.integer(Net_Quantity_),
+      Remove=as.integer(Remove_)
     )
   )
 }
