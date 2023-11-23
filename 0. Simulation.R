@@ -354,7 +354,7 @@ for(i in 1:nrow(Params)){
       Time_Elapsed=Backtesting_Output$Time_Elapsed
       
       Temp$Elapsed_Time[i]=Temp$Elapsed_Time[i]+Time_Elapsed[3]
-
+      
       if(!is.null(do.call(rbind,
                           Results_Temp))){
         Orders_Transmitted_Temp=do.call(rbind,
