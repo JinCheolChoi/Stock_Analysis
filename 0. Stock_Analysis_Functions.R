@@ -920,6 +920,13 @@ Live_Trading_Imitator=function(BarData,
 Backtesting=function(BarData,
                      Strategy_Name,
                      Working_Dir){
+  # BarData_Include_Last_Time
+  BarData_Include_Last_Time=copy(BarData)
+  
+  # remove the last time time point
+  # this allows the second last time point to be the last possible order to be transmitted
+  BarData=BarData[-nrow(BarData), ]
+  
   # BarData is not allowed to be empty
   if(nrow(BarData)==0){
     return(NULL)
@@ -1127,12 +1134,15 @@ Backtesting=function(BarData,
   #*******************
   # Orders_Transmitter
   Orders_Transmitted=Orders_Transmitter(BarData,
+                                        BarData_Include_Last_Time,
                                         Time_Unit,
+                                        Penalty,
+                                        Tick_Size,
                                         Which_Signals,
                                         Long_Signals_Sums,
                                         Short_Signals_Sums)
   
-  # if there are orders that haven't been closed at at the end, submit the closing positions at the end
+  # if there are orders that haven't been closed at the end, submit the closing positions at the end
   if(tail(Which_Signals[["Net_Quantity"]], 1)>0){
     Orders_Transmitted=rbind(Orders_Transmitted,
                              tail(Orders_Transmitted, 1))
@@ -1142,8 +1152,8 @@ Backtesting=function(BarData,
     Orders_Transmitted[nrow(Orders_Transmitted), Action:="Sell"]
     Orders_Transmitted[nrow(Orders_Transmitted), Detail:="STC"]
     Orders_Transmitted[nrow(Orders_Transmitted), TotalQuantity:=abs(tail(Which_Signals[["Net_Quantity"]], 1))]
-    Orders_Transmitted[nrow(Orders_Transmitted), Price:=tail(BarData[["Close"]], 1)-Penalty*Tick_Size]
-    Orders_Transmitted[nrow(Orders_Transmitted), Signs_N:=0]
+    Orders_Transmitted[nrow(Orders_Transmitted), Price:=tail(BarData_Include_Last_Time[["Open"]], 1)-Penalty*Tick_Size]
+    Orders_Transmitted[nrow(Orders_Transmitted), Signs_N:=0] # this implies that Signs_N==0 is automatically filled to get rid of outstanding positions
   }else if(tail(Which_Signals[["Net_Quantity"]], 1)<0){
     Orders_Transmitted=rbind(Orders_Transmitted,
                              tail(Orders_Transmitted, 1))
@@ -1153,8 +1163,8 @@ Backtesting=function(BarData,
     Orders_Transmitted[nrow(Orders_Transmitted), Action:="Buy"]
     Orders_Transmitted[nrow(Orders_Transmitted), Detail:="BTC"]
     Orders_Transmitted[nrow(Orders_Transmitted), TotalQuantity:=abs(tail(Which_Signals[["Net_Quantity"]], 1))]
-    Orders_Transmitted[nrow(Orders_Transmitted), Price:=tail(BarData[["Close"]], 1)+Penalty*Tick_Size]
-    Orders_Transmitted[nrow(Orders_Transmitted), Signs_N:=0]
+    Orders_Transmitted[nrow(Orders_Transmitted), Price:=tail(BarData_Include_Last_Time[["Open"]], 1)+Penalty*Tick_Size]
+    Orders_Transmitted[nrow(Orders_Transmitted), Signs_N:=0] # this implies that Signs_N==0 is automatically filled to get rid of outstanding positions
   }
   
   #**********************
@@ -3134,7 +3144,10 @@ Signal_Obtainer=function(Strategy_Models,
 # Orders_Transmitter
 #*******************
 Orders_Transmitter=function(BarData,
+                            BarData_Include_Last_Time,
                             Time_Unit,
+                            Penalty,
+                            Tick_Size,
                             Which_Signals,
                             Long_Signals_Sums,
                             Short_Signals_Sums){
@@ -3158,7 +3171,7 @@ Orders_Transmitter=function(BarData,
           Detail="BTO",
           TotalQuantity=BTO_Orders[, Quantity],
           OrderType=Order_Rules[["Long"]][["BuyToOpen"]][["OrderType"]],
-          Price=BarData[Ind%in%BTO_Orders[, Ind]][["Close"]]+Penalty*Tick_Size,
+          Price=BarData_Include_Last_Time[Ind%in%c(BTO_Orders[, Ind]+1)][["Open"]]+Penalty*Tick_Size,
           Filled=1,
           Signs_N=Long_Signals_Sums[BTO_Orders[, Ind]],
           Row_N=1:nrow(BTO_Orders)
@@ -3175,7 +3188,7 @@ Orders_Transmitter=function(BarData,
           Detail="STC",
           TotalQuantity=-STC_Orders[, Quantity],
           OrderType=Order_Rules[["Long"]][["SellToClose"]][["OrderType"]],
-          Price=BarData[Ind%in%STC_Orders[, Ind]][["Close"]]-Penalty*Tick_Size,
+          Price=BarData_Include_Last_Time[Ind%in%c(STC_Orders[, Ind]+1)][["Open"]]-Penalty*Tick_Size,
           Filled=1,
           Signs_N=Short_Signals_Sums[STC_Orders[, Ind]],
           Row_N=1:nrow(STC_Orders)
@@ -3192,7 +3205,7 @@ Orders_Transmitter=function(BarData,
           Detail="STO",
           TotalQuantity=-STO_Orders[, Quantity],
           OrderType=Order_Rules[["Short"]][["SellToOpen"]][["OrderType"]],
-          Price=BarData[Ind%in%STO_Orders[, Ind]][["Close"]]-Penalty*Tick_Size,
+          Price=BarData_Include_Last_Time[Ind%in%c(STO_Orders[, Ind]+1)][["Open"]]-Penalty*Tick_Size,
           Filled=1,
           Signs_N=Short_Signals_Sums[STO_Orders[, Ind]],
           Row_N=1:nrow(STO_Orders)
@@ -3209,7 +3222,7 @@ Orders_Transmitter=function(BarData,
           Detail="BTC",
           TotalQuantity=BTC_Orders[, Quantity],
           OrderType=Order_Rules[["Short"]][["BuyToClose"]][["OrderType"]],
-          Price=BarData[Ind%in%BTC_Orders[, Ind]][["Close"]]+Penalty*Tick_Size,
+          Price=BarData_Include_Last_Time[Ind%in%c(BTC_Orders[, Ind]+1)][["Open"]]+Penalty*Tick_Size,
           Filled=1,
           Signs_N=Long_Signals_Sums[BTC_Orders[, Ind]],
           Row_N=1:nrow(BTC_Orders)
@@ -3231,7 +3244,7 @@ Orders_Transmitter=function(BarData,
           Detail="BTO",
           TotalQuantity=BTO_Orders[, Quantity],
           OrderType=Order_Rules[["Long"]][["BuyToOpen"]][["OrderType"]],
-          Price=BarData[Ind%in%BTO_Orders[, Ind]][["Close"]]+Penalty*Tick_Size,
+          Price=BarData_Include_Last_Time[Ind%in%c(BTO_Orders[, Ind]+1)][["Open"]]+Penalty*Tick_Size,
           Filled=1,
           Signs_N=Long_Signals_Sums[BTO_Orders[, Ind]],
           Row_N=1:nrow(BTO_Orders)
@@ -3248,7 +3261,7 @@ Orders_Transmitter=function(BarData,
           Detail="STC",
           TotalQuantity=-STC_Orders[, Quantity],
           OrderType=Order_Rules[["Long"]][["SellToClose"]][["OrderType"]],
-          Price=BarData[Ind%in%STC_Orders[, Ind]][["Close"]]-Penalty*Tick_Size,
+          Price=BarData_Include_Last_Time[Ind%in%c(STC_Orders[, Ind]+1)][["Open"]]-Penalty*Tick_Size,
           Filled=1,
           Signs_N=Short_Signals_Sums[STC_Orders[, Ind]],
           Row_N=1:nrow(STC_Orders)
@@ -3270,7 +3283,7 @@ Orders_Transmitter=function(BarData,
           Detail="STO",
           TotalQuantity=-STO_Orders[, Quantity],
           OrderType=Order_Rules[["Short"]][["SellToOpen"]][["OrderType"]],
-          Price=BarData[Ind%in%STO_Orders[, Ind]][["Close"]]-Penalty*Tick_Size,
+          Price=BarData_Include_Last_Time[Ind%in%c(STO_Orders[, Ind]+1)][["Open"]]-Penalty*Tick_Size,
           Filled=1,
           Signs_N=Short_Signals_Sums[STO_Orders[, Ind]],
           Row_N=1:nrow(STO_Orders)
@@ -3287,7 +3300,7 @@ Orders_Transmitter=function(BarData,
           Detail="BTC",
           TotalQuantity=BTC_Orders[, Quantity],
           OrderType=Order_Rules[["Short"]][["BuyToClose"]][["OrderType"]],
-          Price=BarData[Ind%in%BTC_Orders[, Ind]][["Close"]]+Penalty*Tick_Size,
+          Price=BarData_Include_Last_Time[Ind%in%c(BTC_Orders[, Ind]+1)][["Open"]]+Penalty*Tick_Size,
           Filled=1,
           Signs_N=Long_Signals_Sums[BTC_Orders[, Ind]],
           Row_N=1:nrow(BTC_Orders)
