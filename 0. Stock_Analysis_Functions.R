@@ -2795,6 +2795,8 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
   Remove_=rep(0, nrow(Which_Signals))
   Both_Direction_Ind=0
   
+  # begin orders with an open position
+  # thus, indicate removal in Remove_[i] for closing positions until the first open position
   ind=1
   while_i=0
   while(while_i==0){
@@ -2815,29 +2817,31 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
     # Net_Quantity_[i-1]=0
     
     # adjust Quantity[i]
-    if((Net_Quantity_[i-1]<0)&
-       (Net_Quantity_[i-1]+Quantity_[i]>0)&
-       (Net_Quantity_[i-1]+Quantity_[i]<=Max_Orders)){
-      Quantity_[i]=-Net_Quantity_[i-1]
-    }else if((Net_Quantity_[i-1])>0&
-             (Net_Quantity_[i-1]+Quantity_[i]<0)&
-             (Net_Quantity_[i-1]+Quantity_[i]>=-Max_Orders)){
-      Quantity_[i]=-Net_Quantity_[i-1]
-    }
-    
-    if(abs(Net_Quantity_[i-1]+Quantity_[i])>Max_Orders){
-      if(Detail_[i]=="BTC"|
-         Detail_[i]=="STC"){
-        if(Quantity_[i]<0){
-          Quantity_[i]=max(Quantity_[i], -(Max_Orders))
-        }else if(Quantity_[i]>=0){
-          Quantity_[i]=min(Quantity_[i], Max_Orders)
-        }
-      }else{
-        if(Quantity_[i]<0){
-          Quantity_[i]=max(Quantity_[i], -(Max_Orders+Net_Quantity_[i-1]))
-        }else if(Quantity_[i]>=0){
-          Quantity_[i]=min(Quantity_[i], Max_Orders-Net_Quantity_[i-1])
+    {
+      if((Net_Quantity_[i-1]<0)&
+         (Net_Quantity_[i-1]+Quantity_[i]>0)&
+         (Net_Quantity_[i-1]+Quantity_[i]<=Max_Orders)){
+        Quantity_[i]=-Net_Quantity_[i-1]
+      }else if((Net_Quantity_[i-1])>0&
+               (Net_Quantity_[i-1]+Quantity_[i]<0)&
+               (Net_Quantity_[i-1]+Quantity_[i]>=-Max_Orders)){
+        Quantity_[i]=-Net_Quantity_[i-1]
+      }
+      
+      if(abs(Net_Quantity_[i-1]+Quantity_[i])>Max_Orders){
+        if(Detail_[i]=="BTC"|
+           Detail_[i]=="STC"){
+          if(Quantity_[i]<0){
+            Quantity_[i]=max(Quantity_[i], -(Max_Orders))
+          }else if(Quantity_[i]>=0){
+            Quantity_[i]=min(Quantity_[i], Max_Orders)
+          }
+        }else{
+          if(Quantity_[i]<0){
+            Quantity_[i]=max(Quantity_[i], -(Max_Orders+Net_Quantity_[i-1]))
+          }else if(Quantity_[i]>=0){
+            Quantity_[i]=min(Quantity_[i], Max_Orders-Net_Quantity_[i-1])
+          }
         }
       }
     }
@@ -2855,6 +2859,8 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
       switch(as.character(Both_Direction_[i]),
              
              "TRUE"={
+               # indicate removal in Remove_[i] for orders that occur at the same time in both directions (long & short)
+               # such duplicated orders are removed from the 2nd one (the very 1st one is processed by the next for statment)
                if(Both_Direction_Ind==Ind_[i]){
                  Net_Quantity_[i]=Net_Quantity_[i-1]
                  Remove_[i]=1
@@ -2866,7 +2872,7 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
                if((Net_Quantity_[i-1]>0&Detail_[i]=="STC")|
                   (Net_Quantity_[i-1]<0&Detail_[i]=="BTC")){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i]
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
                  
                  next
                }
@@ -2894,6 +2900,8 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
       switch(as.character(Both_Direction_[i]),
              
              "TRUE"={
+               # indicate removal in Remove_[i] for orders that occur at the same time in both directions (long & short)
+               # such duplicated orders are removed from the 2nd one (the very 1st one is processed by the next for statment)
                if(Both_Direction_Ind==Ind_[i]){
                  Net_Quantity_[i]=Net_Quantity_[i-1]
                  Remove_[i]=1
@@ -2904,14 +2912,14 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
                # Always first try to clear the existing positions
                if(Detail_[i]=="STC"){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i]
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
                  
                  next
                }
                
                if(Detail_[i]=="BTO"){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i]
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
                  
                  next
                }
@@ -2940,6 +2948,8 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
       switch(as.character(Both_Direction_[i]),
              
              "TRUE"={
+               # indicate removal in Remove_[i] for orders that occur at the same time in both directions (long & short)
+               # such duplicated orders are removed from the 2nd one (the very 1st one is processed by the next for statment)
                if(Both_Direction_Ind==Ind_[i]){
                  Net_Quantity_[i]=Net_Quantity_[i-1]
                  Remove_[i]=1
@@ -2950,14 +2960,14 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
                # Always first try to clear the existing positions
                if(Detail_[i]=="BTC"){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i]
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
                  
                  next
                }
                
                if(Detail_[i]=="STO"){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i]
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
                  
                  next
                }
@@ -2986,6 +2996,8 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
       switch(as.character(Both_Direction_[i]),
              
              "TRUE"={
+               # indicate removal in Remove_[i] for orders that occur at the same time in both directions (long & short)
+               # such duplicated orders are removed from the 2nd one (the very 1st one is processed by the next for statment)
                if(Both_Direction_Ind==Ind_[i]){
                  Net_Quantity_[i]=Net_Quantity_[i-1]
                  Remove_[i]=1
@@ -2996,13 +3008,13 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
                # This part allows to force the long position entrance when there is no position filled yet while Sigs_N indicates to enter both positions at the same time
                if(Detail_[i]=="BTO"){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i]
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
                  
                  next
                  
                }else if(Detail_[i]=="STO"){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i]
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
                  
                  next
                }
