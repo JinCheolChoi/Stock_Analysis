@@ -518,3 +518,5 @@ Orders_Transmitted_Temp[Detail=="BTC",][, .I[Filled_Time==Ind_Profit_Temp[Profit
 Ind_Profit_Temp[order(Profit, decreasing = T)]
 Ind_Profit_Temp
 
+plot(Ind_Profit_Temp$Time,
+     Ind_Profit_Temp$Cum_Profit)
