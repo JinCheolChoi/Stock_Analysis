@@ -115,8 +115,8 @@ for(k_ind in 1:k){
                         x=as.Date(x)
                         BarData=BarData[Time>=paste0(x-1, " ", Market_Close_Time)&
                                           Time<paste0(x, " ", Market_Close_Time), ]
-                        BarData=BarData[!(Time>=paste0(x, " ", Market_Open_Time)&
-                                            Time<paste0(x, " ", Market_Close_Time)), ]
+                        # BarData=BarData[!(Time>=paste0(x, " ", Market_Open_Time)&
+                        #                     Time<paste0(x, " ", Market_Close_Time)), ]
                         
                         BarData[, Ind:=.I]
                       })
@@ -128,6 +128,7 @@ for(k_ind in 1:k){
   )
   rm(Temp)
 }
+
 
 # Live_Trading
 Live_Trading=FALSE
