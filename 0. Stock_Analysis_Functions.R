@@ -1002,7 +1002,13 @@ Backtesting=function(BarData,
   # transmit order & fill order
   #****************************
   Long_Which_Signals=c()
+  Long_Which_Signals_BTO=c()
+  Long_Which_Signals_STC=c()
+  
   Short_Which_Signals=c()
+  Short_Which_Signals_STO=c()
+  Short_Which_Signals_BTC=c()
+  
   BuyToOpen_Signals=c()
   SellToOpen_Signals=c()
   SellToClose_Signals=c()
@@ -1016,26 +1022,31 @@ Backtesting=function(BarData,
     BuyToOpen_Signals[length(BuyToOpen_Signals)]=FALSE # this part is to not transfer open orders at the very last time
     SellToClose_Signals=Short_Signals_Sums>=SellToClose_Min_Sig_N
     
-    if(sum(BuyToOpen_Signals)>0 & sum(SellToClose_Signals)>0){
-      Long_Which_Signals=rbind(
-        data.table(
-          Ind=which(BuyToOpen_Signals),
-          Time=BarData[BuyToOpen_Signals, Time],
-          Signals=Long_Signals_Sums[which(BuyToOpen_Signals)],
-          Action="Buy",
-          Detail="BTO",
-          Quantity=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Quantity"]])
-        ),
-        data.table(
-          Ind=which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))],
-          Time=BarData[which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))], Time],
-          Signals=Short_Signals_Sums[which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))]],
-          Action="Sell",
-          Detail="STC",
-          Quantity=-as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Quantity"]])
-        )
+    if(sum(BuyToOpen_Signals)>0){
+      Long_Which_Signals_BTO=data.table(
+        Ind=which(BuyToOpen_Signals),
+        Time=BarData[BuyToOpen_Signals, Time],
+        Signals=Long_Signals_Sums[which(BuyToOpen_Signals)],
+        Action="Buy",
+        Detail="BTO",
+        Quantity=as.numeric(Order_Rules[["Long"]][["BuyToOpen"]][["Quantity"]])
       )
     }
+    
+    if(sum(SellToClose_Signals)>0){
+      Long_Which_Signals_STC=data.table(
+        Ind=which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))],
+        Time=BarData[which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))], Time],
+        Signals=Short_Signals_Sums[which(SellToClose_Signals)[which(SellToClose_Signals)>=min(which(BuyToOpen_Signals))]],
+        Action="Sell",
+        Detail="STC",
+        Quantity=-as.numeric(Order_Rules[["Long"]][["SellToClose"]][["Quantity"]])
+      )
+    }
+    
+    Long_Which_Signals=rbind(Long_Which_Signals_BTO,
+                             Long_Which_Signals_STC)
+    
   }
   if("Short"%in%Position_Names){
     SellToOpen_Min_Sig_N=as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Min_Sig_N"]])
@@ -1046,26 +1057,31 @@ Backtesting=function(BarData,
     SellToOpen_Signals[length(SellToOpen_Signals)]=FALSE # this part is to not transfer open orders at the very last time
     BuyToClose_Signals=Long_Signals_Sums>=BuyToClose_Min_Sig_N
     
-    if(sum(SellToOpen_Signals)>0 & sum(BuyToClose_Signals)>0){
-      Short_Which_Signals=rbind(
-        data.table(
-          Ind=which(SellToOpen_Signals),
-          Time=BarData[SellToOpen_Signals, Time],
-          Signals=Short_Signals_Sums[which(SellToOpen_Signals)],
-          Action="Sell",
-          Detail="STO",
-          Quantity=-as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Quantity"]])
-        ),
-        data.table(
-          Ind=which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))],
-          Time=BarData[which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))], Time],
-          Signals=Long_Signals_Sums[which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))]],
-          Action="Buy",
-          Detail="BTC",
-          Quantity=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Quantity"]])
-        )
+    if(sum(SellToOpen_Signals)>0){
+      Short_Which_Signals_STO=data.table(
+        Ind=which(SellToOpen_Signals),
+        Time=BarData[SellToOpen_Signals, Time],
+        Signals=Short_Signals_Sums[which(SellToOpen_Signals)],
+        Action="Sell",
+        Detail="STO",
+        Quantity=-as.numeric(Order_Rules[["Short"]][["SellToOpen"]][["Quantity"]])
       )
     }
+    
+    if(sum(SellToOpen_Signals)>0 & sum(BuyToClose_Signals)>0){
+      Short_Which_Signals_BTC=data.table(
+        Ind=which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))],
+        Time=BarData[which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))], Time],
+        Signals=Long_Signals_Sums[which(BuyToClose_Signals)[which(BuyToClose_Signals)>=min(which(SellToOpen_Signals))]],
+        Action="Buy",
+        Detail="BTC",
+        Quantity=as.numeric(Order_Rules[["Short"]][["BuyToClose"]][["Quantity"]])
+      )
+    }
+    
+    Short_Which_Signals=rbind(Short_Which_Signals_STO,
+                              Short_Which_Signals_BTC)
+    
   }
   
   if(sum(BuyToOpen_Signals)==0 &
@@ -1074,12 +1090,12 @@ Backtesting=function(BarData,
                 Ind_Profit=NA,
                 Net_Profit=NA))
   }
-  if(sum(SellToClose_Signals)==0 &
-     sum(BuyToClose_Signals)==0){
-    return(list(Orders_Transmitted=NA,
-                Ind_Profit=NA,
-                Net_Profit=NA))
-  }
+  # if(sum(SellToClose_Signals)==0 &
+  #    sum(BuyToClose_Signals)==0){
+  #   return(list(Orders_Transmitted=NA,
+  #               Ind_Profit=NA,
+  #               Net_Profit=NA))
+  # }
   
   Which_Signals=rbind(
     Long_Which_Signals,
@@ -1119,6 +1135,9 @@ Backtesting=function(BarData,
         Which_Signals[1, Detail]=="STC"){
     Which_Signals=Which_Signals[-1, ]
   }
+  
+  # order by Time and Action such that BTO is prioritized over STO
+  Which_Signals=Which_Signals[order(Time, Action)]
   
   #***************
   # Order_Filled_C
