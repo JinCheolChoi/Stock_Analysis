@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="desktop" # "laptop" or "desktop"
+Device="laptop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -31,8 +31,9 @@ if(Device=="desktop"){
   source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
 }
 
-load(paste0(rdata.dir, "Futures_2023-09-12 - 15mins.Rdata"))
+load(paste0(rdata.dir, "Futures_2023-07-11 - 15mins_RSI.Rdata"))
 # load(paste0(rdata.dir, "Futures_2023-07-22 - 5mins_RSI.Rdata"))
+
 
 
 #***********
@@ -42,7 +43,7 @@ load(paste0(rdata.dir, "Futures_2023-09-12 - 15mins.Rdata"))
 #******************
 # working directory
 #******************
-Device="desktop" # "laptop" or "desktop"
+Device="laptop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -185,7 +186,6 @@ Simulation_Results=c()
     Trading_Dates=unique(as.Date(BarData_Temp$Time))
     
     # Market_Time=1
-    
     Backtesting_Output=Run_Backtesting(Market_Time=Market_Time,
                                        BarData=BarData_Temp,
                                        Trading_Dates=Trading_Dates,
@@ -517,6 +517,12 @@ Orders_Transmitted_Temp[Detail=="BTC",][, .I[Filled_Time==Ind_Profit_Temp[Profit
 
 Ind_Profit_Temp[order(Profit, decreasing = T)]
 Ind_Profit_Temp
+library(ggplot2)
+month=seq(as.Date(min(Ind_Profit_Temp$Time)), 
+          as.Date(max(Ind_Profit_Temp$Time)), 
+          by = "1 month")
+plot(as.Date(Ind_Profit_Temp$Time),
+     Ind_Profit_Temp$Cum_Profit,
+     xaxt="n")
+axis(side=1, at=month, labels=format(month, "%b-%Y"), cex.axis=0.7)
 
-plot(Ind_Profit_Temp$Time,
-     Ind_Profit_Temp$Cum_Profit)
