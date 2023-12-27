@@ -10,10 +10,28 @@ rm(list=ls())
 #
 # parameters
 #
-#***********
+#******************
 # working directory
-# working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+#******************
+Device="laptop" # "laptop" or "desktop"
+
+if(Device=="desktop"){
+  # desktop
+  working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/"
+  data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+  rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+  
+  source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R"))
+}else if(Device=="laptop"){
+  # laptop
+  working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
+  data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
+  rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+  
+  source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
+}
+
+
 
 # account
 # margin account="U4524665"
@@ -67,12 +85,10 @@ tws=twsConnect(clientId=round(runif(1)*10000000), port=Port)
 # assign local parameters
 #************************
 Strategy_Name="Live_Strategy"
-source(paste0(working.dir, "/Common_Parameters.R"))
+source(paste0(working.dir, "Common_Parameters.R"))
 
 # Live_Trading
 Live_Trading=TRUE
-
-Transmitted_Orders=0
 
 # Positions=0
 Orders_Transmitted=c()
@@ -89,8 +105,41 @@ while(!exists("N_Orders_held")){
 
 #********
 # BarData
-BarData=Initiate_BarData(BarSize=BarSize,
-                         Ignore_Prep=FALSE)
+Current_Time=format(Sys.time(),
+                    tz="America/Los_Angeles")
+Current_Date=as.Date(Current_Time)
+
+if(Market_Time==1){ # both regular and pre-market trading time
+  # blank
+  BarData=Initiate_BarData(BarSize=BarSize,
+                           Ignore_Prep=TRUE) # Currently, simulations are based on data after a certain time without requiring the historical data.
+  
+}else if(Market_Time==2){
+  # only regular time
+  if(Current_Time>=as.POSIXct(format(paste0(Current_Date, " ", Market_Open_Time),
+                                     tz="America/Los_Angeles")) &
+     Current_Time<=as.POSIXct(format(paste0(Current_Date, " ", Market_Close_Time),
+                                     tz="America/Los_Angeles"))){
+    BarData=Initiate_BarData(BarSize=BarSize,
+                             Ignore_Prep=TRUE) # Currently, simulations are based on data after a certain time without requiring the historical data.
+  }else{
+    print(paste0("Market_Time : ", Market_Time))
+    warning("Current time is not within the target time period!")
+  }
+  
+}else if(Market_Time==3){
+  # only pre-market trading time
+  if(!(Current_Time>=as.POSIXct(format(paste0(Current_Date, " ", Market_Open_Time),
+                                       tz="America/Los_Angeles")) &
+       Current_Time<=as.POSIXct(format(paste0(Current_Date, " ", Market_Close_Time),
+                                       tz="America/Los_Angeles")))){
+    BarData=Initiate_BarData(BarSize=BarSize,
+                             Ignore_Prep=TRUE) # Currently, simulations are based on data after a certain time without requiring the historical data.
+  }else{
+    print(paste0("Market_Time : ", Market_Time))
+    warning("Current time is not within the target time period!")
+  }
+}
 
 #***************
 # main algorithm
@@ -175,8 +224,78 @@ while(TRUE){
   Live_Data_Temp=tail(BarData, Max_Rows)
   
   # algorithm determine to take a position
-  if(!is.null(Live_Data_Temp) &
-     Transmitted_Orders<Inf){ # run the algorithm only when there is no transmitted order
+  if(!is.null(Live_Data_Temp)){
+    #********************************************************
+    # clear the existing position at the second last bar data
+    #********************************************************
+    BarData_Last_Time=as.ITime(format(tail(Live_Data_Temp, 1)$Time,
+                                      tz="America/Los_Angeles"))
+    if(abs(N_Orders_held)>0){
+      # determine Clear_Position
+      if(Market_Time==1 &
+         BarData_Last_Time<as.ITime(Market_Close_Time) &
+         BarData_Last_Time>=as.ITime(Market_Close_Time)-BarSize){
+        Clear_Position=TRUE
+      }else if(Market_Time==2 &
+               BarData_Last_Time<as.ITime(Market_Close_Time) &
+               BarData_Last_Time>=as.ITime(Market_Close_Time)-BarSize){
+        Clear_Position=TRUE
+      }else if(Market_Time==3 &
+               BarData_Last_Time<as.ITime(Market_Open_Time) &
+               BarData_Last_Time>=as.ITime(Market_Open_Time)-BarSize){
+        Clear_Position=TRUE
+      }else{
+        Clear_Position=FALSE
+      }
+      
+      # action given Clear_Position==TRUE
+      if(Clear_Position==TRUE){
+        if(N_Orders_held>0){
+          Position_Names_Temp=sort(Position_Names, decreasing=T)
+        }else{
+          Position_Names_Temp=sort(Position_Names, decreasing=F)
+        }
+        
+        # Order_to_Transmit
+        Order_to_Transmit=lapply(Position_Names_Temp,
+                                 function(x){
+                                   do.call(OrderRules_Env[[paste0(x, "_Function")]],
+                                           c(list(Live_Data=Live_Data_Temp,
+                                                  Time_Unit=BarSize,
+                                                  Stop_Order=Stop_Order,
+                                                  Profit_Order=Profit_Order,
+                                                  Max_Orders=Max_Orders,
+                                                  Sigs_N=c(1000, 1000),
+                                                  N_Orders_held=N_Orders_held),
+                                             Params=list(Order_Rules[[x]]),
+                                             Live_Trading=TRUE)
+                                   )
+                                 })
+        
+        # record open and closed orders
+        if(exists("Order_to_Transmit")){
+          if(!is.null(do.call(rbind, Order_to_Transmit))){
+            # print(Calculated_Indicators)
+            # add Order_to_Transmit to Orders_Transmitted
+            Orders_Transmitted=rbind(Orders_Transmitted,
+                                     do.call(rbind, Order_to_Transmit),
+                                     fill=T)
+            #print(paste0("Transmit order / i : ", i, " / action : ", tail(Orders_Transmitted[["Detail"]], 1)))
+            
+            # reconnect (required after the version, 0.10-2)
+            tws=twsConnect(clientId=round(runif(1)*10000000), port=Port)
+          }
+          
+          # remove Orders_Transmitted
+          rm(Order_to_Transmit)
+        }
+        
+        print("The existing position has been closed")
+        
+        break
+      }
+    }
+    
     #*********************
     # calculate indicators
     #*********************
