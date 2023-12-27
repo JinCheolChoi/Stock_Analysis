@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="desktop" # or "desktop"
+Device="desktop" # or "laptop"
 
 if(Device=="desktop"){
   # desktop
@@ -35,7 +35,9 @@ if(Device=="desktop"){
 #****************
 # data parameters
 #****************
-Symbols=c("MNQ")
+Symbols=c("IWM",
+          "M2K",
+          "MNQ")
 
 #*****************
 #
@@ -60,42 +62,63 @@ for(pack in c("IBrokers",
   lapply(pack, checkpackages)
 }
 
-# Barsize
-Barsizes=c(5,
+# BarSize
+BarSizes=c(5,
            60,
            60*5,
            60*15,
            60*30,
            60*60)
-for(Barsize in Barsizes){
-  switch(as.character(Barsize),
-         "5"={folder_name="5secs"},
-         "60"={folder_name="1min"},
-         "300"={folder_name="5mins"},
-         "900"={folder_name="15mins"},
-         "1800"={folder_name="30mins"},
-         "3600"={folder_name="60mins"}
-  )
-  
-  for(Symbol in Symbols){
-    # import data
-    Get_Data(Symbols=Symbol,
-             Data_Dir=data.dir,
-             BarSize=Barsize,
-             Convert_Tz=F,
-             Filter=F)
+
+# import data
+Get_Data(Symbols=Symbols,
+         Data_Dir=data.dir,
+         BarSizes=BarSizes,
+         Convert_Tz=F,
+         Filter=F)
+
+# save the files
+for(Symbol in Symbols){
+  for(BarSize in BarSizes){
+    switch(as.character(BarSize),
+           "5"={folder_name="5secs"},
+           "60"={folder_name="1min"},
+           "300"={folder_name="5mins"},
+           "900"={folder_name="15mins"},
+           "1800"={folder_name="30mins"},
+           "3600"={folder_name="60mins"}
+    )
     
-    if(Device=="desktop"){
+    # if there is a value named as paste0(Symbol, "_", BarSize) in the global environment , export it
+    if(paste0(Symbol, "_", BarSize)%in%ls(envir=.GlobalEnv)){
       # desktop
-      fwrite(MNQ,
-             paste0("E:/Stock_Data/", folder_name, "/", Symbols, "/", Symbols, ".csv"))
-      fwrite(MNQ,
-             paste0("C:/Users/JinCheol Choi/Desktop/Stock_Data/", folder_name, "/", Symbols, "/", Symbols, ".csv"))
-    }else if(Device=="laptop"){
-      # laptop
-      fwrite(MNQ,
-             paste0("C:/Users/jchoi02/Desktop/Data/", folder_name, "/", Symbols, "/", Symbols, ".csv"))
+      if(Device=="desktop"){
+        # create a folder if not exist
+        if(!dir.exists(paste0("E:/Stock_Data/", folder_name, "/", Symbol, "/"))){
+          dir.create(paste0("E:/Stock_Data/", folder_name, "/", Symbol, "/")) 
+        }
+        if(!dir.exists(paste0("C:/Users/JinCheol Choi/Desktop/Stock_Data/", folder_name, "/", Symbol, "/"))){
+          dir.create(paste0("C:/Users/JinCheol Choi/Desktop/Stock_Data/", folder_name, "/", Symbol, "/")) 
+        }
+        
+        # save the file
+        fwrite(get(paste0(Symbol, "_", BarSize)),
+               paste0("E:/Stock_Data/", folder_name, "/", Symbol, "/", Symbol, ".csv"))
+        fwrite(get(paste0(Symbol, "_", BarSize)),
+               paste0("C:/Users/JinCheol Choi/Desktop/Stock_Data/", folder_name, "/", Symbol, "/", Symbol, ".csv"))
+      }else if(Device=="laptop"){
+        # create a folder if not exist
+        if(!dir.exists(paste0("C:/Users/jchoi02/Desktop/Data/", folder_name, "/", Symbol, "/"))){
+          dir.create(paste0("C:/Users/jchoi02/Desktop/Data/", folder_name, "/", Symbol, "/")) 
+        }
+        
+        # save the file
+        fwrite(get(paste0(Symbol, "_", BarSize)),
+               paste0("C:/Users/jchoi02/Desktop/Data/", folder_name, "/", Symbol, "/", Symbol, ".csv"))
+      }
+      
+      print(paste0("saved : ", Symbol, " - ", folder_name))
     }
-    
   }
 }
+

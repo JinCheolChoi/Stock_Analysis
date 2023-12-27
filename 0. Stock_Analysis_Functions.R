@@ -256,16 +256,18 @@ Daily_Hist_Data_Save=function(Contract,
 #**********************************************************************************
 Get_Data=function(Symbols,
                   Data_Dir,
-                  BarSize=60*30,
+                  BarSizes=60*30,
                   First_Date="2021-01-20",
                   Last_Date=as.Date(format(Sys.time(), tz="America/Los_Angeles")),
                   Convert_Tz=F,
-                  Filter=TRUE){
+                  Filter=F){
   #************
   # import data
   #************
   # output : `5SecsBarHistData`
   for(Symbol in Symbols){
+    # import 5 seconds bar data
+    print(paste0("Converting data in process : ", Symbol))
     Get_5SecsBarHistData(Symbol=Symbol,
                          Data_Dir=Data_Dir,
                          First_Date=First_Date,
@@ -273,12 +275,14 @@ Get_Data=function(Symbols,
                          Convert_Tz=F,
                          Filter=Filter)
     
-    # collapse data to the chosen-sized bar data
-    assign(Symbol, 
-           Collapse_5SecsBarData(`5SecsBarHistData`,
-                                 BarSize=BarSize,
-                                 Convert_Tz=Convert_Tz),
-           envir=.GlobalEnv)
+    for(BarSize in BarSizes){
+      # collapse data to the chosen-sized bar data
+      assign(paste0(Symbol, "_", BarSize), 
+             Collapse_5SecsBarData(`5SecsBarHistData`,
+                                   BarSize=BarSize,
+                                   Convert_Tz=Convert_Tz),
+             envir=.GlobalEnv)
+    }
     
     # remove `5SecsBarHistData`
     rm(`5SecsBarHistData`, envir=.GlobalEnv)
@@ -300,7 +304,7 @@ Get_5SecsBarHistData=function(Symbol,
                               First_Date,
                               Last_Date,
                               Convert_Tz=F,
-                              Filter=T){
+                              Filter=F){ # Filter is currently useless as it is only for Nasdaq Futures. Therefore, let's keep it FALSE.
   # data table
   lapply("data.table", checkpackages)
   
@@ -314,12 +318,22 @@ Get_5SecsBarHistData=function(Symbol,
       next
     }
     
+    # skip the file that has been imported if it is empty
+    Data_to_Import=fread(paste0(Data_Dir, Symbol, "/", File_name))
+    if(nrow(Data_to_Import)==0){
+      print(paste0(Data_Dir, Symbol, "/", File_name, " is empty."))
+      next
+    }
+    
     if(!exists("5SecsBarHistData", envir=.GlobalEnv)){
-      `5SecsBarHistData`<<-fread(paste0(Data_Dir, Symbol, "/", File_name))
+      `5SecsBarHistData`<<-Data_to_Import
     }else{
       `5SecsBarHistData`<<-rbind(`5SecsBarHistData`,
-                                 fread(paste0(Data_Dir, Symbol, "/", File_name)))
+                                 Data_to_Import)
     }
+    
+    # remove Data_to_Import
+    rm(Data_to_Import)
   }
   
   # convert time zone
@@ -330,20 +344,20 @@ Get_5SecsBarHistData=function(Symbol,
                                           tz="America/Los_Angeles")]
   }
   
-  # remove data while system is halted during temporary market close times
-  if(Filter==T){
-    #(1) (not applicable) for 17 mins from 13:14:00 to 13:31:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
-    #(2) for 63 mins from 13:59:00 to 15:00:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
-    # (ToDay=="Friday" & CurrentTime>=(as.ITime("13:50:00"))) | # the market closes at 14:00:00 PDT on Friday
-    #   (ToDay=="Saturday") | # the market closes on Saturday
-    #   (ToDay=="Sunday" & CurrentTime<(as.ITime("15:05:00")))
-    `5SecsBarHistData`[, Daily_Time:=strftime(Time, format="%H:%M:%S", tz="America/Los_Angeles")]
-    # `5SecsBarHistData`<<-`5SecsBarHistData`[!(Daily_Time>="13:10:00" &
-    #                                             Daily_Time<"13:35:00"), ]
-    `5SecsBarHistData`<<-`5SecsBarHistData`[!(Daily_Time>="13:59:00" &
-                                                Daily_Time<"15:00:00"), ]
-    `5SecsBarHistData`[, Daily_Time:=NULL]
-  }
+  # # remove data while system is halted during temporary market close times
+  # if(Filter==T){
+  #   #(1) (not applicable) for 17 mins from 13:14:00 to 13:31:00 PDT (market closed : 13:15:00 to 13:30:00 PDT)
+  #   #(2) for 63 mins from 13:59:00 to 15:00:00 PDT (market closed : 14:00:00 to 15:00:00 PDT)
+  #   # (ToDay=="Friday" & CurrentTime>=(as.ITime("13:50:00"))) | # the market closes at 14:00:00 PDT on Friday
+  #   #   (ToDay=="Saturday") | # the market closes on Saturday
+  #   #   (ToDay=="Sunday" & CurrentTime<(as.ITime("15:05:00")))
+  #   `5SecsBarHistData`[, Daily_Time:=strftime(Time, format="%H:%M:%S", tz="America/Los_Angeles")]
+  #   # `5SecsBarHistData`<<-`5SecsBarHistData`[!(Daily_Time>="13:10:00" &
+  #   #                                             Daily_Time<"13:35:00"), ]
+  #   `5SecsBarHistData`<<-`5SecsBarHistData`[!(Daily_Time>="13:59:00" &
+  #                                               Daily_Time<"15:00:00"), ]
+  #   `5SecsBarHistData`[, Daily_Time:=NULL]
+  # }
 }
 
 
