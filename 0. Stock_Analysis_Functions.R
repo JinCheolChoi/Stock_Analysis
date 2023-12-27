@@ -1812,7 +1812,7 @@ ReqRealTimeBars=function(BarSize=5,
     # print("Recent_RealTimeBarData doesn't exist")
     if(!exists("Archiv")){
       print("Data has not been archived yet")
-      print(paste0("waiting for the starting time of the next bar"))
+      print("waiting for the starting time of the next bar")
     }
     Recent_RealTimeBarData<<-RealTimeBarData
     Sys.sleep(0.5) # suspend execution for a while to prevent the system from breaking
@@ -1948,7 +1948,7 @@ ReqRealTimeBars=function(BarSize=5,
 
 #*********
 # snapShot
-#*********#
+#*********
 # an example function provided from the interactive brokers' API archives
 snapShot = function(twsCon,
                     eWrapper,

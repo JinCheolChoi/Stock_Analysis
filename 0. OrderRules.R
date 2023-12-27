@@ -114,7 +114,7 @@ OrderRules_Env$Long_Function=function(Live_Data,
                  contract,
                  Main_Order_Info)
       
-      rm(Main_Order_Info)
+      rm(Main_Order_Info, envir=.GlobalEnv)
       
       # profit order
       if(Profit_Order<=5000){
@@ -198,9 +198,9 @@ OrderRules_Env$Long_Function=function(Live_Data,
                         Detail=Detail,
                         TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
-                        # Price=tail(Live_Data, 1)[, Close],
-                        Price=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$marketPrice,
-                        Filled=0,
+                        Price=tail(Live_Data, 1)[, Close],
+                        # Price=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$marketPrice,
+                        Filled=1,
                         Sigs_N=Sigs_N[1]))
     }
     if(Action=="Sell"){
@@ -211,9 +211,9 @@ OrderRules_Env$Long_Function=function(Live_Data,
                         Detail=Detail,
                         TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
-                        # Price=tail(Live_Data, 1)[, Close],
-                        Price=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$marketPrice,
-                        Filled=0,
+                        Price=tail(Live_Data, 1)[, Close],
+                        # Price=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$marketPrice,
+                        Filled=1,
                         Sigs_N=Sigs_N[2]))
     }
   }
@@ -300,7 +300,7 @@ OrderRules_Env$Short_Function=function(Live_Data,
                  contract,
                  Main_Order_Info)
       
-      rm(Main_Order_Info)
+      rm(Main_Order_Info, envir=.GlobalEnv)
       
       # profit order
       if(Profit_Order<=5000){
@@ -384,9 +384,9 @@ OrderRules_Env$Short_Function=function(Live_Data,
                         Detail=Detail,
                         TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
-                        # Price=tail(Live_Data, 1)[, Close],
-                        Price=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$marketPrice,
-                        Filled=0,
+                        Price=tail(Live_Data, 1)[, Close],
+                        # Price=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$marketPrice,
+                        Filled=1,
                         Sigs_N=Sigs_N[2]))
     }
     if(Action=="Buy"){
@@ -397,9 +397,9 @@ OrderRules_Env$Short_Function=function(Live_Data,
                         Detail=Detail,
                         TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
-                        # Price=tail(Live_Data, 1)[, Close],
-                        Price=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$marketPrice,
-                        Filled=0,
+                        Price=tail(Live_Data, 1)[, Close],
+                        # Price=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$marketPrice,
+                        Filled=1,
                         Sigs_N=Sigs_N[1]))
     }
   }

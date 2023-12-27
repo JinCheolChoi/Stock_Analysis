@@ -34,6 +34,7 @@ Tick_Value=as.numeric(Order_Rules[["General"]][["Tick_Value"]])
 Market_Time=as.numeric(Order_Rules[["General"]][["Market_Time"]])
 
 # regular market time to analyze
+# time zone must be America/Los_Angeles
 Market_Open_Time="05:30:00"
 Market_Close_Time="14:00:00"
 
