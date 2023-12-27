@@ -11,13 +11,27 @@ rm(list=ls())
 # parameters
 #
 #***********
-# working directory
-working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/" # desktop
-#working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/" # laptop
+Device="laptop" # "laptop" or "desktop"
 
-# daily.data.dir
-# separately stored due to the slack token that is not supposed to be posted publicly on the internet (e.g. GitHub)
-daily.data.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/" # desktop
+if(Device=="desktop"){
+  # desktop
+  working.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis/"
+  data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
+  rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+  
+  # daily.data.dir
+  # separately stored due to the slack token that is not supposed to be posted publicly on the internet (e.g. GitHub)
+  daily.data.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/"
+  
+  source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R"))
+}else if(Device=="laptop"){
+  # laptop
+  working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
+  data.dir="C:/Users/jchoi02/Desktop/Data/" # upper folder that has a folder storing stock data
+  rdata.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
+  
+  source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
+}
 
 
 #*****************
@@ -25,9 +39,6 @@ daily.data.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/" # d
 # preliminary step
 #
 #*******************
-# required functions
-source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
-
 # import taskscheduleR
 lapply(
   c(
