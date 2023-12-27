@@ -28,7 +28,7 @@ if(Device=="desktop"){
   data.dir="E:/Stock_Data/" # upper folder that has a folder storing stock data
   rdata.dir="C:/Users/JinCheol Choi/Desktop/R/Stock_Analysis_Daily_Data/Rdata/"
   
-  source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R")) # desktop
+  source(paste0("C:/Users/JinCheol Choi/Desktop/R/Functions/Functions.R"))
 }else if(Device=="laptop"){
   # laptop
   working.dir="C:/Users/jchoi02/Desktop/R/Stock_Analysis/"
