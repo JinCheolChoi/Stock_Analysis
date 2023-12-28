@@ -111,7 +111,7 @@ Orders_Transmitted=c()
 BarData=Initiate_BarData(BarSize=BarSize,
                          Counting_Down=TRUE,
                          Seconds_Before_Proceeding=5,
-                         Historical_Data=T) # Currently, simulations are based on data after a certain time without requiring the historical data.
+                         Historical_Data=FALSE) # Currently, simulations are based on data after a certain time without requiring the historical data.
 
 #***************
 # main algorithm
@@ -226,12 +226,13 @@ while(Run_Algorithm==TRUE){
   #*************
   # candle chart
   #*************
-  Candle_Chart(BarData)
+  # Candle_Chart(BarData)
   
   #********************
   # determine an action
   #********************
-  Live_Data_Temp=tail(BarData, Max_Rows)
+  BarData=tail(BarData, Max_Rows)
+  Live_Data_Temp=copy(BarData)
   
   # algorithm determine to take a position
   if(!is.null(Live_Data_Temp)){
