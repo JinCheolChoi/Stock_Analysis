@@ -58,6 +58,8 @@ OrderRules_Env$Long_Function=function(Live_Data,
                                       Profit_Order=100,
                                       Sigs_N,
                                       N_Orders_held,
+                                      Penalty,
+                                      Tick_Size,
                                       Params,
                                       Live_Trading=FALSE){
   #Sigs_N[1] : buy signal
@@ -192,26 +194,26 @@ OrderRules_Env$Long_Function=function(Live_Data,
     #
     if(Action=="Buy"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                        Submit_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
-                        #Filled_Time=tail(Live_Data, 1)[, Time],
+                        Submitted_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
+                        Filled_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
                         Action=Action,
                         Detail=Detail,
                         TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
-                        Price=tail(Live_Data, 1)[, Close],
+                        Price=tail(Live_Data, 1)[, Close]+Penalty*Tick_Size,
                         # Price=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$marketPrice,
                         Filled=1,
                         Sigs_N=Sigs_N[1]))
     }
     if(Action=="Sell"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                        Submit_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
-                        #Filled_Time=tail(Live_Data, 1)[, Time],
+                        Submitted_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
+                        Filled_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
                         Action=Action,
                         Detail=Detail,
                         TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
-                        Price=tail(Live_Data, 1)[, Close],
+                        Price=tail(Live_Data, 1)[, Close]-Penalty*Tick_Size,
                         # Price=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$marketPrice,
                         Filled=1,
                         Sigs_N=Sigs_N[2]))
@@ -244,6 +246,8 @@ OrderRules_Env$Short_Function=function(Live_Data,
                                        Profit_Order=100,
                                        Sigs_N,
                                        N_Orders_held,
+                                       Penalty,
+                                       Tick_Size,
                                        Params,
                                        Live_Trading=FALSE){
   #Sigs_N[1] : buy signal
@@ -378,26 +382,26 @@ OrderRules_Env$Short_Function=function(Live_Data,
     #
     if(Action=="Sell"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                        Submit_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
-                        #Filled_Time=tail(Live_Data, 1)[, Time],
+                        Submitted_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
+                        Filled_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
                         Action=Action,
                         Detail=Detail,
                         TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
-                        Price=tail(Live_Data, 1)[, Close],
+                        Price=tail(Live_Data, 1)[, Close]-Penalty*Tick_Size,
                         # Price=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$marketPrice,
                         Filled=1,
                         Sigs_N=Sigs_N[2]))
     }
     if(Action=="Buy"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                        Submit_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
-                        #Filled_Time=tail(Live_Data, 1)[, Time],
+                        Submitted_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
+                        Filled_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
                         Action=Action,
                         Detail=Detail,
                         TotalQuantity=TotalQuantity,
                         OrderType=OrderType,
-                        Price=tail(Live_Data, 1)[, Close],
+                        Price=tail(Live_Data, 1)[, Close]+Penalty*Tick_Size,
                         # Price=reqAccountUpdates(tws)[[2]][[1]]$portfolioValue$marketPrice,
                         Filled=1,
                         Sigs_N=Sigs_N[1]))

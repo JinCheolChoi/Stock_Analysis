@@ -456,13 +456,13 @@ plot(Ind_Profit_Temp$Time,
 #               name="BarData",
 #               theme="white")
 # })
-hist(as.numeric(c(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]],
-                  Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]])),
+hist(as.numeric(c(Orders_Transmitted_Temp[Detail=="STC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submitted_Time"]],
+                  Orders_Transmitted_Temp[Detail=="BTC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submitted_Time"]])),
      breaks=50)
-head(c(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]],
-       Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]]), 10)
-as.numeric(c(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]],
-             Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]])) %>% summary
+head(c(Orders_Transmitted_Temp[Detail=="STC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submitted_Time"]],
+       Orders_Transmitted_Temp[Detail=="BTC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submitted_Time"]]), 10)
+as.numeric(c(Orders_Transmitted_Temp[Detail=="STC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submitted_Time"]],
+             Orders_Transmitted_Temp[Detail=="BTC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submitted_Time"]])) %>% summary
 
 
 #***********
@@ -470,9 +470,9 @@ as.numeric(c(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Tra
 library(quantmod)
 Ind=6
 # elapsed time summary
-Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]]
-which.max(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]])
-summary(as.numeric(Orders_Transmitted_Temp[Detail=="STC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submit_Time"]]))
+Orders_Transmitted_Temp[Detail=="STC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submitted_Time"]]
+which.max(Orders_Transmitted_Temp[Detail=="STC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submitted_Time"]])
+summary(as.numeric(Orders_Transmitted_Temp[Detail=="STC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submitted_Time"]]))
 Orders_Transmitted_Temp[Detail=="BTO", ][Ind, ]
 Orders_Transmitted_Temp[Detail=="STC",][Ind, ]
 Ind_Profit_Temp[Time==Orders_Transmitted_Temp[Detail=="STC",][Ind, Filled_Time], ]
@@ -486,9 +486,9 @@ chartSeries(BarData[Row_Ind, -1],
 # Short graph
 Ind=118
 # elapsed time summary
-Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]]
-which.max(Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]])
-summary(as.numeric(Orders_Transmitted_Temp[Detail=="BTC",][["Submit_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submit_Time"]]))
+Orders_Transmitted_Temp[Detail=="BTC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submitted_Time"]]
+which.max(Orders_Transmitted_Temp[Detail=="BTC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submitted_Time"]])
+summary(as.numeric(Orders_Transmitted_Temp[Detail=="BTC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submitted_Time"]]))
 Orders_Transmitted_Temp[Detail=="STO", ][Ind, ]
 Orders_Transmitted_Temp[Detail=="BTC",][Ind, ]
 Ind_Profit_Temp[Time==Orders_Transmitted_Temp[Detail=="BTC",][Ind, Filled_Time], ]
