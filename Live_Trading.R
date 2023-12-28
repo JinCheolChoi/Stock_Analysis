@@ -110,8 +110,8 @@ Orders_Transmitted=c()
 # BarData
 BarData=Initiate_BarData(BarSize=BarSize,
                          Counting_Down=TRUE,
-                         Seconds_Before_Proceeding=2,
-                         Historical_Data=FALSE) # Currently, simulations are based on data after a certain time without requiring the historical data.
+                         Seconds_Before_Proceeding=5,
+                         Historical_Data=T) # Currently, simulations are based on data after a certain time without requiring the historical data.
 
 #***************
 # main algorithm
