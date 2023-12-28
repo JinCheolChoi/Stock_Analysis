@@ -298,7 +298,9 @@ while(Run_Algorithm==TRUE){
                                                     Profit_Order=Profit_Order,
                                                     Max_Orders=Max_Orders,
                                                     Sigs_N=c(1000, 1000), # any large numbers
-                                                    N_Orders_held=N_Orders_held),
+                                                    N_Orders_held=N_Orders_held,
+                                                    Penalty=Penalty,
+                                                    Tick_Size=Tick_Size),
                                                Params=list(Order_Rules[[x]]),
                                                Live_Trading=TRUE)
                                      )
