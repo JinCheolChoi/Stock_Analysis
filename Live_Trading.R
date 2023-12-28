@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="laptop" # "laptop" or "desktop"
+Device="desktop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -109,7 +109,9 @@ Orders_Transmitted=c()
 #********
 # BarData
 BarData=Initiate_BarData(BarSize=BarSize,
-                         Ignore_Prep=TRUE) # Currently, simulations are based on data after a certain time without requiring the historical data.
+                         Counting_Down=TRUE,
+                         Seconds_Before_Requesting_Historical_Data=10,
+                         Historical_Data=FALSE) # Currently, simulations are based on data after a certain time without requiring the historical data.
 
 #***************
 # main algorithm
@@ -224,7 +226,7 @@ while(Run_Algorithm==TRUE){
   #*************
   # candle chart
   #*************
-  # Candle_Chart(BarData)
+  Candle_Chart(BarData)
   
   #********************
   # determine an action
