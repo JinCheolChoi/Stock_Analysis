@@ -2927,7 +2927,7 @@ reqopenorders_cb=function(twsconn) {
 # generate BarData for barsize of 30 seconds or larger in an attempt to reduce the preparation time
 Initiate_BarData=function(BarSize=60,
                           Counting_Down=TRUE,                             # counting down (secs) before the start of the next bar
-                          Seconds_Before_Proceeding=2,  # the number of seconds when counting down ends before proceeding
+                          Seconds_Before_Proceeding=5,  # the number of seconds when counting down ends before proceeding
                                                         # Seconds_Before_Proceeding must be larger than 1
                           Historical_Data=TRUE){
   
@@ -2953,9 +2953,9 @@ Initiate_BarData=function(BarSize=60,
     if(Counting_Down==TRUE){
       # wait for the initial time of the current Barsize
       if((BarSize-round(as.numeric(Sys.time())%%BarSize))-Seconds_Before_Proceeding>0){
-        print(paste0("wait for the initial time to request historical data of the given Barsize"))
+        print(paste0("wait for the next bar starting in"))
         while((BarSize-round(as.numeric(Sys.time())%%BarSize))-Seconds_Before_Proceeding>0){
-          print(paste0((BarSize-round(as.numeric(Sys.time())%%BarSize)), " second(s) before the next bar begins"))
+          print(paste0((BarSize-round(as.numeric(Sys.time())%%BarSize)), " second(s)"))
           Sys.sleep(1) # suspend execution for a while to prevent the system from breaking
         }
       }
