@@ -192,8 +192,8 @@ OrderRules_Env$Long_Function=function(Live_Data,
     #
     if(Action=="Buy"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                        Submit_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
-                        #Filled_Time=tail(Live_Data, 1)[, Time],
+                        Submitted_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
+                        Filled_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
                         Action=Action,
                         Detail=Detail,
                         TotalQuantity=TotalQuantity,
@@ -205,8 +205,8 @@ OrderRules_Env$Long_Function=function(Live_Data,
     }
     if(Action=="Sell"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                        Submit_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
-                        #Filled_Time=tail(Live_Data, 1)[, Time],
+                        Submitted_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
+                        Filled_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
                         Action=Action,
                         Detail=Detail,
                         TotalQuantity=TotalQuantity,
@@ -378,8 +378,8 @@ OrderRules_Env$Short_Function=function(Live_Data,
     #
     if(Action=="Sell"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                        Submit_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
-                        #Filled_Time=tail(Live_Data, 1)[, Time],
+                        Submitted_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
+                        Filled_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
                         Action=Action,
                         Detail=Detail,
                         TotalQuantity=TotalQuantity,
@@ -391,8 +391,8 @@ OrderRules_Env$Short_Function=function(Live_Data,
     }
     if(Action=="Buy"){
       return(data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                        Submit_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
-                        #Filled_Time=tail(Live_Data, 1)[, Time],
+                        Submitted_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
+                        Filled_Time=tail(Live_Data, 1)[, Time]+Time_Unit,
                         Action=Action,
                         Detail=Detail,
                         TotalQuantity=TotalQuantity,

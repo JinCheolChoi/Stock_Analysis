@@ -636,7 +636,7 @@ Live_Trading_Imitator=function(BarData,
   Live_Data=BarData[1, ]
   # define Orders_Transmitted
   Orders_Transmitted=data.table(Symbol=tail(Live_Data, 1)[, Symbol],
-                                Submit_Time=tail(Live_Data, 1)[, Time],
+                                Submitted_Time=tail(Live_Data, 1)[, Time],
                                 Filled_Time=tail(Live_Data, 1)[, Time],
                                 Action="",
                                 Detail="",
@@ -780,17 +780,17 @@ Live_Trading_Imitator=function(BarData,
     if(sum(Orders_Transmitted[["Action"]]=="Buy"&
            Orders_Transmitted[["Filled"]]==0)>0){ # if there is any transmitted buy order that has not been filled yet
       
-      Unfilled_Buy_Position_Times=Orders_Transmitted[Action=="Buy"&Filled==0, Submit_Time]
-      Unfilled_Buy_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Buy_Position_Times&Filled==0, Price]
+      Unfilled_Buy_Position_Times=Orders_Transmitted[Action=="Buy"&Filled==0, Submitted_Time]
+      Unfilled_Buy_Position_Prices=Orders_Transmitted[Submitted_Time%in%Unfilled_Buy_Position_Times&Filled==0, Price]
       Which_Buy_Position_to_Fill=which(BarData[["Low"]][i+1]<Unfilled_Buy_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
-      Orders_Transmitted[Submit_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
+      Orders_Transmitted[Submitted_Time==Unfilled_Buy_Position_Times[Which_Buy_Position_to_Fill],
                          `:=`(Filled_Time=BarData[i+1, Time],
                               Filled=1)]
       
       # if not filled, just cancel the transmit Maximum_Elapsed_Time seconds later
       if(sum(Orders_Transmitted[["Filled"]]==0)){
-        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>Maximum_Elapsed_Time){
+        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submitted_Time]))>Maximum_Elapsed_Time){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
           #print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
@@ -804,18 +804,18 @@ Live_Trading_Imitator=function(BarData,
     if(sum(Orders_Transmitted[["Action"]]=="Sell"&
            Orders_Transmitted[["Filled"]]==0)>0){ # if there is any transmitted sell order that has not been filled yet
       
-      Unfilled_Sell_Position_Times=Orders_Transmitted[Action=="Sell"&Filled==0, Submit_Time]
-      Unfilled_Sell_Position_Prices=Orders_Transmitted[Submit_Time%in%Unfilled_Sell_Position_Times&Filled==0, Price]
+      Unfilled_Sell_Position_Times=Orders_Transmitted[Action=="Sell"&Filled==0, Submitted_Time]
+      Unfilled_Sell_Position_Prices=Orders_Transmitted[Submitted_Time%in%Unfilled_Sell_Position_Times&Filled==0, Price]
       
       Which_Sell_Position_to_Fill=which(BarData[["High"]][i+1]>Unfilled_Sell_Position_Prices)[1] # fill the oldest order that have met the price criterion
       
-      Orders_Transmitted[Submit_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
+      Orders_Transmitted[Submitted_Time==Unfilled_Sell_Position_Times[Which_Sell_Position_to_Fill],
                          `:=`(Filled_Time=BarData[i+1, Time],
                               Filled=1)]
       
       # if not filled, just cancel the transmit Maximum_Elapsed_Time seconds later
       if(sum(Orders_Transmitted[["Filled"]]==0)){
-        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submit_Time]))>Maximum_Elapsed_Time){
+        if((as.numeric(BarData[i+1, Time])-as.numeric(Orders_Transmitted[Filled==0, Submitted_Time]))>Maximum_Elapsed_Time){
           Orders_Transmitted=Orders_Transmitted[Filled!=0, ]
           #print(paste0("Transmit order / i : ", i, " / action : Cancelled"))
         }
@@ -965,7 +965,7 @@ Backtesting=function(BarData,
   #*********************
   # define Orders_Transmitted
   Orders_Transmitted=data.table(Symbol=tail(BarData, 1)[, Symbol],
-                                Submit_Time=tail(BarData, 1)[, Time],
+                                Submitted_Time=tail(BarData, 1)[, Time],
                                 Filled_Time=tail(BarData, 1)[, Time],
                                 Action="",
                                 Detail="",
@@ -1129,9 +1129,9 @@ Backtesting=function(BarData,
   # Market_Time
   # 1: both regular and pre-market trading time, 2: only regular trading time, 3: only pre-market trading time
   # last trading time prior to market close
-  Which_Signals[, Submit_Time:=Time+Time_Unit]
-  Which_Signals[, Submit_Time:=format(Submit_Time, tz="America/Los_Angeles")]
-  Which_Signals[, Trading_Time:=format(as.POSIXct(Submit_Time), format="%H:%M:%S")]
+  Which_Signals[, Submitted_Time:=Time+Time_Unit]
+  Which_Signals[, Submitted_Time:=format(Submitted_Time, tz="America/Los_Angeles")]
+  Which_Signals[, Trading_Time:=format(as.POSIXct(Submitted_Time), format="%H:%M:%S")]
   
   Last_Trading_Time=format(as.POSIXct(paste0("1970-01-01 ", Market_Close_Time))-Time_Unit, format="%H:%M:%S")
   
@@ -1180,7 +1180,7 @@ Backtesting=function(BarData,
     Orders_Transmitted=rbind(Orders_Transmitted,
                              tail(Orders_Transmitted, 1))
     
-    Orders_Transmitted[nrow(Orders_Transmitted), Submit_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
+    Orders_Transmitted[nrow(Orders_Transmitted), Submitted_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
     Orders_Transmitted[nrow(Orders_Transmitted), Filled_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
     Orders_Transmitted[nrow(Orders_Transmitted), Action:="Sell"]
     Orders_Transmitted[nrow(Orders_Transmitted), Detail:="STC"]
@@ -1191,7 +1191,7 @@ Backtesting=function(BarData,
     Orders_Transmitted=rbind(Orders_Transmitted,
                              tail(Orders_Transmitted, 1))
     
-    Orders_Transmitted[nrow(Orders_Transmitted), Submit_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
+    Orders_Transmitted[nrow(Orders_Transmitted), Submitted_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
     Orders_Transmitted[nrow(Orders_Transmitted), Filled_Time:=tail(BarData[["Time"]], 1)+Time_Unit]
     Orders_Transmitted[nrow(Orders_Transmitted), Action:="Buy"]
     Orders_Transmitted[nrow(Orders_Transmitted), Detail:="BTC"]
@@ -1376,7 +1376,7 @@ Profit_Loss_Cut_Transmitted=function(Orders_Transmitted, Next_BarData, Profit_Or
     if(Early_Profit_Ind){
       Profit_Transmitted=data.table(
         Symbol=Next_BarData[["Symbol"]],
-        Submit_Time=Next_BarData[["Time"]],
+        Submitted_Time=Next_BarData[["Time"]],
         Filled_Time=Next_BarData[["Time"]],
         Action="Sell",
         Detail="Early_Profit",
@@ -1391,7 +1391,7 @@ Profit_Loss_Cut_Transmitted=function(Orders_Transmitted, Next_BarData, Profit_Or
     if(Stop_Ind){
       Stop_Transmitted=data.table(
         Symbol=Next_BarData[["Symbol"]],
-        Submit_Time=Next_BarData[["Time"]],
+        Submitted_Time=Next_BarData[["Time"]],
         Filled_Time=Next_BarData[["Time"]],
         Action="Sell",
         Detail="Stop",
@@ -1421,7 +1421,7 @@ Profit_Loss_Cut_Transmitted=function(Orders_Transmitted, Next_BarData, Profit_Or
     if(Early_Profit_Ind){
       Profit_Transmitted=data.table(
         Symbol=Next_BarData[["Symbol"]],
-        Submit_Time=Next_BarData[["Time"]],
+        Submitted_Time=Next_BarData[["Time"]],
         Filled_Time=Next_BarData[["Time"]],
         Action="Buy",
         Detail="Early_Profit",
@@ -1436,7 +1436,7 @@ Profit_Loss_Cut_Transmitted=function(Orders_Transmitted, Next_BarData, Profit_Or
     if(Stop_Ind){
       Stop_Transmitted=data.table(
         Symbol=Next_BarData[["Symbol"]],
-        Submit_Time=Next_BarData[["Time"]],
+        Submitted_Time=Next_BarData[["Time"]],
         Filled_Time=Next_BarData[["Time"]],
         Action="Buy",
         Detail="Stop",
@@ -2928,7 +2928,7 @@ reqopenorders_cb=function(twsconn) {
 Initiate_BarData=function(BarSize=60,
                           Counting_Down=TRUE,                             # counting down (secs) before the start of the next bar
                           Seconds_Before_Proceeding=5,  # the number of seconds when counting down ends before proceeding
-                                                        # Seconds_Before_Proceeding must be larger than 1
+                          # Seconds_Before_Proceeding must be larger than 1
                           Historical_Data=TRUE){
   
   if(BarSize>=30){
@@ -3465,7 +3465,7 @@ Orders_Transmitter=function(BarData,
       if(nrow(BTO_Orders)>0){
         data.table(
           Symbol=BarData[Ind%in%BTO_Orders[, Ind], Symbol],
-          Submit_Time=BarData[Ind%in%BTO_Orders[, Ind], Time]+Time_Unit,
+          Submitted_Time=BarData[Ind%in%BTO_Orders[, Ind], Time]+Time_Unit,
           Filled_Time=BarData[Ind%in%BTO_Orders[, Ind], Time]+Time_Unit,
           Action="Buy",
           Detail="BTO",
@@ -3482,7 +3482,7 @@ Orders_Transmitter=function(BarData,
       if(nrow(STC_Orders)>0){
         data.table(
           Symbol=BarData[Ind%in%STC_Orders[, Ind], Symbol],
-          Submit_Time=BarData[Ind%in%STC_Orders[, Ind], Time]+Time_Unit,
+          Submitted_Time=BarData[Ind%in%STC_Orders[, Ind], Time]+Time_Unit,
           Filled_Time=BarData[Ind%in%STC_Orders[, Ind], Time]+Time_Unit,
           Action="Sell",
           Detail="STC",
@@ -3499,7 +3499,7 @@ Orders_Transmitter=function(BarData,
       if(nrow(STO_Orders)>0){
         data.table(
           Symbol=BarData[Ind%in%STO_Orders[, Ind], Symbol],
-          Submit_Time=BarData[Ind%in%STO_Orders[, Ind], Time]+Time_Unit,
+          Submitted_Time=BarData[Ind%in%STO_Orders[, Ind], Time]+Time_Unit,
           Filled_Time=BarData[Ind%in%STO_Orders[, Ind], Time]+Time_Unit,
           Action="Sell",
           Detail="STO",
@@ -3516,7 +3516,7 @@ Orders_Transmitter=function(BarData,
       if(nrow(BTC_Orders)>0){
         data.table(
           Symbol=BarData[Ind%in%BTC_Orders[, Ind], Symbol],
-          Submit_Time=BarData[Ind%in%BTC_Orders[, Ind], Time]+Time_Unit,
+          Submitted_Time=BarData[Ind%in%BTC_Orders[, Ind], Time]+Time_Unit,
           Filled_Time=BarData[Ind%in%BTC_Orders[, Ind], Time]+Time_Unit,
           Action="Buy",
           Detail="BTC",
@@ -3538,7 +3538,7 @@ Orders_Transmitter=function(BarData,
       if(nrow(BTO_Orders)>0){
         data.table(
           Symbol=BarData[Ind%in%BTO_Orders[, Ind], Symbol],
-          Submit_Time=BarData[Ind%in%BTO_Orders[, Ind], Time]+Time_Unit,
+          Submitted_Time=BarData[Ind%in%BTO_Orders[, Ind], Time]+Time_Unit,
           Filled_Time=BarData[Ind%in%BTO_Orders[, Ind], Time]+Time_Unit,
           Action="Buy",
           Detail="BTO",
@@ -3555,7 +3555,7 @@ Orders_Transmitter=function(BarData,
       if(nrow(STC_Orders)>0){
         data.table(
           Symbol=BarData[Ind%in%STC_Orders[, Ind], Symbol],
-          Submit_Time=BarData[Ind%in%STC_Orders[, Ind], Time]+Time_Unit,
+          Submitted_Time=BarData[Ind%in%STC_Orders[, Ind], Time]+Time_Unit,
           Filled_Time=BarData[Ind%in%STC_Orders[, Ind], Time]+Time_Unit,
           Action="Sell",
           Detail="STC",
@@ -3577,7 +3577,7 @@ Orders_Transmitter=function(BarData,
       if(nrow(STO_Orders)>0){
         data.table(
           Symbol=BarData[Ind%in%STO_Orders[, Ind], Symbol],
-          Submit_Time=BarData[Ind%in%STO_Orders[, Ind], Time]+Time_Unit,
+          Submitted_Time=BarData[Ind%in%STO_Orders[, Ind], Time]+Time_Unit,
           Filled_Time=BarData[Ind%in%STO_Orders[, Ind], Time]+Time_Unit,
           Action="Sell",
           Detail="STO",
@@ -3594,7 +3594,7 @@ Orders_Transmitter=function(BarData,
       if(nrow(BTC_Orders)>0){
         data.table(
           Symbol=BarData[Ind%in%BTC_Orders[, Ind], Symbol],
-          Submit_Time=BarData[Ind%in%BTC_Orders[, Ind], Time]+Time_Unit,
+          Submitted_Time=BarData[Ind%in%BTC_Orders[, Ind], Time]+Time_Unit,
           Filled_Time=BarData[Ind%in%BTC_Orders[, Ind], Time]+Time_Unit,
           Action="Buy",
           Detail="BTC",
@@ -3608,7 +3608,7 @@ Orders_Transmitter=function(BarData,
       }
     )
   }
-  Orders_Transmitted=Orders_Transmitted[order(Submit_Time, Row_N), ]
+  Orders_Transmitted=Orders_Transmitted[order(Submitted_Time, Row_N), ]
   
   return(Orders_Transmitted)
 }

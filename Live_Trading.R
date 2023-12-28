@@ -187,7 +187,7 @@ while(Run_Algorithm==TRUE){
     #      length(Open_Orders)==1){
     #     
     #     # (1) if main order is not filled for longer than 1 hours, cancel orders
-    #     if(Sys.time()-Orders_Transmitted[Filled==0, Submit_Time]>60*60){
+    #     if(Sys.time()-Orders_Transmitted[Filled==0, Submitted_Time]>60*60){
     #       Transmitted_Orders=0 # reset Transmitted_Orders to 0
     #       
     #       Open_Orders=unique(do.call(rbind, reqopenorders_cb(tws))[, 3])
@@ -437,4 +437,3 @@ while(Run_Algorithm==TRUE){
   }
   
 }
-
