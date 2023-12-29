@@ -31,7 +31,7 @@ if(Device=="desktop"){
   source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
 }
 
-load(paste0(rdata.dir, "Futures_2023-07-11 - 15mins_RSI.Rdata"))
+load(paste0(rdata.dir, "Futures_2023-12-28 - 15mins.Rdata"))
 # load(paste0(rdata.dir, "Futures_2023-07-22 - 5mins_RSI.Rdata"))
 
 
@@ -79,6 +79,7 @@ source(paste0(working.dir, "0. Stock_Analysis_Functions.R"))
 for(pack in c("IBrokers",
               "TTR",
               "data.table",
+              "plyr",
               "dplyr",
               "DescTools", # candle chart
               
@@ -410,7 +411,9 @@ for(Strategy_Name in Strategies){
 
 Top_Ten_Models=c()
 All_Results$Market_Time=Params$Market_Time
-All_Results=All_Results[Market_Time==3,]
+# All_Results[, adjR2_Avg:=rowMeans(.SD, na.rm=T), .SDcols=c(paste0("adjR2_on_", 1:15))]
+# All_Results=All_Results[Market_Time==3,]
+# Top_Ten_Models$i=All_Results[order(K, decreasing=TRUE)][["Row"]][1:10]
 Top_Ten_Models$i=All_Results[order(NP, decreasing=TRUE)][["Row"]][1:10]
 Top_Ten_Models$Strategy_Name=All_Results[order(NP, decreasing=TRUE)][["Strategy"]][1:10]
 
