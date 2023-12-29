@@ -35,9 +35,11 @@ if(Device=="desktop"){
 #****************
 # data parameters
 #****************
-Symbols=c("IWM",
-          "M2K",
-          "MNQ")
+Symbols=c(
+  # "IWM",
+  # "M2K",
+  "MNQ"
+)
 
 #*****************
 #

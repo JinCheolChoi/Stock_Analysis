@@ -236,11 +236,11 @@ while(Run_Algorithm==TRUE){
   
   # algorithm determine to take a position
   if(!is.null(Live_Data_Temp)){
-    #*************************************************************************
+    #************************************************************
     #
-    # clear the existing position at the last bar data during the trading time
+    # clear the existing position(s) at the start of the last bar
     #
-    #*************************************************************************
+    #************************************************************
     {
       BarData_Last_Time=as.ITime(format(tail(Live_Data_Temp, 1)$Time,
                                         tz="America/Los_Angeles"))

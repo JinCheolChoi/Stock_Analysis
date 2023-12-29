@@ -57,7 +57,7 @@ Add_Model(Strategy="Live_Strategy",
                            Long_RSI=0.30*100,
                            Short_RSI=0.70*100,
                            Live_Trading=TRUE,
-                           Reverse=TRUE))
+                           Reverse=FALSE))
 Add_Model(Strategy="Live_Strategy",
           Model="Simple_RSI",
           Model_Name="Simple_RSI_2",
@@ -66,7 +66,7 @@ Add_Model(Strategy="Live_Strategy",
                            Long_RSI=0.40*100,
                            Short_RSI=0.60*100,
                            Live_Trading=TRUE,
-                           Reverse=TRUE))
+                           Reverse=FALSE))
 # Add_Model(Strategy="Live_Strategy",
 #           Model="Trend",
 #           ModelParams=list(Interval=5,
