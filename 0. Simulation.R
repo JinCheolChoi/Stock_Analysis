@@ -68,7 +68,7 @@ for(pack in c("IBrokers",
 }
 
 # bar size
-BarSize="15mins"
+BarSize="1min"
 
 # import data
 BarData=fread(paste0(data.dir, BarSize, "/", Symbols, "/", Symbols, ".csv"))

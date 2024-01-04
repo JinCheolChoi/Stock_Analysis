@@ -31,7 +31,7 @@ if(Device=="desktop"){
   source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
 }
 
-load(paste0(rdata.dir, "Futures_2023-12-28 - 15mins.Rdata"))
+load(paste0(rdata.dir, "Futures_2023-12-31 - 1min.Rdata"))
 # load(paste0(rdata.dir, "Futures_2023-07-22 - 5mins_RSI.Rdata"))
 
 
@@ -92,7 +92,7 @@ for(pack in c("IBrokers",
 }
 
 # bar size
-BarSize="15mins"
+BarSize="1min"
 
 # import data
 BarData=fread(paste0(data.dir, BarSize, "/", Symbols, "/", Symbols, ".csv"))
@@ -412,13 +412,13 @@ for(Strategy_Name in Strategies){
 Top_Ten_Models=c()
 All_Results$Market_Time=Params$Market_Time
 # All_Results[, adjR2_Avg:=rowMeans(.SD, na.rm=T), .SDcols=c(paste0("adjR2_on_", 1:15))]
-# All_Results=All_Results[Market_Time==3,]
+# All_Results=All_Results[Market_Time==1,]
 # Top_Ten_Models$i=All_Results[order(K, decreasing=TRUE)][["Row"]][1:10]
 Top_Ten_Models$i=All_Results[order(NP, decreasing=TRUE)][["Row"]][1:10]
 Top_Ten_Models$Strategy_Name=All_Results[order(NP, decreasing=TRUE)][["Strategy"]][1:10]
 
 i=Top_Ten_Models$i[1]
-
+Params[Ind==i, ]
 # import strategies
 source(paste0(working.dir, "Strategies.R"))
 
@@ -471,7 +471,7 @@ as.numeric(c(Orders_Transmitted_Temp[Detail=="STC",][["Submitted_Time"]]-Orders_
 #***********
 # Long graph
 library(quantmod)
-Ind=6
+Ind=which.max(Orders_Transmitted_Temp[Detail=="STC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submitted_Time"]])
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="STC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submitted_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="STC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="BTO", ][["Submitted_Time"]])
@@ -487,7 +487,7 @@ chartSeries(BarData[Row_Ind, -1],
 
 #************
 # Short graph
-Ind=118
+Ind=which.max(Orders_Transmitted_Temp[Detail=="BTC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submitted_Time"]])
 # elapsed time summary
 Orders_Transmitted_Temp[Detail=="BTC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submitted_Time"]]
 which.max(Orders_Transmitted_Temp[Detail=="BTC",][["Submitted_Time"]]-Orders_Transmitted_Temp[Detail=="STO", ][["Submitted_Time"]])
@@ -528,4 +528,10 @@ plot(as.Date(Ind_Profit_Temp$Time),
      Ind_Profit_Temp$Cum_Profit,
      xaxt="n")
 axis(side=1, at=month, labels=format(month, "%b-%Y"), cex.axis=0.7)
+
+# i=1241
+# 4812.58
+# 2022-05-05 06:04:00
+# 2022-05-05 08:32:00
+# take into account summer time
 
