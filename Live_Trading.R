@@ -132,7 +132,7 @@ while(Run_Algorithm==TRUE){
       # blank
     }else if(Market_Time==2){
       # only regular time
-      if(!(Current_Time>=as.POSIXct(format(paste0(Current_Date, " ", Market_Open_Time),
+      if(!(Current_Time>=as.POSIXct(format(paste0(Current_Date, " ", as.ITime(Market_Open_Time)+60*60), # remove the first 1 hour after market open
                                            tz="America/Los_Angeles")) &
            Current_Time<=as.POSIXct(format(paste0(Current_Date, " ", Market_Close_Time),
                                            tz="America/Los_Angeles")))){
