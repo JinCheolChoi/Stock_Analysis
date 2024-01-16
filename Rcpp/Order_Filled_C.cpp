@@ -16,9 +16,9 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
 
   IntegerVector Quantity_ = as<IntegerVector>(Which_Signals["Quantity"]);
 
-  LogicalVector Both_Direction_ = as<LogicalVector>(Which_Signals["Both_Direction"]);
+  LogicalVector Simultaneous_ = as<LogicalVector>(Which_Signals["Simultaneous"]);
 
-  int n = Both_Direction_.size();
+  int n = Simultaneous_.size();
 
   // create output vectors
   IntegerVector Net_Quantity_(n);
@@ -28,7 +28,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
   IntegerVector Remove_(n);
   std::fill(Remove_.begin(), Remove_.end(), 0);
 
-  int Both_Direction_Ind = 0;
+  int Simultaneous_Ind = 0;
 
   // begin orders with an open position
   // thus, indicate removal in Remove_[i] for closing positions until the first open position
@@ -45,28 +45,34 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
     else
     {
       while_i++;
-      Net_Quantity_[ind] = Quantity_[ind];
+      // Net_Quantity_[ind] = Quantity_[ind];      
+      Net_Quantity_[ind] = ((Quantity_[ind] > 0) - (Quantity_[ind] < 0)) * min(abs(Quantity_[ind]), Max_Orders);
     }
     ind++;
   }
+
+  Quantity_[0]=Net_Quantity_[0];
 
   for (int i = ind; i < n; ++i)
   {
     // adjust Quantity[i]
     {
-      if (
-          (Net_Quantity_[i - 1] < 0) &&
-          (Net_Quantity_[i - 1] + Quantity_[i] > 0) &&
-          (Net_Quantity_[i - 1] + Quantity_[i] <= Max_Orders))
+      // comment the following bracket part to allow switching
       {
-        Quantity_[i] = -Net_Quantity_[i - 1];
-      }
-      else if (
-          (Net_Quantity_[i - 1] > 0) &&
-          (Net_Quantity_[i - 1] + Quantity_[i] < 0) &&
-          (Net_Quantity_[i - 1] + Quantity_[i] >= -Max_Orders))
-      {
-        Quantity_[i] = -Net_Quantity_[i - 1];
+        if (
+            (Net_Quantity_[i - 1] < 0) &&
+            (Net_Quantity_[i - 1] + Quantity_[i] > 0) &&
+            (Net_Quantity_[i - 1] + Quantity_[i] <= Max_Orders))
+        {
+          Quantity_[i] = -Net_Quantity_[i - 1];
+        }
+        else if (
+            (Net_Quantity_[i - 1] > 0) &&
+            (Net_Quantity_[i - 1] + Quantity_[i] < 0) &&
+            (Net_Quantity_[i - 1] + Quantity_[i] >= -Max_Orders))
+        {
+          Quantity_[i] = -Net_Quantity_[i - 1];
+        }
       }
 
       if (abs(Net_Quantity_[i - 1] + Quantity_[i]) > Max_Orders)
@@ -109,13 +115,13 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         continue;
       }
 
-      switch (Both_Direction_[i])
+      switch (Simultaneous_[i])
       {
 
       case true:
         // indicate removal in Remove_[i] for orders that occur at the same time in both directions (long & short)
         // such duplicated orders are removed from the 2nd one (the very 1st one is processed by the next for statment)
-        if (Both_Direction_Ind == Ind_[i])
+        if (Simultaneous_Ind == Ind_[i])
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1];
           Remove_[i] = 1;
@@ -128,7 +134,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
             (Net_Quantity_[i - 1] < 0 && Detail_[i] == "BTC"))
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
+          Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
 
           continue;
         }
@@ -156,12 +162,12 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
     // if(Net_Quantity_[i-1]>0)
     if (Net_Quantity_[i - 1] > 0)
     {
-      switch (Both_Direction_[i])
+      switch (Simultaneous_[i])
       {
       case true:
         // indicate removal in Remove_[i] for orders that occur at the same time in both directions (long & short)
         // such duplicated orders are removed from the 2nd one (the very 1st one is processed by the next for statment)
-        if (Both_Direction_Ind == Ind_[i])
+        if (Simultaneous_Ind == Ind_[i])
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1];
           Remove_[i] = 1;
@@ -173,7 +179,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         if (Detail_[i] == "STC")
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
+          Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
 
           continue;
         }
@@ -181,7 +187,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         if (Detail_[i] == "BTO")
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
+          Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
 
           continue;
         }
@@ -209,12 +215,12 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
     // if(Net_Quantity_[i-1]<0)
     if (Net_Quantity_[i - 1] < 0)
     {
-      switch (Both_Direction_[i])
+      switch (Simultaneous_[i])
       {
       case true:
         // indicate removal in Remove_[i] for orders that occur at the same time in both directions (long & short)
         // such duplicated orders are removed from the 2nd one (the very 1st one is processed by the next for statment)
-        if (Both_Direction_Ind == Ind_[i])
+        if (Simultaneous_Ind == Ind_[i])
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1];
           Remove_[i] = 1;
@@ -226,7 +232,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         if (Detail_[i] == "BTC")
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
+          Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
 
           continue;
         }
@@ -234,7 +240,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         if (Detail_[i] == "STO")
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
+          Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
 
           continue;
         }
@@ -262,12 +268,12 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
     // Net_Quantity_[i-1]==0
     if (Net_Quantity_[i - 1] == 0)
     {
-      switch (Both_Direction_[i])
+      switch (Simultaneous_[i])
       {
       case true:
         // indicate removal in Remove_[i] for orders that occur at the same time in both directions (long & short)
         // such duplicated orders are removed from the 2nd one (the very 1st one is processed by the next for statment)
-        if (Both_Direction_Ind == Ind_[i])
+        if (Simultaneous_Ind == Ind_[i])
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1];
           Remove_[i] = 1;
@@ -279,14 +285,14 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         if (Detail_[i] == "BTO")
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
+          Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
 
           continue;
         }
         else if (Detail_[i] == "STO")
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
+          Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
 
           continue;
         }
@@ -320,7 +326,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
 }
 
 /* // [[Rcpp::export]]
-List Order_Filled(List Which_Signals, LogicalVector Both_Direction_, int Max_Orders){
+List Order_Filled(List Which_Signals, LogicalVector Simultaneous_, int Max_Orders){
 
   IntegerVector Ind_ = as<IntegerVector>(Which_Signals["Ind"]);
 
@@ -366,7 +372,7 @@ List Order_Filled(List Which_Signals, LogicalVector Both_Direction_, int Max_Ord
             Remove_[Ind]=0;
         }
       }else{ //
-        if(Both_Direction_[Ind]==TRUE){
+        if(Simultaneous_[Ind]==TRUE){
           if(Net_Quantity_[Ind-1]<0 && Action_[Ind]=="Sell"){
               Net_Quantity_[Ind]=Net_Quantity_[Ind-1];
               Remove_[Ind]=1;
@@ -402,5 +408,5 @@ List Order_Filled(List Which_Signals, LogicalVector Both_Direction_, int Max_Ord
     }
   }
 
-  return List::create(Quantity_, Net_Quantity_, Remove_, Both_Direction_);
+  return List::create(Quantity_, Net_Quantity_, Remove_, Simultaneous_);
 } */
