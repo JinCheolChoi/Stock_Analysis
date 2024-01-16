@@ -128,7 +128,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
             (Net_Quantity_[i - 1] < 0 && Detail_[i] == "BTC"))
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st uplicated order is recorded
+          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
 
           continue;
         }
@@ -173,7 +173,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         if (Detail_[i] == "STC")
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st uplicated order is recorded
+          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
 
           continue;
         }
@@ -181,7 +181,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         if (Detail_[i] == "BTO")
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st uplicated order is recorded
+          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
 
           continue;
         }
@@ -226,7 +226,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         if (Detail_[i] == "BTC")
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st uplicated order is recorded
+          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
 
           continue;
         }
@@ -234,7 +234,7 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         if (Detail_[i] == "STO")
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st uplicated order is recorded
+          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
 
           continue;
         }
@@ -279,14 +279,14 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         if (Detail_[i] == "BTO")
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st uplicated order is recorded
+          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
 
           continue;
         }
         else if (Detail_[i] == "STO")
         {
           Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st uplicated order is recorded
+          Both_Direction_Ind = Ind_[i]; // update Both_Direction_Ind after the 1st duplicated order is recorded
 
           continue;
         }

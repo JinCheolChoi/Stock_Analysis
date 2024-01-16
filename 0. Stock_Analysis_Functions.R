@@ -3078,8 +3078,8 @@ readExecutions <- function(twsconn) {
 # [ --- Rcpp --- ] ----
 #
 #**********************
-# Order_Filled
-#*************
+# Order_Filled_C
+#***************
 # c++ code
 Order_Filled=\(){}
 lapply("Rcpp", checkpackages)
@@ -3183,7 +3183,7 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
                if((Net_Quantity_[i-1]>0&Detail_[i]=="STC")|
                   (Net_Quantity_[i-1]<0&Detail_[i]=="BTC")){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st duplicated order is recorded
                  
                  next
                }
@@ -3223,14 +3223,14 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
                # Always first try to clear the existing positions
                if(Detail_[i]=="STC"){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st duplicated order is recorded
                  
                  next
                }
                
                if(Detail_[i]=="BTO"){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st duplicated order is recorded
                  
                  next
                }
@@ -3271,14 +3271,14 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
                # Always first try to clear the existing positions
                if(Detail_[i]=="BTC"){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st duplicated order is recorded
                  
                  next
                }
                
                if(Detail_[i]=="STO"){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st duplicated order is recorded
                  
                  next
                }
@@ -3319,13 +3319,13 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
                # This part allows to force the long position entrance when there is no position filled yet while Sigs_N indicates to enter both positions at the same time
                if(Detail_[i]=="BTO"){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st duplicated order is recorded
                  
                  next
                  
                }else if(Detail_[i]=="STO"){
                  Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st uplicated order is recorded
+                 Both_Direction_Ind=Ind_[i] # update Both_Direction_Ind after the 1st duplicated order is recorded
                  
                  next
                }
