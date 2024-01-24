@@ -212,7 +212,8 @@ Simulation_Results=c()
                                       fill=TRUE))
     
     Orders_Transmitted=rbind(Orders_Transmitted,
-                             Orders_Transmitted_Temp)
+                             Orders_Transmitted_Temp,
+                             fill=TRUE)
     
     if(ncol(Orders_Transmitted_Temp)>1 & !sum(apply(Orders_Transmitted_Temp,
                                                     2,
