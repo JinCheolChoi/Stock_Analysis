@@ -1511,7 +1511,7 @@ Add_Indicator=function(Strategy,
   TTR_Objects=ls("package:TTR")
   
   # check the availability of Indicator in TTR
-  if(Indicator=="Close"){
+  if(Indicator%in%c("High", "Low", "Open", "Close")){
     New_IndicatorParams=TRUE
   }else{
     if(!Indicator%in%TTR_Objects){
@@ -3399,19 +3399,37 @@ Indicator_Calculator=function(BarData,
   # calculate indicators
   Calculated_Indicators=lapply(Strategy_Indicators,
                                function(x)
-                                 if(x=="Close"){
-                                   BarData[["Close"]]
-                                 }else{
-                                   if(x=="BBands" & nrow(BarData)>=Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
-                                     do.call(x, 
-                                             c(list(BarData[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
-                                               Indicators[[x]]))
-                                   }else if(x!="BBands" & nrow(BarData)>Indicators[[x]][['n']]+1){
-                                     do.call(x, 
-                                             c(list(BarData[["Close"]]), # for now only using "Close price", additional work would be required in the future if the indicator does not depend on "Close price"
-                                               Indicators[[x]]))
+                                 switch(
+                                   x,
+                                   "High"={BarData[["High"]]},
+                                   "Low"={BarData[["Low"]]},
+                                   "Open"={BarData[["Open"]]},
+                                   "Close"={BarData[["Close"]]},
+                                   # default
+                                   {
+                                     if(nrow(BarData)>=Indicators[[x]][['n']]+1){ # BBands : n-1, RSI : n+1
+                                       switch(
+                                         x,
+                                         "BBands"={
+                                           do.call(x, 
+                                                   c(list(BarData[["Close"]]), # using only "Close price"
+                                                     Indicators[[x]]))
+                                         },
+                                         "ADX"={
+                                           do.call(x, 
+                                                   c(list(BarData[, c("High","Low","Close")]), # using "High price","Low price", and "Close price"
+                                                     Indicators[[x]]))
+                                         },
+                                         # default
+                                         {
+                                           do.call(x, 
+                                                   c(list(BarData[["Close"]]), # using only "Close price"
+                                                     Indicators[[x]]))
+                                         }
+                                       )
+                                     }
                                    }
-                                 }
+                                 )
   )
   
   # Calculated_Indicators=Calculated_Indicators[-which(sapply(Calculated_Indicators, is.null))]

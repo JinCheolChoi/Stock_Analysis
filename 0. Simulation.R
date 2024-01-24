@@ -20,7 +20,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="desktop" # "laptop" or "desktop"
+Device="laptop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -68,7 +68,7 @@ for(pack in c("IBrokers",
 }
 
 # bar size
-BarSize="1min"
+BarSize="15mins"
 
 # import data
 BarData=fread(paste0(data.dir, BarSize, "/", Symbols, "/", Symbols, ".csv"))
@@ -159,48 +159,48 @@ Live_Trading=FALSE
 #   "Reverse"
 # )
 
-Market_Time=c(1, 2, 3)
-Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
-Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
-Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
-Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
-Open_Long_Consec_Times=c(4)
-Open_Short_Consec_Times=c(4)
-Multiplier=100
-Reverse=c(TRUE, FALSE)
-# Market_Time=2
-# Simple_BBands_1_Long_PctB=0.3
-# Simple_BBands_1_Short_PctB=0.7
-# Simple_BBands_2_Long_PctB=0.25
-# Simple_BBands_2_Short_PctB=0.75
-# Open_Long_Consec_Times=4
-# Open_Short_Consec_Times=4
+# Market_Time=c(1, 2, 3)
+# Simple_BBands_1_Long_PctB=seq(0.1, 0.3, by=0.05)
+# Simple_BBands_1_Short_PctB=seq(0.7, 0.9, by=0.05)
+# Simple_BBands_2_Long_PctB=seq(0.1, 0.3, by=0.05)
+# Simple_BBands_2_Short_PctB=seq(0.7, 0.9, by=0.05)
+# Open_Long_Consec_Times=c(4)
+# Open_Short_Consec_Times=c(4)
 # Multiplier=100
-# Reverse=TRUE
-Params=data.table(
-  expand.grid(
-    Market_Time,
-    Simple_BBands_1_Long_PctB,
-    Simple_BBands_1_Short_PctB,
-    Simple_BBands_2_Long_PctB,
-    Simple_BBands_2_Short_PctB,
-    Open_Long_Consec_Times,
-    Open_Short_Consec_Times,
-    Multiplier,
-    Reverse
-  )
-)
-Tuning_Parameters=c(
-  "Market_Time",
-  "Simple_BBands_1_Long_PctB",
-  "Simple_BBands_1_Short_PctB",
-  "Simple_BBands_2_Long_PctB",
-  "Simple_BBands_2_Short_PctB",
-  "Open_Long_Consec_Times",
-  "Open_Short_Consec_Times",
-  "Multiplier",
-  "Reverse"
-)
+# Reverse=c(TRUE, FALSE)
+# # Market_Time=2
+# # Simple_BBands_1_Long_PctB=0.3
+# # Simple_BBands_1_Short_PctB=0.7
+# # Simple_BBands_2_Long_PctB=0.25
+# # Simple_BBands_2_Short_PctB=0.75
+# # Open_Long_Consec_Times=4
+# # Open_Short_Consec_Times=4
+# # Multiplier=100
+# # Reverse=TRUE
+# Params=data.table(
+#   expand.grid(
+#     Market_Time,
+#     Simple_BBands_1_Long_PctB,
+#     Simple_BBands_1_Short_PctB,
+#     Simple_BBands_2_Long_PctB,
+#     Simple_BBands_2_Short_PctB,
+#     Open_Long_Consec_Times,
+#     Open_Short_Consec_Times,
+#     Multiplier,
+#     Reverse
+#   )
+# )
+# Tuning_Parameters=c(
+#   "Market_Time",
+#   "Simple_BBands_1_Long_PctB",
+#   "Simple_BBands_1_Short_PctB",
+#   "Simple_BBands_2_Long_PctB",
+#   "Simple_BBands_2_Short_PctB",
+#   "Open_Long_Consec_Times",
+#   "Open_Short_Consec_Times",
+#   "Multiplier",
+#   "Reverse"
+# )
 
 # Market_Time=c(1, 2, 3)
 # RSI_RSI_MA_Diff_Min=c(1, 2, 3)
@@ -284,9 +284,25 @@ Tuning_Parameters=c(
 #   
 #   "Reverse"
 # )
+
+Market_Time=c(1, 2, 3)
+ADX_Value=c(20, 25, 30)
+Reverse=c(TRUE, FALSE)
+Params=data.table(
+  expand.grid(
+    Market_Time,
+    ADX_Value,
+    Reverse
+  )
+)
+Tuning_Parameters=c(
+  "Market_Time",
+  "ADX_Value",
+  "Reverse"
+)
 colnames(Params)=Tuning_Parameters
 for(i in 1:nrow(Params)){
-  # i=1
+  # i=153
   
   # import strategies
   source(paste0(working.dir, "Strategies.R"))
@@ -449,3 +465,4 @@ for(i in 1:nrow(Params)){
 #**************
 # save.image(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
 # load(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
+

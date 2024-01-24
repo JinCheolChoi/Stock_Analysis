@@ -405,7 +405,55 @@ Models_Env$Simple_Test=list(
 )
 
 
-
+#****************
+#
+# Simple_ADX ----
+#
+#****************
+Models_Env$Simple_ADX=list(
+  Essential_Indicators=c("ADX"), # list of required indicators
+  
+  Function=function(Data,
+                    ADX_Value=25,
+                    Reverse=FALSE,
+                    ...){
+    if(Live_Trading==TRUE){
+      # positive long signal
+      Long_Sig=(Data[, "DIp"]>Data[, "DIn"]) & Data[, "ADX"]>=ADX_Value
+      
+      # positive short signal
+      Short_Sig=(Data[, "DIp"]<Data[, "DIn"]) & Data[, "ADX"]>=ADX_Value
+      
+      # return signals
+      Signals=c()
+      if(Reverse==TRUE){
+        Signals$Long_Sig=Short_Sig
+        Signals$Short_Sig=Long_Sig
+      }else{
+        Signals$Long_Sig=Long_Sig
+        Signals$Short_Sig=Short_Sig
+      }
+      return(Signals)
+    }else{
+      # positive long signal
+      Long_Sig=(Data[, "DIp"]>Data[, "DIn"]) & Data[, "ADX"]>=25
+      
+      # positive short signal
+      Short_Sig=(Data[, "DIp"]<Data[, "DIn"]) & Data[, "ADX"]>=25
+      
+      # return signals
+      Signals=c()
+      if(Reverse==TRUE){
+        Signals$Long_Sig=Short_Sig
+        Signals$Short_Sig=Long_Sig
+      }else{
+        Signals$Long_Sig=Long_Sig
+        Signals$Short_Sig=Short_Sig
+      }
+      return(Signals)
+    }
+  }
+)
 
 
 
