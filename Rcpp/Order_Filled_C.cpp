@@ -20,6 +20,8 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
 
   int n = Simultaneous_.size();
 
+  int exist = 0;
+
   // create output vectors
   IntegerVector Net_Quantity_(n);
   std::fill(Net_Quantity_.begin(), Net_Quantity_.end(), 0);
@@ -45,13 +47,13 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
     else
     {
       while_i++;
-      // Net_Quantity_[ind] = Quantity_[ind];      
+      // Net_Quantity_[ind] = Quantity_[ind];
       Net_Quantity_[ind] = ((Quantity_[ind] > 0) - (Quantity_[ind] < 0)) * min(abs(Quantity_[ind]), Max_Orders);
     }
     ind++;
   }
 
-  Quantity_[0]=Net_Quantity_[0];
+  Quantity_[0] = Net_Quantity_[0];
 
   for (int i = ind; i < n; ++i)
   {
@@ -117,7 +119,6 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
 
       switch (Simultaneous_[i])
       {
-
       case true:
         // indicate removal in Remove_[i] for orders that occur at the same time in both directions (long & short)
         // such duplicated orders are removed from the 2nd one (the very 1st one is processed by the next for statment)
@@ -176,20 +177,37 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         }
 
         // Always first try to clear the existing positions
-        if (Detail_[i] == "STC")
+        exist = 0;
+        for (int which_i = 0; which_i < Ind_.size(); ++which_i)
         {
-          Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
-
-          continue;
+          if (Ind_[which_i] == Ind_[i])
+          {
+            if (Detail_[which_i] == "STC")
+            {
+              exist = 1;
+            }
+          }
         }
 
-        if (Detail_[i] == "BTO")
+        if (exist == 1)
         {
-          Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
+          if (Detail_[i] == "STC")
+          {
+            Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
+            Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
 
-          continue;
+            continue;
+          }
+        }
+        else if (exist == 0)
+        {
+          if (Detail_[i] == "BTO")
+          {
+            Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
+            Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
+
+            continue;
+          }
         }
 
         break;
@@ -229,20 +247,37 @@ List Order_Filled_C(List Which_Signals, int Max_Orders)
         }
 
         // Always first try to clear the existing positions
-        if (Detail_[i] == "BTC")
+        exist = 0;
+        for (int which_i = 0; which_i < Ind_.size(); ++which_i)
         {
-          Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
-
-          continue;
+          if (Ind_[which_i] == Ind_[i])
+          {
+            if (Detail_[which_i] == "BTC")
+            {
+              exist = 1;
+            }
+          }
         }
 
-        if (Detail_[i] == "STO")
+        if (exist == 1)
         {
-          Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
-          Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
+          if (Detail_[i] == "BTC")
+          {
+            Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
+            Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
 
-          continue;
+            continue;
+          }
+        }
+        else if (exist == 0)
+        {
+          if (Detail_[i] == "STO")
+          {
+            Net_Quantity_[i] = Net_Quantity_[i - 1] + Quantity_[i];
+            Simultaneous_Ind = Ind_[i]; // update Simultaneous_Ind after the 1st duplicated order is recorded
+
+            continue;
+          }
         }
 
         break;
