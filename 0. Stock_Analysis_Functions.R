@@ -1122,8 +1122,8 @@ Backtesting=function(BarData,
                 Net_Profit=NA))
   }
   
-  Which_Signals[, Simultaneous:=duplicated(Which_Signals[["Ind"]], fromLast=T)|duplicated(Which_Signals[["Ind"]], fromLast=F)]
-  Which_Signals=Which_Signals[order(Ind, Detail)] # make sure BTO comes ahead of STO given Simultaneous==TRUE
+  Which_Signals[, Simultaneous:=duplicated(Which_Signals[["Time"]], fromLast=T)|duplicated(Which_Signals[["Time"]], fromLast=F)]
+  Which_Signals=Which_Signals[order(Time, Detail)] # make sure BTO comes ahead of STO given Simultaneous==TRUE
   
   #************
   # Market_Time
@@ -1152,6 +1152,9 @@ Backtesting=function(BarData,
   
   # order by Time and Action such that BTO is prioritized over STO
   Which_Signals=Which_Signals[order(Time, Action)]
+  
+  # Submitted_Time
+  Which_Signals[, Submitted_Time:=as.POSIXct(Submitted_Time)]
   
   #***************
   # Order_Filled_C
@@ -3214,7 +3217,6 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
     if(Net_Quantity_[i-1]>0){
       
       switch(as.character(Simultaneous_[i]),
-             
              "TRUE"={
                # indicate removal in Remove_[i] for orders that occur at the same time in both directions (long & short)
                # such duplicated orders are removed from the 2nd one (the very 1st one is processed by the next for statment)
@@ -3226,19 +3228,24 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
                }
                
                # Always first try to clear the existing positions
-               if(Detail_[i]=="STC"){
-                 Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
-                 
-                 next
+               if("STC"%in%Detail_[which(Ind_==Ind_[i])]){
+                 if(Detail_[i]=="STC"){
+                   Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
+                   Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
+                   
+                   next
+                 }
                }
                
-               if(Detail_[i]=="BTO"){
-                 Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
-                 
-                 next
+               if(!"STC"%in%Detail_[which(Ind_==Ind_[i])]){
+                 if(Detail_[i]=="BTO"){
+                   Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
+                   Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
+                   
+                   next
+                 }
                }
+               
              },
              
              "FALSE"={
@@ -3274,19 +3281,24 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
                }
                
                # Always first try to clear the existing positions
-               if(Detail_[i]=="BTC"){
-                 Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
-                 
-                 next
+               if("BTC"%in%Detail_[which(Ind_==Ind_[i])]){
+                 if(Detail_[i]=="BTC"){
+                   Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
+                   Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
+                   
+                   next
+                 }
                }
                
-               if(Detail_[i]=="STO"){
-                 Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                 Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
-                 
-                 next
+               if(!"BTC"%in%Detail_[which(Ind_==Ind_[i])]){
+                 if(Detail_[i]=="STO"){
+                   Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
+                   Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
+                   
+                   next
+                 }
                }
+               
              },
              
              "FALSE"={
