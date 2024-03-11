@@ -1246,6 +1246,8 @@ Backtesting=function(BarData,
   #**********************
   # calculate the balance
   #**********************
+  # Work on Balance_Calculator (2024-03-10)
+  # then, convert Order_Filled_R_Test to C++
   Balance=Balance_Calculator(Orders_Transmitted)
   
   return(Balance)
@@ -3453,7 +3455,7 @@ Order_Filled_R_Test=function(Which_Signals,
   
   Current_Position=c() #
   Current_Position_Net_Quantity=0 #
-  Current_Avg_Price=0 #
+  Current_Avg_Value=0 #
   
   Last_Simultaneous_Ind=0
   Simultaneous_List=c()
@@ -3567,16 +3569,16 @@ Order_Filled_R_Test=function(Which_Signals,
         Current_Time=Time_[i]
         Current_Position_Net_Quantity=Current_Quantity
         
-        # Current_Position & Current_Avg_Price
+        # Current_Position & Current_Avg_Value
         if(Current_Position_Net_Quantity>0){
           Current_Position="Long"
-          Current_Avg_Price=sum((Current_Open_Price+Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
+          Current_Avg_Value=sum((Current_Open_Price+Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
         }else if(Current_Position_Net_Quantity<0){
           Current_Position="Short"
-          Current_Avg_Price=sum((Current_Open_Price-Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
+          Current_Avg_Value=sum((Current_Open_Price-Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
         }else if(Current_Position_Net_Quantity==0){
           Current_Position="No"
-          Current_Avg_Price=0
+          Current_Avg_Value=0
         }
         
         # update *_Out
@@ -3584,7 +3586,7 @@ Order_Filled_R_Test=function(Which_Signals,
         Action_Out=c(Action_Out, Current_Action)
         Detail_Out=c(Detail_Out, Current_Detail)
         Quantity_Out=c(Quantity_Out, Current_Quantity)
-        Price_Out=c(Price_Out, Current_Avg_Price)
+        Price_Out=c(Price_Out, Current_Avg_Value)
         Time_Out=c(Time_Out, Current_Time)
         Net_Quantity_Out=c(Net_Quantity_Out, Current_Position_Net_Quantity)
         
@@ -3592,25 +3594,25 @@ Order_Filled_R_Test=function(Which_Signals,
         switch(Current_Position,
                "Long"={
                  # take profit
-                 if((Current_Avg_Price+Profit_Order)<=Which_Signals[i, High]){
+                 if((Current_Avg_Value+Profit_Order)<=Which_Signals[i, High]){
                    # update *_Out
                    Which_Ind_Out=c(Which_Ind_Out, Which_Ind_[i])
                    Action_Out=c(Action_Out, "Sell")
-                   Detail_Out=c(Detail_Out, "Profit")
+                   Detail_Out=c(Detail_Out, "Early_Profit")
                    Quantity_Out=c(Quantity_Out, -Current_Position_Net_Quantity)
                    Time_Out=c(Time_Out, Time_[i])
-                   Price_Out=c(Price_Out, (Current_Avg_Price+Profit_Order))
+                   Price_Out=c(Price_Out, (Current_Avg_Value+Profit_Order))
                    Net_Quantity_Out=c(Net_Quantity_Out, 0)
                  }
                  # take profit
-                 else if((Current_Avg_Price-Stop_Order)>=Which_Signals[i, Low]){
+                 else if((Current_Avg_Value-Stop_Order)>=Which_Signals[i, Low]){
                    # update *_Out
                    Which_Ind_Out=c(Which_Ind_Out, Which_Ind_[i])
                    Action_Out=c(Action_Out, "Sell")
-                   Detail_Out=c(Detail_Out, "Loss")
+                   Detail_Out=c(Detail_Out, "Loss_Cut")
                    Quantity_Out=c(Quantity_Out, -Current_Position_Net_Quantity)
                    Time_Out=c(Time_Out, Time_[i])
-                   Price_Out=c(Price_Out, (Current_Avg_Price-Stop_Order))
+                   Price_Out=c(Price_Out, (Current_Avg_Value-Stop_Order))
                    Net_Quantity_Out=c(Net_Quantity_Out, 0)
                  }
                  # else
@@ -3627,29 +3629,29 @@ Order_Filled_R_Test=function(Which_Signals,
                  Current_Time=c()
                  Current_Position=c()
                  Current_Position_Net_Quantity=0
-                 Current_Avg_Price=0
+                 Current_Avg_Value=0
                },
                "Short"={
                  # take profit
-                 if((Current_Avg_Price-Profit_Order)>=Which_Signals[i, Low]){
+                 if((Current_Avg_Value-Profit_Order)>=Which_Signals[i, Low]){
                    # update *_Out
                    Which_Ind_Out=c(Which_Ind_Out, Which_Ind_[i])
                    Action_Out=c(Action_Out, "Buy")
-                   Detail_Out=c(Detail_Out, "Profit")
+                   Detail_Out=c(Detail_Out, "Early_Profit")
                    Quantity_Out=c(Quantity_Out, -Current_Position_Net_Quantity)
                    Time_Out=c(Time_Out, Time_[i])
-                   Price_Out=c(Price_Out, (Current_Avg_Price-Profit_Order))
+                   Price_Out=c(Price_Out, (Current_Avg_Value-Profit_Order))
                    Net_Quantity_Out=c(Net_Quantity_Out, 0)
                  }
                  # cut loss
-                 else if((Current_Avg_Price+Stop_Order)<=Which_Signals[i, High]){
+                 else if((Current_Avg_Value+Stop_Order)<=Which_Signals[i, High]){
                    # update *_Out
                    Which_Ind_Out=c(Which_Ind_Out, Which_Ind_[i])
                    Action_Out=c(Action_Out, "Buy")
-                   Detail_Out=c(Detail_Out, "Loss")
+                   Detail_Out=c(Detail_Out, "Loss_Cut")
                    Quantity_Out=c(Quantity_Out, -Current_Position_Net_Quantity)
                    Time_Out=c(Time_Out, Time_[i])
-                   Price_Out=c(Price_Out, (Current_Avg_Price+Stop_Order))
+                   Price_Out=c(Price_Out, (Current_Avg_Value+Stop_Order))
                    Net_Quantity_Out=c(Net_Quantity_Out, 0)
                  }
                  # else
@@ -3666,7 +3668,7 @@ Order_Filled_R_Test=function(Which_Signals,
                  Current_Time=c()
                  Current_Position=c()
                  Current_Position_Net_Quantity=0
-                 Current_Avg_Price=0
+                 Current_Avg_Value=0
                },
                "No"={
                  next
@@ -3682,39 +3684,41 @@ Order_Filled_R_Test=function(Which_Signals,
       #*******************
       #* is.na(Detail_[i])
       if(is.na(Detail_[i])){
-        if(Current_Position_Net_Quantity>0){
-          Current_Position="Long"
-          Current_Avg_Price=sum((Current_Open_Price-Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
-        }else if(Current_Position_Net_Quantity<0){
-          Current_Position="Short"
-          Current_Avg_Price=sum((Current_Open_Price-Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
-        }else if(Current_Position_Net_Quantity==0){
-          Current_Position="No"
-          Current_Avg_Price=0
+        if(Current_Avg_Value==0){ # this line is to prevent Current_Avg_Value from being calculated repetitively
+          if(Current_Position_Net_Quantity>0){
+            Current_Position="Long"
+            Current_Avg_Value=sum((Current_Open_Price+Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
+          }else if(Current_Position_Net_Quantity<0){
+            Current_Position="Short"
+            Current_Avg_Value=sum((Current_Open_Price-Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
+          }else if(Current_Position_Net_Quantity==0){
+            Current_Position="No"
+            Current_Avg_Value=0
+          }
         }
         
         switch(Current_Position,
                "Long"={
                  # take profit
-                 if((Current_Avg_Price+Profit_Order)<=Which_Signals[i, High]){
+                 if((Current_Avg_Value+Profit_Order)<=Which_Signals[i, High]){
                    # update *_Out
                    Which_Ind_Out=c(Which_Ind_Out, Which_Ind_[i])
                    Action_Out=c(Action_Out, "Sell")
-                   Detail_Out=c(Detail_Out, "Profit")
+                   Detail_Out=c(Detail_Out, "Early_Profit")
                    Quantity_Out=c(Quantity_Out, -Current_Position_Net_Quantity)
                    Time_Out=c(Time_Out, Time_[i])
-                   Price_Out=c(Price_Out, (Current_Avg_Price+Profit_Order))
+                   Price_Out=c(Price_Out, (Current_Avg_Value+Profit_Order))
                    Net_Quantity_Out=c(Net_Quantity_Out, 0)
                  }
                  # cut loss
-                 else if((Current_Avg_Price-Stop_Order)>=Which_Signals[i, Low]){
+                 else if((Current_Avg_Value-Stop_Order)>=Which_Signals[i, Low]){
                    # update *_Out
                    Which_Ind_Out=c(Which_Ind_Out, Which_Ind_[i])
                    Action_Out=c(Action_Out, "Sell")
-                   Detail_Out=c(Detail_Out, "Loss")
+                   Detail_Out=c(Detail_Out, "Loss_Cut")
                    Quantity_Out=c(Quantity_Out, -Current_Position_Net_Quantity)
                    Time_Out=c(Time_Out, Time_[i])
-                   Price_Out=c(Price_Out, (Current_Avg_Price-Stop_Order))
+                   Price_Out=c(Price_Out, (Current_Avg_Value-Stop_Order))
                    Net_Quantity_Out=c(Net_Quantity_Out, 0)
                  }
                  # else
@@ -3731,29 +3735,29 @@ Order_Filled_R_Test=function(Which_Signals,
                  Current_Time=c()
                  Current_Position=c()
                  Current_Position_Net_Quantity=0
-                 Current_Avg_Price=0
+                 Current_Avg_Value=0
                },
                "Short"={
                  # take profit
-                 if((Current_Avg_Price-Profit_Order)>=Which_Signals[i, Low]){
+                 if((Current_Avg_Value-Profit_Order)>=Which_Signals[i, Low]){
                    # update *_Out
                    Which_Ind_Out=c(Which_Ind_Out, Which_Ind_[i])
                    Action_Out=c(Action_Out, "Buy")
-                   Detail_Out=c(Detail_Out, "Profit")
+                   Detail_Out=c(Detail_Out, "Early_Profit")
                    Quantity_Out=c(Quantity_Out, -Current_Position_Net_Quantity)
                    Time_Out=c(Time_Out, Time_[i])
-                   Price_Out=c(Price_Out, (Current_Avg_Price-Profit_Order))
+                   Price_Out=c(Price_Out, (Current_Avg_Value-Profit_Order))
                    Net_Quantity_Out=c(Net_Quantity_Out, 0)
                  }
                  # cut loss
-                 else if((Current_Avg_Price+Stop_Order)<=Which_Signals[i, High]){
+                 else if((Current_Avg_Value+Stop_Order)<=Which_Signals[i, High]){
                    # update *_Out
                    Which_Ind_Out=c(Which_Ind_Out, Which_Ind_[i])
                    Action_Out=c(Action_Out, "Buy")
-                   Detail_Out=c(Detail_Out, "Loss")
+                   Detail_Out=c(Detail_Out, "Loss_Cut")
                    Quantity_Out=c(Quantity_Out, -Current_Position_Net_Quantity)
                    Time_Out=c(Time_Out, Time_[i])
-                   Price_Out=c(Price_Out, (Current_Avg_Price+Stop_Order))
+                   Price_Out=c(Price_Out, (Current_Avg_Value+Stop_Order))
                    Net_Quantity_Out=c(Net_Quantity_Out, 0)
                  }
                  # else
@@ -3770,7 +3774,7 @@ Order_Filled_R_Test=function(Which_Signals,
                  Current_Time=c()
                  Current_Position=c()
                  Current_Position_Net_Quantity=0
-                 Current_Avg_Price=0
+                 Current_Avg_Value=0
                },
                "No"={
                  next
@@ -3784,13 +3788,13 @@ Order_Filled_R_Test=function(Which_Signals,
       if(Detail_[i]=="BTC" | Detail_[i]=="STC"){
         if(Current_Position_Net_Quantity>0){
           Current_Position="Long"
-          Current_Avg_Price=sum((Current_Open_Price-Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
+          Current_Avg_Value=sum((Current_Open_Price+Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
         }else if(Current_Position_Net_Quantity<0){
           Current_Position="Short"
-          Current_Avg_Price=sum((Current_Open_Price-Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
+          Current_Avg_Value=sum((Current_Open_Price-Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
         }else if(Current_Position_Net_Quantity==0){
           Current_Position="No"
-          Current_Avg_Price=0
+          Current_Avg_Value=0
         }
         
         if(Current_Position=="Long" & Detail_[i]=="STC"){
@@ -3818,7 +3822,7 @@ Order_Filled_R_Test=function(Which_Signals,
             Current_Time=c()
             Current_Position=c()
             Current_Position_Net_Quantity=0
-            Current_Avg_Price=0
+            Current_Avg_Value=0
             
           }else if(Current_Position_Net_Quantity>0){
             # update current variables
@@ -3829,7 +3833,7 @@ Order_Filled_R_Test=function(Which_Signals,
             Current_Open_Price=c(Current_Open_Price, Open_Price_[i])
             Current_Time=c(Current_Time, Time_[i])
             Current_Position_Net_Quantity=Current_Position_Net_Quantity
-            Current_Avg_Price=Current_Avg_Price
+            Current_Avg_Value=Current_Avg_Value
           }
           
         }else if(Current_Position=="Short" & Detail_[i]=="BTC"){
@@ -3857,7 +3861,7 @@ Order_Filled_R_Test=function(Which_Signals,
             Current_Time=c()
             Current_Position=c()
             Current_Position_Net_Quantity=0
-            Current_Avg_Price=0
+            Current_Avg_Value=0
           }else if(Current_Position_Net_Quantity<0){
             # update current variables
             Current_Which_Ind=c(Current_Which_Ind, Which_Ind_[i])
@@ -3867,7 +3871,7 @@ Order_Filled_R_Test=function(Which_Signals,
             Current_Open_Price=c(Current_Open_Price, Open_Price_[i])
             Current_Time=c(Current_Time, Time_[i])
             Current_Position_Net_Quantity=Current_Position_Net_Quantity
-            Current_Avg_Price=Current_Avg_Price
+            Current_Avg_Value=Current_Avg_Value
           }
         }
         next
@@ -3876,9 +3880,9 @@ Order_Filled_R_Test=function(Which_Signals,
       #**************************************
       # Detail_[i]=="BTO" | Detail_[i]=="STO"
       if(Detail_[i]=="BTO" | Detail_[i]=="STO"){
-        if(abs(Current_Position_Net_Quantity>=Max_Orders)){
+        if(abs(Current_Position_Net_Quantity)>=Max_Orders){
           next
-        }else if(abs(Current_Position_Net_Quantity<Max_Orders)){
+        }else if(abs(Current_Position_Net_Quantity)<Max_Orders){
           if(Current_Position=="Long" & Detail_[i]=="BTO"){
             # adjust Quantity_[i]
             Quantity_[i]=min(Quantity_[i], Max_Orders-Current_Position_Net_Quantity)
@@ -3891,8 +3895,16 @@ Order_Filled_R_Test=function(Which_Signals,
             Current_Open_Price=c(Current_Open_Price, Open_Price_[i])
             Current_Time=c(Current_Time, Time_[i])
             Current_Position_Net_Quantity=sum(Current_Quantity)
-            Current_Avg_Price=sum((Current_Open_Price-Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
+            Current_Avg_Value=sum((Current_Open_Price+Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
             
+            # update *_Out
+            Which_Ind_Out=c(Which_Ind_Out, Which_Ind_[i])
+            Action_Out=c(Action_Out, "Buy")
+            Detail_Out=c(Detail_Out, "BTO")
+            Quantity_Out=c(Quantity_Out, Quantity_[i])
+            Time_Out=c(Time_Out, Time_[i])
+            Price_Out=c(Price_Out, Open_Price_[i]+Penalty*Tick_Size)
+            Net_Quantity_Out=c(Net_Quantity_Out, Current_Position_Net_Quantity)
           }
           else if(Current_Position=="Short" & Detail_[i]=="STO"){
             # adjust Quantity_[i]
@@ -3902,10 +3914,20 @@ Order_Filled_R_Test=function(Which_Signals,
             Current_Which_Ind=c(Current_Which_Ind, Which_Ind_[i])
             Current_Action=c(Current_Action, Action_[i])
             Current_Detail=c(Current_Detail, Detail_[i])
+            Current_Quantity=c(Current_Quantity, Quantity_[i])
             Current_Open_Price=c(Current_Open_Price, Open_Price_[i])
             Current_Time=c(Current_Time, Time_[i])
             Current_Position_Net_Quantity=sum(Current_Quantity)
-            Current_Avg_Price=sum((Current_Open_Price-Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
+            Current_Avg_Value=sum((Current_Open_Price-Penalty*Tick_Size)*abs(Current_Quantity))/abs(Current_Position_Net_Quantity)
+            
+            # update *_Out
+            Which_Ind_Out=c(Which_Ind_Out, Which_Ind_[i])
+            Action_Out=c(Action_Out, "Sell")
+            Detail_Out=c(Detail_Out, "STO")
+            Quantity_Out=c(Quantity_Out, Quantity_[i])
+            Time_Out=c(Time_Out, Time_[i])
+            Price_Out=c(Price_Out, Open_Price_[i]-Penalty*Tick_Size)
+            Net_Quantity_Out=c(Net_Quantity_Out, Current_Position_Net_Quantity)
           }
         }
         next
@@ -4220,10 +4242,14 @@ Orders_Transmitter=function(BarData_5Secs,
   # BarData_5Secs_Include_Last_Time[, Time:=format(as.POSIXct(Time),
   #                                                tz="America/Los_Angeles")]
   
-  BTO_Orders=Which_Signals_Order_Filled[Which_Signals_Order_Filled[["Detail"]]=="BTO", ]
-  STC_Orders=Which_Signals_Order_Filled[Which_Signals_Order_Filled[["Detail"]]=="STC", ]
+  BTO_Orders=Which_Signals_Order_Filled[Detail=="BTO", ]
+  STC_Orders=Which_Signals_Order_Filled[Detail=="STC" |
+                                          (Action=="Sell" & Detail=="Early_Profit") |
+                                          (Action=="Sell" & Detail=="Loss_Cut"), ]
   STO_Orders=Which_Signals_Order_Filled[Which_Signals_Order_Filled[["Detail"]]=="STO", ]
-  BTC_Orders=Which_Signals_Order_Filled[Which_Signals_Order_Filled[["Detail"]]=="BTC", ]
+  BTC_Orders=Which_Signals_Order_Filled[Detail=="BTC" |
+                                          (Action=="Buy" & Detail=="Early_Profit") |
+                                          (Action=="Buy" & Detail=="Loss_Cut"), ]
   if(sum(c("Long", "Short")%in%Position_Names)==2){
     # Orders_Transmitted
     Orders_Transmitted=rbind(
@@ -4233,14 +4259,13 @@ Orders_Transmitter=function(BarData_5Secs,
           Symbol=BarData_5Secs[Time%in%BTO_Orders[, Submitted_Time], Symbol],
           Submitted_Time=BarData_5Secs[Time%in%BTO_Orders[, Submitted_Time], Time],
           Filled_Time=BarData_5Secs[Time%in%BTO_Orders[, Submitted_Time], Time],
-          Action="Buy",
-          Detail="BTO",
+          Action=BTO_Orders[, Action],
+          Detail=BTO_Orders[, Detail],
           TotalQuantity=BTO_Orders[, Quantity],
           OrderType=Order_Rules[["Long"]][["BuyToOpen"]][["OrderType"]],
           Price=BarData_5Secs_Include_Last_Time[Time%in%c(BTO_Orders[, Submitted_Time])][["Open"]]+Penalty*Tick_Size,
           Filled=1,
-          Signs_N=Which_Signals[Detail%in%BTO_Orders[, Detail] &
-                                  Submitted_Time%in%BTO_Orders[, Submitted_Time], Signals],
+          Signs_N=Which_Signals[Which_Ind%in%BTO_Orders$Which_Ind, Signals],
           Row_N=1:nrow(BTO_Orders)
         )
       },
@@ -4251,14 +4276,13 @@ Orders_Transmitter=function(BarData_5Secs,
           Symbol=BarData_5Secs[Time%in%STC_Orders[, Submitted_Time], Symbol],
           Submitted_Time=BarData_5Secs[Time%in%STC_Orders[, Submitted_Time], Time],
           Filled_Time=BarData_5Secs[Time%in%STC_Orders[, Submitted_Time], Time],
-          Action="Sell",
-          Detail="STC",
+          Action=STC_Orders[, Action],
+          Detail=STC_Orders[, Detail],
           TotalQuantity=-STC_Orders[, Quantity],
           OrderType=Order_Rules[["Long"]][["SellToClose"]][["OrderType"]],
           Price=BarData_5Secs_Include_Last_Time[Time%in%c(STC_Orders[, Submitted_Time])][["Open"]]-Penalty*Tick_Size,
           Filled=1,
-          Signs_N=Which_Signals[Detail%in%STC_Orders[, Detail] &
-                                  Submitted_Time%in%STC_Orders[, Submitted_Time], Signals],
+          Signs_N=Which_Signals[Which_Ind%in%STC_Orders$Which_Ind, Signals],
           Row_N=1:nrow(STC_Orders)
         )
       },
@@ -4269,14 +4293,13 @@ Orders_Transmitter=function(BarData_5Secs,
           Symbol=BarData_5Secs[Time%in%STO_Orders[, Submitted_Time], Symbol],
           Submitted_Time=BarData_5Secs[Time%in%STO_Orders[, Submitted_Time], Time],
           Filled_Time=BarData_5Secs[Time%in%STO_Orders[, Submitted_Time], Time],
-          Action="Sell",
-          Detail="STO",
+          Action=STO_Orders[, Action],
+          Detail=STO_Orders[, Detail],
           TotalQuantity=-STO_Orders[, Quantity],
           OrderType=Order_Rules[["Short"]][["SellToOpen"]][["OrderType"]],
           Price=BarData_5Secs_Include_Last_Time[Time%in%c(STO_Orders[, Submitted_Time])][["Open"]]-Penalty*Tick_Size,
           Filled=1,
-          Signs_N=Which_Signals[Detail%in%STO_Orders[, Detail] &
-                                  Submitted_Time%in%STO_Orders[, Submitted_Time], Signals],
+          Signs_N=Which_Signals[Which_Ind%in%STO_Orders$Which_Ind, Signals],
           Row_N=1:nrow(STO_Orders)
         )
       },
@@ -4287,14 +4310,13 @@ Orders_Transmitter=function(BarData_5Secs,
           Symbol=BarData_5Secs[Time%in%BTC_Orders[, Submitted_Time], Symbol],
           Submitted_Time=BarData_5Secs[Time%in%BTC_Orders[, Submitted_Time], Time],
           Filled_Time=BarData_5Secs[Time%in%BTC_Orders[, Submitted_Time], Time],
-          Action="Buy",
-          Detail="BTC",
+          Action=BTC_Orders[, Action],
+          Detail=BTC_Orders[, Detail],
           TotalQuantity=BTC_Orders[, Quantity],
           OrderType=Order_Rules[["Short"]][["BuyToClose"]][["OrderType"]],
           Price=BarData_5Secs_Include_Last_Time[Time%in%c(BTC_Orders[, Submitted_Time])][["Open"]]+Penalty*Tick_Size,
           Filled=1,
-          Signs_N=Which_Signals[Detail%in%BTC_Orders[, Detail] &
-                                  Submitted_Time%in%BTC_Orders[, Submitted_Time], Signals],
+          Signs_N=Which_Signals[Which_Ind%in%BTC_Orders$Which_Ind, Signals],
           Row_N=1:nrow(BTC_Orders)
         )
       }
