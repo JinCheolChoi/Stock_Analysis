@@ -19,8 +19,8 @@ OrderRules_Env$General=list(
   #Position_Direction="both",
   Scenario="Positive", # Positive : early profit is prioritized over loss cut
   # Negative : loss cut is prioritized over early profit
-  Stop_Order=10,
-  Profit_Order=10,
+  Stop_Order=10, # the divergence from the average value of the positions currently held to prevent further loss, at which limit orders are filled to clear the existing positions
+  Profit_Order=10, # the divergence from the average value of the positions currently held to secure early profit, at which limit orders are filled to clear the existing positions
   Maximum_Elapsed_Time=Inf, # This argument is to be defined for OrderType=="LMT"
   Commission=0.25, # Commission per contract
   Tick_Size=0.25, # the minimum tick size
