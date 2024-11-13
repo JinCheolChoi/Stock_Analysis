@@ -13,7 +13,7 @@ rm(list=ls())
 #******************
 # working directory
 #******************
-Device="desktop" # "laptop" or "desktop"
+Device="laptop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop
@@ -31,7 +31,7 @@ if(Device=="desktop"){
   source(paste0("C:/Users/jchoi02/Desktop/R/Functions/Functions.R"))
 }
 
-load(paste0(rdata.dir, "Futures_2023-12-31 - 1min.Rdata"))
+load(paste0(rdata.dir, "Futures_2024-01-26 - 1min.Rdata"))
 # load(paste0(rdata.dir, "Futures_2023-07-22 - 5mins_RSI.Rdata"))
 
 
@@ -43,7 +43,7 @@ load(paste0(rdata.dir, "Futures_2023-12-31 - 1min.Rdata"))
 #******************
 # working directory
 #******************
-Device="desktop" # "laptop" or "desktop"
+Device="laptop" # "laptop" or "desktop"
 
 if(Device=="desktop"){
   # desktop

@@ -5,6 +5,7 @@
 # load(paste0(rdata.dir, "Futures_", as.Date(Sys.time()), " - ", BarSize, ".Rdata"))
 # load(paste0(rdata.dir, "Futures_2023-07-08 - 5mins.Rdata"))
 
+
 #********************
 #
 # empty the workspace
@@ -68,12 +69,13 @@ for(pack in c("IBrokers",
 }
 
 # bar size
-BarSize="15mins"
+BarSize="1min"
 
 # import data
+BarData_5Secs=fread(paste0(data.dir, "5secs/", Symbols, "/", Symbols, ".csv"))
 BarData=fread(paste0(data.dir, BarSize, "/", Symbols, "/", Symbols, ".csv"))
-BarData[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"),
-                           tz="America/Los_Angeles")]
+# BarData[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"),
+#                            tz="America/Los_Angeles")]
 
 # BarData[, Time:=as.POSIXct(format(as.POSIXct(Time), tz="America/Los_Angeles"), tz="America/Los_Angeles")]
 
@@ -286,7 +288,7 @@ Live_Trading=FALSE
 # )
 
 Market_Time=c(1, 2, 3)
-ADX_Value=c(20, 25, 30)
+ADX_Value=c(0)
 Reverse=c(TRUE, FALSE)
 Params=data.table(
   expand.grid(

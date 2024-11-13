@@ -1153,8 +1153,151 @@ Backtesting=function(BarData,
   # order by Time and Action such that BTO is prioritized over STO
   Which_Signals=Which_Signals[order(Time, Action)]
   
-  # Submitted_Time
-  Which_Signals[, Submitted_Time:=as.POSIXct(Submitted_Time)]
+  
+  
+  ############################################
+  #**************************
+  # Profit_Order & Stop_Order
+  Which_Signals[, `:=`(Time=NULL,
+                       Ind=NULL,
+                       Trading_Time=NULL)]
+  setnames(Which_Signals, "Submitted_Time", "Time")
+  Which_Signals[, Time:=as.POSIXct(Time)]
+  Which_Signals=BarData_5sec[Which_Signals, on=c("Time")]
+  Which_Signals[Detail=="BTO", Price:=Open+Penalty*Tick_Size]
+  Which_Signals[Detail=="STO", Price:=Open-Penalty*Tick_Size]
+  setnames(Which_Signals, "Ind_5sec", "Ind")
+  
+  Profit_Order=40
+  Stop_Order=40
+  
+  BarData_5sec_Temp=copy(BarData_5sec)
+  setnames(BarData_5sec_Temp, "Ind_5sec", "Ind")
+  # BarData_5sec_Temp_Include_Last_Time
+  BarData_5sec_Temp_Include_Last_Time=BarData_5sec_Temp[Time>=min(BarData_Include_Last_Time[, Time]) &
+                                                          Time<=max(BarData_Include_Last_Time[, Time]), ]
+  # remove the last time time point
+  BarData_5sec_Temp=BarData_5sec_Temp[Time>=min(BarData[, Time]) &
+                                        Time<=max(BarData[, Time]), ]
+  
+  Which_Signals=rbind(Which_Signals,
+                      do.call(rbind,
+                              apply(Which_Signals,
+                                    1,
+                                    function(x){
+                                      switch(x[["Detail"]],
+                                             # if detail=="BTO"
+                                             "BTO"={
+                                               # Earliest_Profit_Ind
+                                               Earliest_Profit_Ind=min(
+                                                 ifelse(
+                                                   length(BarData_5sec_Temp[Time>x[["Time"]][1] &
+                                                                              High>=(as.numeric(x[["Price"]][1])+Profit_Order), Ind])==0,
+                                                   Inf,
+                                                   BarData_5sec_Temp[Time>x[["Time"]][1] &
+                                                                       High>=(as.numeric(x[["Price"]][1])+Profit_Order), Ind]
+                                                 )
+                                               )
+                                               # Earliest_Stop_Ind
+                                               Earliest_Stop_Ind=min(
+                                                 ifelse(
+                                                   length(BarData_5sec_Temp[Time>x[["Time"]][1] &
+                                                                              Low<=(as.numeric(x[["Price"]][1])-Stop_Order), Ind])==0,
+                                                   Inf,
+                                                   BarData_5sec_Temp[Time>x[["Time"]][1] &
+                                                                       Low<=(as.numeric(x[["Price"]][1])-Stop_Order), Ind]
+                                                 )
+                                               )
+                                               if(Earliest_Profit_Ind==Inf & Earliest_Stop_Ind==Inf){
+                                                 # empty
+                                               }else{ # if Earliest_Profit_Ind!=Inf or Earliest_Stop_Ind!=Inf
+                                                 if(Earliest_Profit_Ind<=Earliest_Stop_Ind){
+                                                   data.table(
+                                                     BarData_5sec_Temp[Ind==(min(Earliest_Profit_Ind, Earliest_Stop_Ind)+1), -c("Ind")],
+                                                     Ind=BarData_5sec_Temp[Ind==(min(Earliest_Profit_Ind, Earliest_Stop_Ind)+1), ][["Ind"]],
+                                                     Signals=1,
+                                                     Action="Sell",
+                                                     Detail="STC",
+                                                     Quantity=-1,
+                                                     Simultaneous=FALSE,
+                                                     Price=(as.numeric(x[["Price"]][1])+Profit_Order)-Penalty*Tick_Size
+                                                   )
+                                                 }else if(Earliest_Profit_Ind>Earliest_Stop_Ind){
+                                                   data.table(
+                                                     BarData_5sec_Temp[Ind==(min(Earliest_Profit_Ind, Earliest_Stop_Ind)+1), -c("Ind")],
+                                                     Ind=BarData_5sec_Temp[Ind==(min(Earliest_Profit_Ind, Earliest_Stop_Ind)+1), ][["Ind"]],
+                                                     Signals=1,
+                                                     Action="Sell",
+                                                     Detail="STC",
+                                                     Quantity=-1,
+                                                     Simultaneous=FALSE,
+                                                     Price=(as.numeric(x[["Price"]][1])+Profit_Order)+Penalty*Tick_Size
+                                                   )
+                                                 }
+                                               }
+                                               
+                                             },
+                                             # if detail=="STO"
+                                             "STO"={
+                                               # Earliest_Profit_Ind
+                                               Earliest_Profit_Ind=min(
+                                                 ifelse(
+                                                   length(BarData_5sec_Temp[Time>x[["Time"]][1] &
+                                                                              Low<=(as.numeric(x[["Price"]][1])-Profit_Order), Ind])==0,
+                                                   Inf,
+                                                   BarData_5sec_Temp[Time>x[["Time"]][1] &
+                                                                       Low<=(as.numeric(x[["Price"]][1])-Profit_Order), Ind]
+                                                 )
+                                               )
+                                               # Earliest_Stop_Ind
+                                               Earliest_Stop_Ind=min(
+                                                 ifelse(
+                                                   length(BarData_5sec_Temp[Time>x[["Time"]][1] &
+                                                                              High<=(as.numeric(x[["Price"]][1])+Stop_Order), Ind])==0,
+                                                   Inf,
+                                                   BarData_5sec_Temp[Time>x[["Time"]][1] &
+                                                                       High<=(as.numeric(x[["Price"]][1])+Stop_Order), Ind]
+                                                 )
+                                               )
+                                               
+                                               if(Earliest_Profit_Ind==Inf & Earliest_Stop_Ind==Inf){
+                                                 # empty
+                                               }else{
+                                                 if(Earliest_Profit_Ind<=Earliest_Stop_Ind){
+                                                   data.table(
+                                                     BarData_5sec_Temp[Ind==(min(Earliest_Profit_Ind, Earliest_Stop_Ind)+1), -c("Ind")],
+                                                     Ind=BarData_5sec_Temp[Ind==(min(Earliest_Profit_Ind, Earliest_Stop_Ind)+1), ][["Ind"]],
+                                                     Signals=1,
+                                                     Action="Buy",
+                                                     Detail="BTC",
+                                                     Quantity=1,
+                                                     Simultaneous=FALSE,
+                                                     Price=(as.numeric(x[["Price"]][1])+Profit_Order)+Penalty*Tick_Size
+                                                   )
+                                                 }else if(Earliest_Profit_Ind>Earliest_Stop_Ind){
+                                                   data.table(
+                                                     BarData_5sec_Temp[Ind==(min(Earliest_Profit_Ind, Earliest_Stop_Ind)+1), -c("Ind")],
+                                                     Ind=BarData_5sec_Temp[Ind==(min(Earliest_Profit_Ind, Earliest_Stop_Ind)+1), ][["Ind"]],
+                                                     Signals=1,
+                                                     Action="Buy",
+                                                     Detail="BTC",
+                                                     Quantity=1,
+                                                     Simultaneous=FALSE,
+                                                     Price=(as.numeric(x[["Price"]][1])+Profit_Order)-Penalty*Tick_Size
+                                                   )
+                                                 }
+                                               }
+                                             }
+                                      )
+                                    }
+                              )
+                      )
+  )
+  Which_Signals[, Simultaneous:=duplicated(Which_Signals[["Time"]], fromLast=T)|duplicated(Which_Signals[["Time"]], fromLast=F)]
+  Which_Signals=Which_Signals[order(Time, Detail)] # make sure BTO comes ahead of STO given Simultaneous==TRUE
+  
+  
+  ############################################
   
   #***************
   # Order_Filled_C
@@ -1169,8 +1312,8 @@ Backtesting=function(BarData,
   
   #*******************
   # Orders_Transmitter
-  Orders_Transmitted=Orders_Transmitter(BarData,
-                                        BarData_Include_Last_Time,
+  Orders_Transmitted=Orders_Transmitter(BarData=BarData_5sec_Temp,
+                                        BarData_Include_Last_Time=BarData_5sec_Temp_Include_Last_Time,
                                         Time_Unit,
                                         Penalty,
                                         Tick_Size,
@@ -1744,19 +1887,19 @@ Add_OrderRule=function(Strategy,
   # add a model to the corresponding strategy
   Strategy_temp=get(Strategy, envir=.GlobalEnv)
   
-  # Min_Sig_N must be smaller or equal to the number of models
-  if(OrderRule=="Long"){
-    if((length(names(Strategy_temp$Models))<New_ModelParams[["BuyToOpen"]][["Min_Sig_N"]])|
-       (length(names(Strategy_temp$Models))<New_ModelParams[["SellToClose"]][["Min_Sig_N"]])){
-      stop("Min_Sig_N must be smaller or equal to the number of models")
-    }
-  }
-  if(OrderRule=="Short"){
-    if((length(names(Strategy_temp$Models))<New_ModelParams[["SellToOpen"]][["Min_Sig_N"]])|
-       (length(names(Strategy_temp$Models))<New_ModelParams[["BuyToClose"]][["Min_Sig_N"]])){
-      stop("Min_Sig_N must be smaller or equal to the number of models")
-    }
-  }
+  # # Min_Sig_N must be smaller or equal to the number of models
+  # if(OrderRule=="Long"){
+  #   if((length(names(Strategy_temp$Models))<New_ModelParams[["BuyToOpen"]][["Min_Sig_N"]])|
+  #      (length(names(Strategy_temp$Models))<New_ModelParams[["SellToClose"]][["Min_Sig_N"]])){
+  #     stop("Min_Sig_N must be smaller or equal to the number of models")
+  #   }
+  # }
+  # if(OrderRule=="Short"){
+  #   if((length(names(Strategy_temp$Models))<New_ModelParams[["SellToOpen"]][["Min_Sig_N"]])|
+  #      (length(names(Strategy_temp$Models))<New_ModelParams[["BuyToClose"]][["Min_Sig_N"]])){
+  #     stop("Min_Sig_N must be smaller or equal to the number of models")
+  #   }
+  # }
   
   Strategy_temp$Order_Rules[[OrderRule]]=New_ModelParams
   assign(paste0(Strategy), Strategy_temp, envir=.GlobalEnv)
@@ -3217,6 +3360,7 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
     if(Net_Quantity_[i-1]>0){
       
       switch(as.character(Simultaneous_[i]),
+             
              "TRUE"={
                # indicate removal in Remove_[i] for orders that occur at the same time in both directions (long & short)
                # such duplicated orders are removed from the 2nd one (the very 1st one is processed by the next for statment)
@@ -3228,24 +3372,19 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
                }
                
                # Always first try to clear the existing positions
-               if("STC"%in%Detail_[which(Ind_==Ind_[i])]){
-                 if(Detail_[i]=="STC"){
-                   Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                   Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
-                   
-                   next
-                 }
+               if(Detail_[i]=="STC"){
+                 Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
+                 Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
+                 
+                 next
                }
                
-               if(!"STC"%in%Detail_[which(Ind_==Ind_[i])]){
-                 if(Detail_[i]=="BTO"){
-                   Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                   Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
-                   
-                   next
-                 }
+               if(Detail_[i]=="BTO"){
+                 Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
+                 Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
+                 
+                 next
                }
-               
              },
              
              "FALSE"={
@@ -3281,24 +3420,19 @@ Order_Filled_R=function(Which_Signals, Max_Orders){
                }
                
                # Always first try to clear the existing positions
-               if("BTC"%in%Detail_[which(Ind_==Ind_[i])]){
-                 if(Detail_[i]=="BTC"){
-                   Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                   Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
-                   
-                   next
-                 }
+               if(Detail_[i]=="BTC"){
+                 Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
+                 Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
+                 
+                 next
                }
                
-               if(!"BTC"%in%Detail_[which(Ind_==Ind_[i])]){
-                 if(Detail_[i]=="STO"){
-                   Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
-                   Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
-                   
-                   next
-                 }
+               if(Detail_[i]=="STO"){
+                 Net_Quantity_[i]=Net_Quantity_[i-1]+Quantity_[i]
+                 Simultaneous_Ind=Ind_[i] # update Simultaneous_Ind after the 1st duplicated order is recorded
+                 
+                 next
                }
-               
              },
              
              "FALSE"={
