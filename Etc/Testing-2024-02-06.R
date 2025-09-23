@@ -546,6 +546,7 @@ Which_Signals[, Submitted_Time:=as.POSIXct(format(as.POSIXct(Submitted_Time),
 Which_Signals=Which_Signals[BarData_5Secs_Include_Last_Time, on=c(Submitted_Time="Time")]
 Which_Signals[, Which_Ind:=.I]
 
+
 # Stop_Order=30
 # Profit_Order=30
 # Max_Orders=5

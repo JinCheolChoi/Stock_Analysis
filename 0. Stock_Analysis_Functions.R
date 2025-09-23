@@ -1181,11 +1181,12 @@ Backtesting=function(BarData,
   Which_Signals[, Which_Ind:=.I]
   
   # # modify tunning parameters & Quantity in some rows
-  # Stop_Order=Inf
-  # Profit_Order=Inf
+  # Stop_Order=30
+  # Profit_Order=30
   
-  # Max_Orders=1
-  # Which_Signals[c(sample(1:nrow(Which_Signals), nrow(Which_Signals)*0.5)), Quantity:=Quantity*3]
+  # Max_Orders=5
+  # Which_Signals[Quantity>0, Quantity:=round(runif(nrow(Which_Signals[Quantity>0, ]), min=1, max=5))]
+  # Which_Signals[Quantity<0, Quantity:=-round(runif(nrow(Which_Signals[Quantity<0, ]), min=1, max=5))]
   Which_Signals_Copy=copy(Which_Signals)
   Which_Signals_Copy=Which_Signals_Copy[!is.na(Ind), ]
   
@@ -3874,7 +3875,7 @@ Order_Filled_R_Test=function(Which_Signals,
             Current_Avg_Value=Current_Avg_Value
           }
         }
-        next
+        next # this "next" guarantees clearing the existing position as the priority
       }
       
       #**************************************
